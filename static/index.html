@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv</title>
+    <style>
+        h1 { font-size: 2em; color: rgb(139, 68, 68)}
+        body { 
+            margin : 0;
+            height : 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            border-left: 100px solid #8B4444;  /* Bordure à gauche */
+            border-right: 100px solid #8B4444; /* Bordure à droite */
+            padding: 20px;
+            background-color: #dbb9b9;
+        }
+        .content { 
+            flex-grow : 1;
+            padding : 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px;
+            background-color: #5a4141;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .button:hover {
+            background-color: #452d2d;
+        }
+        a {
+            margin: 10px;
+            text-decoration: underline;
+            color: rgb(0, 0, 0);
+        }
+        nav b { display: inline-block; padding: 10px; background-color: #5a4141; color: white; border-radius: 5px; }
+        h2 { margin-top: 100px; color: rgb(139,68,68)}
+        button { padding: 10px; background-color: #5a4141; color: white; border: none; border-radius: 5px; cursor: pointer; }
+
+    </style>
+</head>
+<body>
+    <div class = "content">
+    <h1>🌐 Bienvenue sur Webserv 🌐</h1>
+    
+    <nav>
+        <a class="button" href="/">Accueil</a>
+        <a class="button" href="/upload">Uploader un fichier</a>
+        <a class="button" href="/cgi-bin/script.py">Exécuter un script CGI</a>
+        <a class="button" href="/logs">Voir les logs</a>
+    </nav>
+
+    <h2>📤 Envoyer un fichier :</h2>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="button">Envoyer</button>
+    </form>
+
+    <h2>🕵️ Tests :</h2>
+    <a href="/page-inexistante">Test 404</a> |
+    <a href="/forbidden">Test 403</a> |
+    <a href="/internal-error">Test 500</a>
+
+    <h2>🆘 Statut du serveur :</h2>
+    <p id="status">🔄 Vérification...</p>
+
+    <script>
+        async function checkServerStatus() {
+            try {
+                let response = await fetch("/");
+                if (response.ok) {
+                    document.getElementById("status").innerText = "✅ Serveur en ligne";
+                } else {
+                    document.getElementById("status").innerText = "❌ Erreur serveur";
+                }
+            } catch {
+                document.getElementById("status").innerText = "❌ Serveur hors ligne";
+            }
+        }
+        checkServerStatus();
+    </script>
+    </div>
+</body>
+</html>
