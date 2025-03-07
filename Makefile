@@ -24,7 +24,7 @@ $(BUILD)%.o: $(SRC_DIR)%.cpp $(addprefix $(INC_DIR), $(HEADERS))
 	$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
 
 clean:
-	rm -f $(BUILD)
+	rm -rf build
 
 fclean: clean
 	rm -f $(NAME)

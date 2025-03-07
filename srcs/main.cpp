@@ -1,4 +1,4 @@
-#include "webserv.hpp"
+#include "../includes/webserv.hpp"
 
 int main (int argc, char *argv[])
 {
@@ -9,7 +9,8 @@ int main (int argc, char *argv[])
     }
     else
     {
-        std::cout << "Hello " << argv[1] << "!" << std::endl;
+        Webserv webserv = Webserv();
+        webserv.webserv(argv[1]);
     }
     return 0;
 }

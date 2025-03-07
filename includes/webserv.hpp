@@ -4,5 +4,14 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <ctime>
+
+class Webserv {
+    public : 
+        Webserv();
+        ~Webserv();
+
+        void webserv(char *argv);
+};
 
 #endif
