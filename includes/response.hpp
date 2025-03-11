@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
+#include <unistd.h>
 #include "webserv.hpp"
 #include "request.hpp"
 
@@ -15,14 +16,20 @@ class Response {
         ~Response();
 
         std::string send_response(const Request &request);
-        void send_response();
-        void set_status_code(int status_code);
-        void set_status_message(const std::string &status_message);
-        char *set_time();
+        std::string generate_response();
+
+        void setStatusCode(int status_code);
+        void setStatusMessage(const std::string &status_message);
+        void setBody(const std::string &body);
+        void setTime();
 
         std::string get_response(const Request &request, const std::string &host);
-        void post_response(const Request &request, const std::string &root);
-        void delete_response(const Request &request, const std::string &root);
+        std::string post_response(const Request &request, const std::string &root);
+        std::string delete_response(const Request &request, const std::string &root);
+
+        std::string generate_404_response();
+        std::string generate_200_response(const std::string &path);
+        std::string generate_403_response();
 
     private:
         int _status_code;

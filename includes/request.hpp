@@ -9,11 +9,15 @@ class Request {
         Request();
         ~Request();
 
-        std::string method;
-        std::string url;
-        std::string version;
-        std::map<std::string, std::string> headers;
-        std::string body;
+        std::string getMethod() const;
+        std::string getUrl() const;
+
+    private :
+        std::string _method;
+        std::string _url;
+        std::string _version;
+        std::map<std::string, std::string> _headers;
+        std::string _body;
 };
 
 #endif
