@@ -3,18 +3,26 @@
 
 #include <string>
 #include <map>
+#include <sys/stat.h>
+#include <fstream>
+#include <sstream>
 #include "webserv.hpp"
+#include "request.hpp"
 
 class Response {
     public:
         Response();
         ~Response();
 
-        void get_response();
+        std::string send_response(const Request &request);
         void send_response();
         void set_status_code(int status_code);
-        void set_status_message(std::string status_message);
-        void set_time();
+        void set_status_message(const std::string &status_message);
+        char *set_time();
+
+        std::string get_response(const Request &request, const std::string &host);
+        void post_response(const Request &request, const std::string &root);
+        void delete_response(const Request &request, const std::string &root);
 
     private:
         int _status_code;
