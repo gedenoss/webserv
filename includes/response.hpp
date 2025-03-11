@@ -1,6 +1,8 @@
 #ifndef RESPONSE_HPP
 # define RESPONSE_HPP
 
+#include <string>
+#include <map>
 #include "webserv.hpp"
 
 class Response {
@@ -17,12 +19,7 @@ class Response {
     private:
         int _status_code;
         std::string _status_message;
-        std::string _version;
-        std::string _date;
-        std::string _server;
-        std::string _content_type;
-        std::string _content_length;
-        std::string _connection;
+        std::map<std::string, std::string> _headers;
         std::string _body;
 };
 
