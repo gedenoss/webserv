@@ -3,7 +3,7 @@
 Request::Request()
 {
     _method = "GET";
-    _url = "/index.jpg";
+    _url = "/index.f";
     _version = "HTTP/1.1";
     _headers["Host"] = "";
     _headers["User-Agent"] = "";
