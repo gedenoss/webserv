@@ -9,7 +9,7 @@ int main (int argc, char *argv[])
     }
     else
     {
-        Webserv webserv = Webserv();
+        Webserv webserv;
         webserv.webserv(argv[1]);
     }
     return 0;

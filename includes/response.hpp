@@ -27,6 +27,7 @@ class Response {
         std::string post_response(const Request &request, const std::string &root);
         std::string delete_response(const Request &request, const std::string &root);
 
+        std::string generate_406_response();
         std::string generate_404_response();
         std::string generate_200_response(const std::string &path);
         std::string generate_403_response();

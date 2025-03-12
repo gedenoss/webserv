@@ -92,22 +92,32 @@ std::string Response::generate_403_response()
 
 std::string get_content_type(const std::string &path)
 {
-    if (ends_with(path, ".html"))
-        return "text/html";
-    else if (ends_with(path, ".css"))
-        return "text/css";
-    else if (ends_with(path, ".js"))
-        return "text/javascript";
-    else if (ends_with(path, ".jpg"))
-        return "image/jpeg";
-    else if (ends_with(path, ".png"))
-        return "image/png";
-    else if (ends_with(path, ".gif"))
-        return "image/gif";
-    else if (ends_with(path, ".ico"))
-        return "image/x-icon";
-    else
-        return "text/plain";
+    std::map<std::string, std::string> mime_types;
+    
+    mime_types[".html"] = "text/html";
+    mime_types[".css"] = "text/css";
+    mime_types[".js"] = "application/javascript";
+    mime_types[".png"] = "image/png";
+    mime_types[".jpg"] = "image/jpeg";
+    mime_types[".jpeg"] = "image/jpeg";
+    mime_types[".gif"] = "image/gif";
+    mime_types[".svg"] = "image/svg+xml";
+    mime_types[".ico"] = "image/x-icon";
+    mime_types[".json"] = "application/json";
+    mime_types[".xml"] = "application/xml";
+    mime_types[".pdf"] = "application/pdf";
+    mime_types[".mp4"] = "video/mp4";
+    mime_types[".txt"] = "text/plain";
+    mime_types[".csv"] = "text/csv";
+    mime_types[".mp3"] = "audio/mpeg";
+
+    size_t dot_pos = path.find_last_of(".");
+    if (dot_pos != std::string::npos) {
+        std::string ext = path.substr(dot_pos);
+        if (mime_types.count(ext))
+            return mime_types[ext];
+    }
+    return "application/octet-stream"; // Type par défaut pour fichiers inconnus
 }
 
 std::string Response::generate_200_response(const std::string &path)
@@ -133,16 +143,41 @@ bool has_read_permission(const std::string &path)
     return true;
 }
 
+
+bool is_acceptable(const Request &request, const std::string &path)
+{
+    std::string accept = request.getHeaders().at("Accept");
+    std::vector<std::string> elements;
+    split(accept, ",", elements);
+    if (accept.find("*/*") != std::string::npos || accept.empty())
+        return true;
+    std::string content_type = get_content_type(path);
+    if (accept.find(content_type) != std::string::npos)
+        return true;
+    return false;
+}
+
+std::string Response::generate_406_response()
+{
+    setStatusCode(406);
+    setStatusMessage("Not Acceptable");
+    setTime();
+    _headers["Content-Type"] = "text/html";
+    _headers["Content-Length"] = to_string(_body.length());
+    setBody("<html><body><h1>406 Not Acceptable</h1></body></html>");
+    return generate_response();
+}
+
 std::string Response::get_response(const Request &request, const std::string &root)
 {
     std::string path = root + request.getUrl();
     std::cout << path << std::endl;
     if (!file_exists(path))
         return (generate_404_response());
+    else if (!is_acceptable(request, path))
+        return (generate_406_response());
     else if (!has_read_permission(path))
-    {
         return (generate_403_response());
-    }
     else
         return (generate_200_response(path));
 }
