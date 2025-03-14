@@ -17,6 +17,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <iostream>
 
 struct LocationConfig {
 	std::string path;                  
