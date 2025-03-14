@@ -3,12 +3,13 @@
 Request::Request()
 {
     _method = "GET";
-    _url = "/index.jpg";
-    _version = "HTTP/1.1";
+    _url = "/index.html";
+    _version = "HTTP/1.1000000";
     _headers["Host"] = "";
     _headers["User-Agent"] = "";
-    _headers["Accept"] = "image/*, text/html";
-    _body = "";
+    _headers["Accept"] = "text/html";
+    _headers["Accept-Language"] = "en-US;q=5";
+    _body = "hello everyone";
 }
 
 std::string Request::getMethod() const

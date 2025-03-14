@@ -9,9 +9,9 @@ Webserv::Webserv()
 void Webserv::webserv(char *argv)
 {
     (void)argv;
-    std::cout << "Hello Webserv! " << argv <<  std::endl;
+    std::cout << "Hello Webserv! " << argv <<  "\n" << std::endl;
     Request request;
-    Response response;
+    Response response(request);
     response.send_response(request);
 }
 
