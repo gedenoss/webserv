@@ -6,7 +6,7 @@
 /*   By: gbouguer <gbouguer@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/12 12:22:51 by gbouguer          #+#    #+#             */
-/*   Updated: 2025/03/12 15:24:39 by gbouguer         ###   ########.fr       */
+/*   Updated: 2025/03/14 14:04:55 by gbouguer         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,11 +27,14 @@ struct LocationConfig {
 	bool autoindex;                    
 	std::string upload_dir;            
 	std::string cgi_extension;         
-	std::string cgi_path;              
+	std::string cgi_path;
+	
+	LocationConfig() : autoindex(false) {}
 };
 
 struct ServerConfig {
-	int port;                          
+	int port;  
+	std::string host;                        
 	std::string server_name;           
 	std::string root;                  
 	size_t client_max_body_size;       
