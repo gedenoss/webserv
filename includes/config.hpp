@@ -6,7 +6,7 @@
 /*   By: gbouguer <gbouguer@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/12 12:22:51 by gbouguer          #+#    #+#             */
-/*   Updated: 2025/03/14 14:04:55 by gbouguer         ###   ########.fr       */
+/*   Updated: 2025/03/17 13:04:55 by gbouguer         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ struct LocationConfig {
 	std::string path;                  
 	std::vector<std::string> allow_methods; 
 	std::string root;                  
-	std::string index;                 
+	std::string index;                
 	bool autoindex;                    
 	std::string upload_dir;            
 	std::string cgi_extension;         
@@ -34,7 +34,8 @@ struct LocationConfig {
 
 struct ServerConfig {
 	int port;  
-	std::string host;                        
+	std::string host;
+	std::string index;                       
 	std::string server_name;           
 	std::string root;                  
 	size_t client_max_body_size;       

@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
         std::cerr << "Error: No valid servers found in config file." << std::endl;
         return 1;
     }
-    std::cout << "Configuration successfully loaded." << std::endl;
+    std::cout << "config okm" << std::endl;
     return 0;
 }
 
