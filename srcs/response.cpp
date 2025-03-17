@@ -2,6 +2,7 @@
 #include "../includes/request.hpp"
 #include "../includes/utils.hpp"
 #include "../includes/errors.hpp"
+#include "dirent.h"
 
 Response::Response(Request &req) : request(req)
 {
@@ -11,7 +12,6 @@ Response::Response(Request &req) : request(req)
     _headers["Server"] = "Webserv";
     _headers["Content-Type"] = "";
     _headers["Content-Length"] = "";
-    _headers["Content-Encoding"] = "identity";
     _headers["Content-Language"] = "";
     _headers["Connection"] = "close";
     _available_languages.push_back("en-US");
@@ -21,7 +21,18 @@ Response::Response(Request &req) : request(req)
     _available_languages.push_back("de-DE");
     _available_languages.push_back("en-GB");
     _available_languages.push_back("nl");
+
+    _order.push_back("Connection");
+    _order.push_back("Date");
+    _order.push_back("ETag");
+    _order.push_back("Last-Modified");
+    _order.push_back("Server");
+    _order.push_back("Content-Type");
+    _order.push_back("Content-Length");
+    _order.push_back("Content-Language");
+
     _body = "";
+
 }
 
 void Response::setTime()
@@ -73,13 +84,14 @@ std::string Response::getBody() const
     return _body;
 }
 
-std::string Response::generate_response()
+std::string Response::generateResponse()
 {
     std::stringstream response;
     response << "HTTP/1.1 " << _status_code << " " << _status_message << "\r\n";
-    for (std::map<std::string, std::string>::reverse_iterator it = _headers.rbegin(); it != _headers.rend(); ++it)
+    for(std::vector<std::string>::iterator it = _order.begin(); it != _order.end(); ++it)
     {
-        response << it->first << ": " << it->second << "\r\n";
+        if (_headers.find(*it) != _headers.end())
+            response << *it << ": " << _headers[*it] << "\r\n";
     }
     response << "\r\n";
     response << _body;
@@ -87,18 +99,7 @@ std::string Response::generate_response()
     return response.str();
 }
 
-std::string read_file(const std::string& path)
-{
-    std::ifstream file(path.c_str());
-    if (!file.is_open())
-        return "";
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
-
-std::string get_content_type(const std::string &path)
+std::string getContentType(const std::string &path)
 {
     std::map<std::string, std::string> mime_types;
     
@@ -128,11 +129,7 @@ std::string get_content_type(const std::string &path)
     return "application/octet-stream"; // Type par défaut pour fichiers inconnus
 }
 
-bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<std::string, double>& b) {
-    return a.second > b.second; // or another comparison logic
-}
-
-std::string Response::get_language()
+std::string Response::getLanguage()
 {
     std::string accept_language = request.getHeaders().at("Accept-Language");
     if (accept_language.empty())
@@ -169,40 +166,30 @@ std::string Response::get_language()
 }
 
 
-std::string Response::generate_200_response(const std::string &path, Errors &errors)
+std::string Response::response200(const std::string &path, Errors &errors)
 {
-    std::string _body = read_file(path);
+    std::string _body = readFile(path);
 
     setStatusCode(200);
     setStatusMessage("OK");
     setTime();
-    _headers["Content-Type"] = get_content_type(path);
-    _headers["Content-Length"] = to_string(_body.length());
-    _headers["Content-Language"] = get_language();
+    _headers["Content-Type"] = getContentType(path);
+    _headers["Content-Length"] = toString(_body.length());
+    _headers["Content-Language"] = getLanguage();
     if (_headers["Content-Language"] == "")
-        return errors.generate_400_response();
+        return errors.error400();
     setBody(_body);
-    return generate_response();
+    return generateResponse();
 }
 
-bool has_read_permission(const std::string &path)
-{
-    struct stat fileStat;
-    if (stat(path.c_str(), &fileStat) != 0)
-        return false;
-    if (access(path.c_str(), R_OK) != 0)
-        return false;
-    return true;
-}
-
-bool Response::is_acceptable(const std::string &path)
+bool isAcceptable(const std::string &path, const Request &request)
 {
     std::string accept = request.getHeaders().at("Accept");
     std::vector<std::string> elements;
     split(accept, ",", elements);
     if (accept.find("*/*") != std::string::npos || accept.empty())
         return true;
-    std::string content_type = get_content_type(path);
+    std::string content_type = getContentType(path);
     std::size_t pos = content_type.find("/");
     std::string type_content = content_type.substr(0, pos);
     std::string subtype_content = content_type.substr(pos + 1);
@@ -233,48 +220,105 @@ bool Response::is_acceptable(const std::string &path)
     return false;
 }
 
+bool isModifiedSince(const std::string &path, const std::string &ifModifiedSince)
+{
+    struct stat fileStat;
 
-std::string Response::get_response(const Request &request, const std::string &root)
+    if (stat(path.c_str(), &fileStat) != 0)
+        return true;
+    time_t client_time = parseHttpDate(ifModifiedSince);
+    if (client_time == 0)
+        return true;
+    return fileStat.st_mtime > client_time;
+}
+
+bool handleIfModifiedSince(const std::string &path, const std::map<std::string, std::string> &headers)
+{
+    std::map<std::string, std::string>::const_iterator it = headers.find("If-Modified-Since");
+    if (it == headers.end())
+        return true;
+    if (!isModifiedSince(path, it->second))
+        return false;
+    return true;
+}
+
+bool isNotModified(const std::string &path, const std::map<std::string, std::string> &headers)
+{
+    std::string etag = generateEtag(path);
+    if (headers.count("If-None-Match") > 0)
+    {
+        std::string client_etag = headers.at("If-None-Match");
+        if (client_etag == etag)
+            return true;
+    }
+    return false;
+}
+
+bool isDirectory(const std::string &path)
+{
+    struct stat fileStat;
+    if (stat(path.c_str(), &fileStat) != 0)
+        return false;
+    if (S_ISDIR(fileStat.st_mode))
+    {
+        DIR *dir = opendir(path.c_str());
+        if (dir == NULL)
+            return false;
+        struct dirent *entry;
+        for (entry = readdir(dir); entry != NULL; entry = readdir(dir))
+        {
+        }
+    }
+    return false;
+}
+
+std::string Response::getResponse(const Request &request, const std::string &root)
 {
     Errors errors(*this);
     std::string path = root + request.getUrl();
-    if (!file_exists(path))
-        return (errors.generate_404_response());
-    else if (!is_acceptable(path))
-        return (errors.generate_406_response());
-    else if (!has_read_permission(path))
-        return (errors.generate_403_response());
-    else
-        return (generate_200_response(path, errors));
+    if (!fileExists(path))
+        return (errors.error404());
+
+    struct stat fileStat;
+    stat(path.c_str(), &fileStat);
+    this->setHeaders("Last-Modified", formatHttpDate(fileStat.st_mtime));
+    this->setHeaders("Etag", generateEtag(path));
+
+    if (!isAcceptable(path, this->request))
+        return (errors.error406());
+    if (!hasReadPermission(path) || !isDirectory(path))
+        return (errors.error403());
+    if (!handleIfModifiedSince(path, request.getHeaders()) || isNotModified(path, request.getHeaders()))
+        return (errors.error304());
+    return (response200(path, errors));
 }
 
-std::string Response::post_response(const Request &request, const std::string &root)
+std::string Response::postResponse(const Request &request, const std::string &root)
 {
     (void)request;
     (void)root;
     return ("POST");
 }
 
-std::string Response::delete_response(const Request &request, const std::string &root)
+std::string Response::deleteResponse(const Request &request, const std::string &root)
 {
     (void)request;
     (void)root;
     return ("DELETE");
 }
 
-std::string Response::send_response(const Request &given_request)
+std::string Response::sendResponse(const Request &given_request)
 {
     request = given_request;
     if (request.getMethod() == "GET") {
-        return (get_response(request, "./static"));
+        return (getResponse(request, "./static"));
     } 
     else if (request.getMethod() == "POST") {
-        return (post_response(request, "www"));
+        return (postResponse(request, "www"));
     }
     else
-       return (delete_response(request, "www"));
+       return (deleteResponse(request, "www"));
 }
-
 
 
 Response::~Response()

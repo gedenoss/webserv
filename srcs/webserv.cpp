@@ -12,7 +12,7 @@ void Webserv::webserv(char *argv)
     std::cout << "Hello Webserv! " << argv <<  "\n" << std::endl;
     Request request;
     Response response(request);
-    response.send_response(request);
+    response.sendResponse(request);
 }
 
 Webserv::~Webserv()

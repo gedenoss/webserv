@@ -10,10 +10,11 @@ class Errors
         Errors(Response &resp);
         ~Errors();
 
-        std::string generate_400_response();
-        std::string generate_403_response();
-        std::string generate_404_response();
-        std::string generate_406_response();
+        std::string error304();
+        std::string error400();
+        std::string error403();
+        std::string error404();
+        std::string error406();
 
     private:
         Response _response;

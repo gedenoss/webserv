@@ -3,10 +3,18 @@
 
 #include "webserv.hpp"
 #include "response.hpp"
+#include <sys/stat.h>
+#include <ctime>
 
-std::string to_string(int value);
-bool ends_with(const std::string &str, const std::string &suffix);
-bool file_exists(const std::string &name);
+std::string toString(int value);
+bool endsWith(const std::string &str, const std::string &suffix);
+bool fileExists(const std::string &name);
 void split(const std::string &s, const std::string &delimiter, std::vector<std::string> &elements);
+time_t parseHttpDate(const std::string &httpDate);
+std::string formatHttpDate(time_t timestamp);
+std::string generateEtag(const std::string &path);
+std::string readFile(const std::string& path);
+bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<std::string, double>& b);
+bool hasReadPermission(const std::string &path);
 
 #endif

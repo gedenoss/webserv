@@ -18,8 +18,8 @@ class Response {
         Response(Request &req);
         ~Response();
 
-        std::string send_response(const Request &request);
-        std::string generate_response();
+        std::string sendResponse(const Request &request);
+        std::string generateResponse();
 
         void setStatusCode(int status_code);
         void setStatusMessage(const std::string &status_message);
@@ -32,14 +32,13 @@ class Response {
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
 
-        bool is_acceptable(const std::string &path);
-        std::string get_language();
+        std::string getLanguage();
 
-        std::string get_response(const Request &request, const std::string &host);
-        std::string post_response(const Request &request, const std::string &root);
-        std::string delete_response(const Request &request, const std::string &root);
+        std::string getResponse(const Request &request, const std::string &host);
+        std::string postResponse(const Request &request, const std::string &root);
+        std::string deleteResponse(const Request &request, const std::string &root);
 
-        std::string generate_200_response(const std::string &path, Errors &errors);
+        std::string response200(const std::string &path, Errors &errors);
 
     private:
         Request &request;
@@ -48,6 +47,7 @@ class Response {
         std::map<std::string, std::string> _headers;
         std::vector<std::string> _available_languages;
         std::string _body;
+        std::vector<std::string> _order;
 };
 
 #endif
