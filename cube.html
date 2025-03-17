@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carre qui tourne</title>
+    <style>
+        /* Définir un carré */
+        .carre {
+            width: 100px;
+            height: 100px;
+            background-color: #3498db; /* Couleur du carré */
+            margin: 100px auto;
+            animation: rotation 3s infinite linear;
+        }
+
+        /* Animation de rotation */
+        @keyframes rotation {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="carre"></div>
+</body>
+</html>
