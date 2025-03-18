@@ -1,6 +1,6 @@
 #include "../includes/webserv.hpp"
 #include "../includes/response.hpp"
-#include "../includes/request.hpp"
+#include "../includes/request.hpp" // Ensure this header defines the Request class
 #include "../includes/config.hpp"
 
 Webserv::Webserv()
