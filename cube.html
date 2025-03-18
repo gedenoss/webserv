@@ -6,24 +6,36 @@
     <title>Trois Cubes avec Images Différentes</title>
     <style>
         body {
-            background-color: rgb(154, 186, 216);
+            background: linear-gradient(135deg, rgba(255, 204, 0, 0.8), rgba(0, 204, 255, 0.8));
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
             height: 100vh;
             margin: 0;
+            font-family: 'Barriecito', sans-serif;
+            color: white;
+            padding-top: 0;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin: 0;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
         }
 
         .container {
             display: flex;
-            justify-content: space-around;
-            width: 80%;
-            padding-top: 20px;
+            justify-content: space-evenly;
+            width: 60%;
+            margin-top: 0;
         }
 
         .scene {
-            width: 150px;
-            height: 150px;
+            width: 120px;
+            height: 120px;
             perspective: 600px;
         }
 
@@ -37,41 +49,131 @@
 
         @keyframes rotateCube {
             from {
-                transform: rotateX(0deg) rotateY(0deg);
+                transform: rotateY(0deg);
             }
             to {
-                transform: rotateX(360deg) rotateY(360deg);
+                transform: rotateY(360deg);
             }
         }
 
         .face {
             position: absolute;
-            width: 150px;
-            height: 150px;
-            border: 2px solid black;
+            width: 120px;
+            height: 120px;
             background-size: cover;
             background-position: center;
         }
 
-        .front  { transform: rotateY(  0deg) translateZ(75px); }
-        .back   { transform: rotateY(180deg) translateZ(75px); }
-        .left   { transform: rotateY(-90deg) translateZ(75px); }
-        .right  { transform: rotateY( 90deg) translateZ(75px); }
-        .top    { transform: rotateX( 90deg) translateZ(75px); }
-        .bottom { transform: rotateX(-90deg) translateZ(75px); }
+        .front  { transform: rotateY(  0deg) translateZ(60px); }
+        .back   { transform: rotateY(180deg) translateZ(60px); }
+        .left   { transform: rotateY(-90deg) translateZ(60px); }
+        .right  { transform: rotateY( 90deg) translateZ(60px); }
+        .top    { transform: rotateX( 90deg) translateZ(60px); }
+        .bottom { transform: rotateX(-90deg) translateZ(60px); }
 
-        /* Cube 1 - anaouali.jpg */
         .cube1 .face { background-image: url('anaouali.jpg'); }
-
-        /* Cube 2 - ocussy.jpg */
         .cube2 .face { background-image: url('ocussy.jpg'); }
-
-        /* Cube 3 - gbouguer.jpg */
         .cube3 .face { background-image: url('gbouguer.jpg'); }
 
+        .buttons-container {
+            display: flex;
+            justify-content: space-evenly;
+            width: 60%;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background-color: #d534db;
+            color: rgb(0, 0, 0);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            position: relative;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .file-input {
+            margin-top: 20px;
+            font-size: 1em;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .file-input:hover {
+            background-color: #2980b9;
+        }
+
+        .scrolling-image {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            animation: scrollImage 10s linear infinite;
+        }
+
+        .scrolling-image img {
+            width: 500px;
+            margin-right: 20px;
+        }
+
+        @keyframes scrollImage {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        .glitter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, rgba(255, 182, 193, 0.8), rgba(255, 105, 180, 0));
+            animation: glitterAnim 1s infinite;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        @keyframes glitterAnim {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2) translateY(-100px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes particle {
+            0% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) translateY(-100px);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
+
+    <h1>WEBSAVIEZ VOUS LE ? OUI JE LE SAVAIS TU</h1>
 
     <div class="container">
         <div class="scene">
@@ -106,6 +208,36 @@
                 <div class="face bottom"></div>
             </div>
         </div>
+    </div>
+
+    <div class="buttons-container">
+        <button onclick="showGlitter(event)">Accueil</button>
+        <button onclick="showGlitter(event)">Uploader un fichier</button>
+        <button onclick="showGlitter(event)">Exécuter un script CGI</button>
+        <button onclick="showGlitter(event)">Voir les logs</button>
+        <!-- Bouton ERROR 404 qui redirige vers ta page 404 personnalisée -->
+        <button onclick="window.location.href='error404.html'">ERROR 404</button>
+    </div>
+
+    <input type="file" class="file-input" onchange="uploadFile()">
+
+    <script>
+        function uploadFile() {
+            alert("Fichier téléchargé !");
+        }
+
+        function showGlitter(event) {
+            var glitter = document.createElement('div');
+            glitter.classList.add('glitter');
+            event.target.appendChild(glitter);
+            setTimeout(() => {
+                glitter.remove();
+            }, 1000);
+        }
+    </script>
+
+    <div class="scrolling-image">
+        <img src="vache.png" alt="Vache">
     </div>
 
 </body>
