@@ -3,13 +3,13 @@
 Request::Request()
 {
     _method = "GET";
-    _url = "/lol";
+    _url = "/test";
     _version = "HTTP/1.1";
     _headers["Host"] = "";
     _headers["User-Agent"] = "";
     _headers["Accept"] = "";
     _headers["If-Modified-Since"] = "";
-    _headers["Accepst-Language"] = "en-US";
+    _headers["Accept-Language"] = "en-US";
     _body = "hello everyone";
 }
 

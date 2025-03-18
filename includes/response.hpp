@@ -32,16 +32,25 @@ class Response {
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
 
+        std::string getContentType();
         std::string getLanguage();
+
+        bool isAcceptable();
+        bool isModifiedSince(const std::string &ifModifiedSince);
+        bool handleIfModifiedSince(const std::map<std::string, std::string> &headers);
+        bool isNotModified(const std::map<std::string, std::string> &headers);
+        bool handleDirectory();
+        bool isCGI();
 
         std::string getResponse(const Request &request, const std::string &host);
         std::string postResponse(const Request &request, const std::string &root);
         std::string deleteResponse(const Request &request, const std::string &root);
 
-        std::string response200(const std::string &path, Errors &errors);
+        std::string response200(Errors &errors);
 
     private:
         Request &request;
+        std::string _path;
         int _status_code;
         std::string _status_message;
         std::map<std::string, std::string> _headers;

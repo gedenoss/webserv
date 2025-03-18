@@ -2,7 +2,6 @@
 #include "../includes/request.hpp"
 #include "../includes/utils.hpp"
 #include "../includes/errors.hpp"
-#include "dirent.h"
 
 Response::Response(Request &req) : request(req)
 {
@@ -99,7 +98,7 @@ std::string Response::generateResponse()
     return response.str();
 }
 
-std::string getContentType(const std::string &path)
+std::string Response::getContentType()
 {
     std::map<std::string, std::string> mime_types;
     
@@ -110,19 +109,18 @@ std::string getContentType(const std::string &path)
     mime_types[".jpg"] = "image/jpeg";
     mime_types[".jpeg"] = "image/jpeg";
     mime_types[".gif"] = "image/gif";
-    mime_types[".svg"] = "image/svg+xml";
+    mime_types[".php"] = "text/html";
     mime_types[".ico"] = "image/x-icon";
     mime_types[".json"] = "application/json";
     mime_types[".xml"] = "application/xml";
     mime_types[".pdf"] = "application/pdf";
-    mime_types[".mp4"] = "video/mp4";
     mime_types[".txt"] = "text/plain";
     mime_types[".csv"] = "text/csv";
-    mime_types[".mp3"] = "audio/mpeg";
+    mime_types[".xhtml"] = "text/xhtml";
 
-    size_t dot_pos = path.find_last_of(".");
+    size_t dot_pos = _path.find_last_of(".");
     if (dot_pos != std::string::npos) {
-        std::string ext = path.substr(dot_pos);
+        std::string ext = _path.substr(dot_pos);
         if (mime_types.count(ext))
             return mime_types[ext];
     }
@@ -166,14 +164,14 @@ std::string Response::getLanguage()
 }
 
 
-std::string Response::response200(const std::string &path, Errors &errors)
+std::string Response::response200(Errors &errors)
 {
-    std::string _body = readFile(path);
+    std::string _body = readFile(_path);
 
     setStatusCode(200);
     setStatusMessage("OK");
     setTime();
-    _headers["Content-Type"] = getContentType(path);
+    _headers["Content-Type"] = getContentType();
     _headers["Content-Length"] = toString(_body.length());
     _headers["Content-Language"] = getLanguage();
     if (_headers["Content-Language"] == "")
@@ -182,14 +180,14 @@ std::string Response::response200(const std::string &path, Errors &errors)
     return generateResponse();
 }
 
-bool isAcceptable(const std::string &path, const Request &request)
+bool Response::isAcceptable()
 {
     std::string accept = request.getHeaders().at("Accept");
     std::vector<std::string> elements;
     split(accept, ",", elements);
     if (accept.find("*/*") != std::string::npos || accept.empty())
         return true;
-    std::string content_type = getContentType(path);
+    std::string content_type = getContentType();
     std::size_t pos = content_type.find("/");
     std::string type_content = content_type.substr(0, pos);
     std::string subtype_content = content_type.substr(pos + 1);
@@ -220,11 +218,11 @@ bool isAcceptable(const std::string &path, const Request &request)
     return false;
 }
 
-bool isModifiedSince(const std::string &path, const std::string &ifModifiedSince)
+bool Response::isModifiedSince(const std::string &ifModifiedSince)
 {
     struct stat fileStat;
 
-    if (stat(path.c_str(), &fileStat) != 0)
+    if (stat(_path.c_str(), &fileStat) != 0)
         return true;
     time_t client_time = parseHttpDate(ifModifiedSince);
     if (client_time == 0)
@@ -232,19 +230,19 @@ bool isModifiedSince(const std::string &path, const std::string &ifModifiedSince
     return fileStat.st_mtime > client_time;
 }
 
-bool handleIfModifiedSince(const std::string &path, const std::map<std::string, std::string> &headers)
+bool Response::handleIfModifiedSince(const std::map<std::string, std::string> &headers)
 {
     std::map<std::string, std::string>::const_iterator it = headers.find("If-Modified-Since");
     if (it == headers.end())
         return true;
-    if (!isModifiedSince(path, it->second))
+    if (!isModifiedSince(it->second))
         return false;
     return true;
 }
 
-bool isNotModified(const std::string &path, const std::map<std::string, std::string> &headers)
+bool Response::isNotModified(const std::map<std::string, std::string> &headers)
 {
-    std::string etag = generateEtag(path);
+    std::string etag = generateEtag(_path);
     if (headers.count("If-None-Match") > 0)
     {
         std::string client_etag = headers.at("If-None-Match");
@@ -254,43 +252,47 @@ bool isNotModified(const std::string &path, const std::map<std::string, std::str
     return false;
 }
 
-bool isDirectory(const std::string &path)
+bool Response::handleDirectory()
 {
-    struct stat fileStat;
-    if (stat(path.c_str(), &fileStat) != 0)
-        return false;
-    if (S_ISDIR(fileStat.st_mode))
-    {
-        DIR *dir = opendir(path.c_str());
-        if (dir == NULL)
-            return false;
-        struct dirent *entry;
-        for (entry = readdir(dir); entry != NULL; entry = readdir(dir))
-        {
-        }
-    }
+    if (!isDirectory(_path))
+        return true;
+    // en fait ici il faudrait récupérer le path donné dans le fichier de config qui me donne
+    // le fichier par défaut si c'est un directory
+    // gérer les répertoires interdits
     return false;
 }
+
+bool Response::isCGI()
+{
+    std::string extensions[] = {".php", ".py", ".pl", ".cgi"};
+    for (size_t i = 0; i < sizeof(extensions) / sizeof(extensions[0]); i++)
+    {
+        if (endsWith(_path, extensions[i]))
+            return true;
+    }
+    return true;
+}
+
 
 std::string Response::getResponse(const Request &request, const std::string &root)
 {
     Errors errors(*this);
-    std::string path = root + request.getUrl();
-    if (!fileExists(path))
+    _path = root + request.getUrl();
+    if (!fileExists(_path))
         return (errors.error404());
 
     struct stat fileStat;
-    stat(path.c_str(), &fileStat);
+    stat(_path.c_str(), &fileStat);
     this->setHeaders("Last-Modified", formatHttpDate(fileStat.st_mtime));
-    this->setHeaders("Etag", generateEtag(path));
+    this->setHeaders("Etag", generateEtag(_path));
 
-    if (!isAcceptable(path, this->request))
+    if (!isAcceptable())
         return (errors.error406());
-    if (!hasReadPermission(path) || !isDirectory(path))
+    if (!hasReadPermission(_path) ||!handleDirectory())
         return (errors.error403());
-    if (!handleIfModifiedSince(path, request.getHeaders()) || isNotModified(path, request.getHeaders()))
+    if (!handleIfModifiedSince(request.getHeaders()) || isNotModified(request.getHeaders()))
         return (errors.error304());
-    return (response200(path, errors));
+    return (response200(errors));
 }
 
 std::string Response::postResponse(const Request &request, const std::string &root)

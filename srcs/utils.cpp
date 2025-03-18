@@ -87,3 +87,11 @@ bool hasReadPermission(const std::string &path)
         return false;
     return true;
 }
+
+bool isDirectory(const std::string &path)
+{
+    struct stat fileStat;
+    if (stat(path.c_str(), &fileStat) != 0)
+        return false;
+    return S_ISDIR(fileStat.st_mode);
+}

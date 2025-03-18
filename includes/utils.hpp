@@ -5,6 +5,7 @@
 #include "response.hpp"
 #include <sys/stat.h>
 #include <ctime>
+#include "dirent.h"
 
 std::string toString(int value);
 bool endsWith(const std::string &str, const std::string &suffix);
@@ -16,5 +17,6 @@ std::string generateEtag(const std::string &path);
 std::string readFile(const std::string& path);
 bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<std::string, double>& b);
 bool hasReadPermission(const std::string &path);
+bool isDirectory(const std::string &path);
 
 #endif
