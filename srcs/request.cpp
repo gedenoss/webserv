@@ -3,7 +3,7 @@
 Request::Request()
 {
     _method = "DELETE";
-    _url = "/index.json";
+    _url = "/lol.cgi";
     _version = "HTTP/1.1";
     _headers["Host"] = "";
     _headers["User-Agent"] = "";

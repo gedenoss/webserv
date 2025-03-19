@@ -319,16 +319,17 @@ void Response::handleCGI()
     // ici on va gérer les CGI
 }
 
-void Response::handleUpload()
+std::string Response::handleUpload()
 {
     std::string contentType = request.getHeaders().at("Content-Type");
     std::string boundary = contentType.substr(contentType.find("boundary=") + 9);
     std::string length = request.getHeaders().at("Content-Lenght");
-    if (length.)
-    int len = std::atoi(length.c_str());
-    if (len > MAX_FILE_SIZE)
-        std::cout << "File too big" << std::endl;
-    return;
+    // if (length.empty())
+    //     return (errors.error400());
+    // int len = std::atoi(length.c_str());
+    // if (len > MAX_FILE_SIZE)
+    //     std::cout << "File too big" << std::endl;
+    return "";
 }
 
 std::string Response::getResponse(const Request &request, Errors &errors, const std::string &root)
