@@ -3,71 +3,33 @@
 #include "../includes/utils.hpp"
 #include "../includes/errors.hpp"
 
-Errors::Errors(Response &resp) : _response(resp)
-{
-}
+Errors::Errors(Response &resp) : _response(resp) {}
 
-std::string Errors::error304()
+std::string Errors::generateError(int code, const std::string &message)
 {
-    _response.setStatusCode(304);
-    _response.setStatusMessage("Not Modified");
+    _response.setStatusCode(code);
+    _response.setStatusMessage(message);
     _response.setTime();
-    _response.setBody("<html><body><h1>304 Not Modified</h1></body></html>");
-    _response.setHeaders("Content-Type","text/html");
-    _response.setHeaders("Content-Length", toString(_response.getBody().length()));
-    _response.setHeaders("Content-Language", "en-US");
-    _response.setHeaders("Last-Modified", formatHttpDate(time(0)));
+    
+    std::string body = "<html><body><h1>" + toString(code) + " " + message + "</h1></body></html>";
+    _response.setBody(body);
+    
+    _response.setContentType();
+    _response.setContentLength();
+    _response.setContentLanguage();
+
+    if (code == 304)
+        _response.setLastModified(_response.getPath());
+
     return _response.generateResponse();
 }
 
-std::string Errors::error400()
-{
-    _response.setStatusCode(400);
-    _response.setStatusMessage("Bad Request");
-    _response.setTime();
-    _response.setBody("<html><body><h1>400 Bad Request</h1></body></html>");
-    _response.setHeaders("Content-Type","text/html");
-    _response.setHeaders("Content-Length", toString(_response.getBody().length()));
-    _response.setHeaders("Content-Language", "en-US");
-    return _response.generateResponse();
-}
+std::string Errors::error304() { return generateError(304, "Not Modified"); }
+std::string Errors::error400() { return generateError(400, "Bad Request"); }
+std::string Errors::error403() { return generateError(403, "Forbidden"); }
+std::string Errors::error404() { return generateError(404, "Not Found"); }
+std::string Errors::error406() { return generateError(406, "Not Acceptable"); }
+std::string Errors::error415() { return generateError(415, "Unsupported Media Type"); }
+std::string Errors::error500() { return generateError(500, "Internal Server Error"); }
 
-std::string Errors::error403()
-{
-    _response.setStatusCode(403);
-    _response.setStatusMessage("Forbidden");
-    _response.setTime();
-    _response.setBody("<html><body><h1>403 Forbidden</h1></body></html>");
-    _response.setHeaders("Content-Type","text/html");
-    _response.setHeaders("Content-Length", toString(_response.getBody().length()));
-    _response.setHeaders("Content-Language", "en-US");
-    return _response.generateResponse();
-}
-
-std::string Errors::error404()
-{
-    _response.setStatusCode(404);
-    _response.setStatusMessage("Not Found");
-    _response.setTime();
-    _response.setBody("<html><body><h1>404 Not Found</h1></body></html>");
-    _response.setHeaders("Content-Type","text/html");
-    _response.setHeaders("Content-Length", toString(_response.getBody().length()));
-    _response.setHeaders("Content-Language", "en-US");
-    return _response.generateResponse();
-}
-
-std::string Errors::error406()
-{
-    _response.setStatusCode(406);
-    _response.setStatusMessage("Not Acceptable");
-    _response.setTime();
-    _response.setBody("<html><body><h1>406 Not Acceptable</h1></body></html>");
-    _response.setHeaders("Content-Type","text/html");
-    _response.setHeaders("Content-Length", toString(_response.getBody().length()));
-    _response.setHeaders("Content-Language", "en-US");
-    return _response.generateResponse();
-}
-
-Errors::~Errors()
-{
-}
+Errors::~Errors() {}

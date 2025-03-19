@@ -1,6 +1,7 @@
 #include "../includes/webserv.hpp"
 #include "../includes/response.hpp"
 #include "../includes/request.hpp"
+#include "../includes/errors.hpp"
 
 Webserv::Webserv()
 {

@@ -2,8 +2,8 @@
 
 Request::Request()
 {
-    _method = "GET";
-    _url = "/test";
+    _method = "DELETE";
+    _url = "/index.json";
     _version = "HTTP/1.1";
     _headers["Host"] = "";
     _headers["User-Agent"] = "";

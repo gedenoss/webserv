@@ -17,6 +17,7 @@ std::string generateEtag(const std::string &path);
 std::string readFile(const std::string& path);
 bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<std::string, double>& b);
 bool hasReadPermission(const std::string &path);
+bool hasWritePermission(const std::string &path);
 bool isDirectory(const std::string &path);
 
 #endif

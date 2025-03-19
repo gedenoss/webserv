@@ -63,9 +63,41 @@ void Response::setBody(const std::string &body)
     _body = body;
 }
 
+void Response::setContentType()
+{
+    _headers["Content-Type"] = getContentType();
+}
+
+void Response::setContentLength()
+{
+    _headers["Content-Length"] = toString(_body.length());
+}
+
+void Response::setContentLanguage()
+{
+    _headers["Content-Language"] = getLanguage();
+}
+
+void Response::setLastModified(const std::string &path)
+{
+    struct stat fileStat;
+    stat(path.c_str(), &fileStat);
+    _headers["Last-Modified"] = formatHttpDate(fileStat.st_mtime);
+}
+
+void Response::setEtag(const std::string &path)
+{
+    _headers["ETag"] = generateEtag(path);
+}
+
 int Response::getStatusCode() const
 {
     return _status_code;
+}
+
+std::string Response::getPath() const
+{
+    return _path;
 }
 
 std::string Response::getStatusMessage() const
@@ -89,7 +121,7 @@ std::string Response::generateResponse()
     response << "HTTP/1.1 " << _status_code << " " << _status_message << "\r\n";
     for(std::vector<std::string>::iterator it = _order.begin(); it != _order.end(); ++it)
     {
-        if (_headers.find(*it) != _headers.end())
+        if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
             response << *it << ": " << _headers[*it] << "\r\n";
     }
     response << "\r\n";
@@ -110,7 +142,6 @@ std::string Response::getContentType()
     mime_types[".jpeg"] = "image/jpeg";
     mime_types[".gif"] = "image/gif";
     mime_types[".php"] = "text/html";
-    mime_types[".ico"] = "image/x-icon";
     mime_types[".json"] = "application/json";
     mime_types[".xml"] = "application/xml";
     mime_types[".pdf"] = "application/pdf";
@@ -171,12 +202,23 @@ std::string Response::response200(Errors &errors)
     setStatusCode(200);
     setStatusMessage("OK");
     setTime();
-    _headers["Content-Type"] = getContentType();
-    _headers["Content-Length"] = toString(_body.length());
-    _headers["Content-Language"] = getLanguage();
+    setContentType();
+    setContentLength();
+    setContentLanguage();
+    setLastModified(_path);
+    setEtag(_path);
     if (_headers["Content-Language"] == "")
         return errors.error400();
     setBody(_body);
+    return generateResponse();
+}
+
+std::string Response::response204()
+{
+    setStatusCode(204);
+    setStatusMessage("No Content");
+    setTime();
+    setEtag(_path);
     return generateResponse();
 }
 
@@ -272,19 +314,33 @@ bool Response::isCGI()
     }
     return true;
 }
-
-
-std::string Response::getResponse(const Request &request, const std::string &root)
+void Response::handleCGI()
 {
-    Errors errors(*this);
+    // ici on va gérer les CGI
+}
+
+void Response::handleUpload()
+{
+    std::string contentType = request.getHeaders().at("Content-Type");
+    std::string boundary = contentType.substr(contentType.find("boundary=") + 9);
+    std::string length = request.getHeaders().at("Content-Lenght");
+    if (length.)
+    int len = std::atoi(length.c_str());
+    if (len > MAX_FILE_SIZE)
+        std::cout << "File too big" << std::endl;
+    return;
+}
+
+std::string Response::getResponse(const Request &request, Errors &errors, const std::string &root)
+{
     _path = root + request.getUrl();
     if (!fileExists(_path))
         return (errors.error404());
 
-    struct stat fileStat;
-    stat(_path.c_str(), &fileStat);
-    this->setHeaders("Last-Modified", formatHttpDate(fileStat.st_mtime));
-    this->setHeaders("Etag", generateEtag(_path));
+    // struct stat fileStat;
+    // stat(_path.c_str(), &fileStat);
+    // this->setHeaders("Last-Modified", formatHttpDate(fileStat.st_mtime));
+    // this->setHeaders("Etag", generateEtag(_path));
 
     if (!isAcceptable())
         return (errors.error406());
@@ -292,34 +348,51 @@ std::string Response::getResponse(const Request &request, const std::string &roo
         return (errors.error403());
     if (!handleIfModifiedSince(request.getHeaders()) || isNotModified(request.getHeaders()))
         return (errors.error304());
+    if (isCGI())
+        handleCGI();
     return (response200(errors));
 }
 
-std::string Response::postResponse(const Request &request, const std::string &root)
+std::string Response::postResponse(const Request &request, Errors &errors, const std::string &root)
 {
-    (void)request;
-    (void)root;
+    _path = root + request.getUrl();
+    if (isCGI())
+        handleCGI();
+    else if (request.getUrl() == "/upload")
+    {
+        handleUpload();
+    }
+    else
+        errors.error415();
     return ("POST");
 }
 
-std::string Response::deleteResponse(const Request &request, const std::string &root)
+std::string Response::deleteResponse(const Request &request, Errors &errors, const std::string &root)
 {
-    (void)request;
-    (void)root;
-    return ("DELETE");
+    _path = root + request.getUrl();
+    std::cout << _path << std::endl;
+    if (!fileExists(_path))
+        return (errors.error404());
+    else if (!hasWritePermission(_path))
+        return (errors.error403());
+    else if (std::remove(_path.c_str()) != 0)
+        return (errors.error500());
+    else 
+        return (response204());
 }
 
 std::string Response::sendResponse(const Request &given_request)
 {
+    Errors errors(*this);
     request = given_request;
     if (request.getMethod() == "GET") {
-        return (getResponse(request, "./static"));
+        return (getResponse(request, errors, "./static"));
     } 
     else if (request.getMethod() == "POST") {
-        return (postResponse(request, "www"));
+        return (postResponse(request, errors, "www"));
     }
     else
-       return (deleteResponse(request, "www"));
+       return (deleteResponse(request, errors, "./static"));
 }
 
 

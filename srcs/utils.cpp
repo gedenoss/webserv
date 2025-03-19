@@ -88,6 +88,16 @@ bool hasReadPermission(const std::string &path)
     return true;
 }
 
+bool hasWritePermission(const std::string &path)
+{
+    struct stat fileStat;
+    if (stat(path.c_str(), &fileStat) != 0)
+        return false;
+    if (access(path.c_str(), W_OK) != 0)
+        return false;
+    return true;
+}
+
 bool isDirectory(const std::string &path)
 {
     struct stat fileStat;

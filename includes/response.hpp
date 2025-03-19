@@ -8,10 +8,13 @@
 #include <sstream>
 #include <unistd.h>
 #include <algorithm>
+#include <cstdio>
 #include "webserv.hpp"
 #include "request.hpp"
 
 class Errors;
+
+const int MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
 
 class Response {
     public:
@@ -26,8 +29,14 @@ class Response {
         void setHeaders(const std::string &key, const std::string &value);
         void setBody(const std::string &body);
         void setTime();
+        void setContentType();
+        void setContentLength();
+        void setContentLanguage();
+        void setLastModified(const std::string &path);
+        void setEtag(const std::string &path);
 
         int getStatusCode() const;
+        std::string getPath() const;
         std::string getStatusMessage() const;
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
@@ -42,11 +51,15 @@ class Response {
         bool handleDirectory();
         bool isCGI();
 
-        std::string getResponse(const Request &request, const std::string &host);
-        std::string postResponse(const Request &request, const std::string &root);
-        std::string deleteResponse(const Request &request, const std::string &root);
+        void handleCGI();
+        std::string handleUpload();
+
+        std::string getResponse(const Request &request, Errors &errors, const std::string &host);
+        std::string postResponse(const Request &request, Errors &errors, const std::string &root);
+        std::string deleteResponse(const Request &request, Errors &errors, const std::string &root);
 
         std::string response200(Errors &errors);
+        std::string response204();
 
     private:
         Request &request;
