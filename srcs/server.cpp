@@ -153,7 +153,6 @@ ServerConfig parseConfig(const std::string &filename) {
     return config;
 }
 
-// Fonction pour lire un fichier binaire (ex: .jpg, .png, .html)
 std::string readFile(const std::string &filename) {
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
@@ -164,7 +163,6 @@ std::string readFile(const std::string &filename) {
     return buffer.str();
 }
 
-// Fonction pour extraire l'extension d'un fichier
 std::string getFileExtension(const std::string &path) {
     size_t dotPos = path.find_last_of(".");
     if (dotPos != std::string::npos)
@@ -172,14 +170,13 @@ std::string getFileExtension(const std::string &path) {
     return "";
 }
 
-// Fonction pour déterminer le bon Content-Type
 std::string getContentType(const std::string &ext) {
     if (ext == ".html") return "text/html";
     if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
     if (ext == ".png") return "image/png";
     if (ext == ".css") return "text/css";
     if (ext == ".js") return "application/javascript";
-    return "application/octet-stream"; // Par défaut
+    return "application/octet-stream";
 }
 
 int main() {
@@ -252,24 +249,20 @@ int main() {
                     if (bytes_read > 0) {
                         buffer[bytes_read] = '\0';
                         std::string request(buffer);
-
-                        // Extraire le chemin du fichier demandé
-                        std::string filename = "cube.html"; // Page par défaut
+                        std::string filename = "index.html";
                         size_t start = request.find("GET ") + 4;
                         size_t end = request.find(" ", start);
                         if (start != std::string::npos && end != std::string::npos) {
                             std::string path = request.substr(start, end - start);
                             if (path == "/") {
-                                filename = "cube.html"; // Page principale
+                                filename = "index.html";
                             } else {
-                                filename = path.substr(1); // Enlever le "/"
+                                filename = path.substr(1);
                             }
                         }
-
                         std::string fileContent = readFile(filename);
                         std::string fileExt = getFileExtension(filename);
                         std::string contentType = getContentType(fileExt);
-
                         if (!fileContent.empty()) {
                             std::string response = "HTTP/1.1 200 OK\r\n"
                                                    "Content-Type: " + contentType + "\r\n"
