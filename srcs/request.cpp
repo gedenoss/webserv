@@ -31,11 +31,14 @@ bool HttpRequestParser::isValidMethod(const std::string &method) {
 
 bool HttpRequestParser::isMethodAllowedForRoute(const std::string &method, const std::string &url, const Config &config) {
     // Trouver la route correspondante à l'URL
-    for (const ServerConfig &server : config.servers) {
-        for (const LocationConfig &location : server.locations) {
+    for (size_t i = 0; i < config.servers.size(); ++i) {
+        const ServerConfig &server = config.servers[i];
+        for (size_t j = 0; j < server.locations.size(); ++j) {
+            const LocationConfig &location = server.locations[j];
             if (url.find(location.path) == 0) {  // Vérifie si l'URL commence par le chemin de la route
                 // Vérifier si la méthode est autorisée pour cette location
-                for (const std::string &allowedMethod : location.allow_methods) {
+                for (size_t k = 0; k < location.allow_methods.size(); ++k) {
+                    const std::string &allowedMethod = location.allow_methods[k];
                     if (method == allowedMethod) {
                         return true;  // La méthode est autorisée
                     }
@@ -46,6 +49,7 @@ bool HttpRequestParser::isMethodAllowedForRoute(const std::string &method, const
     }
     return false;  // La méthode n'est pas autorisée pour la route
 }
+
 bool HttpRequestParser::isValidHttpVersion(const std::string &version) {
 	return (version == "HTTP/1.1");
 }
