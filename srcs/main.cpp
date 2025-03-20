@@ -31,7 +31,7 @@ int	main(int argc, char* argv[])
 		
 		HttpRequestParser parser(1024, 1024);
 		int	errorCode =	0;
-		Request	request	= parser.parse(rawRequest, errorCode);
+		Request	request	= parser.parse(rawRequest, errorCode, config);
 		if (errorCode != 200)
 		{
 			std::cerr << "Error	parsing	request. HTTP Error	Code: "	<< errorCode << std::endl;

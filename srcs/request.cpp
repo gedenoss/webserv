@@ -1,8 +1,8 @@
 #include "../includes/request.hpp"
 #include "../includes/response.hpp"
+#include "../includes/config.hpp"
 #include <cctype>
 #include <cstdlib>
-
 // Constructeur
 Request::Request() {}
 
@@ -29,6 +29,23 @@ bool HttpRequestParser::isValidMethod(const std::string &method) {
 	return (method == "GET" || method == "POST" || method == "DELETE");
 }
 
+bool HttpRequestParser::isMethodAllowedForRoute(const std::string &method, const std::string &url, const Config &config) {
+    // Trouver la route correspondante à l'URL
+    for (const ServerConfig &server : config.servers) {
+        for (const LocationConfig &location : server.locations) {
+            if (url.find(location.path) == 0) {  // Vérifie si l'URL commence par le chemin de la route
+                // Vérifier si la méthode est autorisée pour cette location
+                for (const std::string &allowedMethod : location.allow_methods) {
+                    if (method == allowedMethod) {
+                        return true;  // La méthode est autorisée
+                    }
+                }
+                break;
+            }
+        }
+    }
+    return false;  // La méthode n'est pas autorisée pour la route
+}
 bool HttpRequestParser::isValidHttpVersion(const std::string &version) {
 	return (version == "HTTP/1.1");
 }
@@ -37,7 +54,7 @@ bool HttpRequestParser::isValidUrl(const std::string &url) {
 	return !url.empty() && url[0] == '/' && url.find("..") == std::string::npos;
 }
 
-Request HttpRequestParser::parse(const std::string &rawRequest, int &errorCode) {
+Request HttpRequestParser::parse(const std::string &rawRequest, int &errorCode, const Config &config) {
 	Request request;
 	std::istringstream stream(rawRequest);
 	std::string line;
@@ -55,6 +72,10 @@ Request HttpRequestParser::parse(const std::string &rawRequest, int &errorCode) 
 		errorCode = 405;
 		return request;
 	}
+	if (!isMethodAllowedForRoute(method, url, config)) {
+        errorCode = 405;  // Méthode non autorisée
+        return request;
+    }
 	if (!isValidUrl(url)) {
 		errorCode = 400;
 		return request;
