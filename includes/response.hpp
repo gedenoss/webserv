@@ -52,7 +52,7 @@ class Response {
         bool isCGI();
 
         void handleCGI();
-        std::string handleUpload();
+        std::string handleUpload(Errors &errors);
 
         std::string getResponse(const Request &request, Errors &errors, const std::string &host);
         std::string postResponse(const Request &request, Errors &errors, const std::string &root);

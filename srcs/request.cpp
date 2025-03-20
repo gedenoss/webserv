@@ -2,14 +2,16 @@
 
 Request::Request()
 {
-    _method = "DELETE";
-    _url = "/lol.cgi";
+    _method = "GET";
+    _url = "/index.html";
     _version = "HTTP/1.1";
     _headers["Host"] = "";
     _headers["User-Agent"] = "";
     _headers["Accept"] = "";
     _headers["If-Modified-Since"] = "";
     _headers["Accept-Language"] = "en-US";
+    _headers["Content-Type"] = "text/html";
+    _headers["Content-Length"] = "10000";
     _body = "hello everyone";
 }
 

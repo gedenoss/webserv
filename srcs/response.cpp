@@ -312,23 +312,45 @@ bool Response::isCGI()
         if (endsWith(_path, extensions[i]))
             return true;
     }
-    return true;
+    return false;
 }
 void Response::handleCGI()
 {
-    // ici on va gérer les CGI
+    std::cout << "CGI" << std::endl;
 }
 
-std::string Response::handleUpload()
+std::string Response::handleUpload(Errors &errors)
 {
+    if (request.getHeaders().count("Content-Type") == 0)
+        return (errors.error400());
     std::string contentType = request.getHeaders().at("Content-Type");
-    std::string boundary = contentType.substr(contentType.find("boundary=") + 9);
-    std::string length = request.getHeaders().at("Content-Lenght");
-    // if (length.empty())
-    //     return (errors.error400());
-    // int len = std::atoi(length.c_str());
-    // if (len > MAX_FILE_SIZE)
-    //     std::cout << "File too big" << std::endl;
+    // size_t boundaryPos = contentType.find("boundary=");
+    // if (boundaryPos == std::string::npos)
+    //     return errors.error400();
+    std::string lengthStr = request.getHeaders().at("Content-Length");
+
+    if (contentType.find("multipart/form-data") == std::string::npos)
+        return errors.error400();
+    size_t pos = contentType.find("boundary=");
+    std::string boundary;
+    if (pos != std::string::npos)
+        boundary = "--" + _headers["Content-Type"].substr(pos + 9);
+    else
+        return errors.error400();
+    char* endPtr;
+    double len = std::strtod(lengthStr.c_str(), &endPtr);
+    if (*endPtr != '\0' || len < 0)
+        return errors.error500();
+    if (len > MAX_FILE_SIZE)
+        return errors.error507();
+    std::string body = request.getBody();
+    if (body.empty())
+        return errors.error400();
+    if (body.length() != len)
+        return errors.error500();
+    std::ofstream file("upload.txt", std::ios::binary);
+    file.write(body.c_str(), body.length());
+    file.close();
     return "";
 }
 
@@ -337,12 +359,6 @@ std::string Response::getResponse(const Request &request, Errors &errors, const 
     _path = root + request.getUrl();
     if (!fileExists(_path))
         return (errors.error404());
-
-    // struct stat fileStat;
-    // stat(_path.c_str(), &fileStat);
-    // this->setHeaders("Last-Modified", formatHttpDate(fileStat.st_mtime));
-    // this->setHeaders("Etag", generateEtag(_path));
-
     if (!isAcceptable())
         return (errors.error406());
     if (!hasReadPermission(_path) ||!handleDirectory())
@@ -361,7 +377,7 @@ std::string Response::postResponse(const Request &request, Errors &errors, const
         handleCGI();
     else if (request.getUrl() == "/upload")
     {
-        handleUpload();
+        handleUpload(errors);
     }
     else
         errors.error415();
@@ -390,7 +406,7 @@ std::string Response::sendResponse(const Request &given_request)
         return (getResponse(request, errors, "./static"));
     } 
     else if (request.getMethod() == "POST") {
-        return (postResponse(request, errors, "www"));
+        return (postResponse(request, errors, "./static"));
     }
     else
        return (deleteResponse(request, errors, "./static"));

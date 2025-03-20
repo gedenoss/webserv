@@ -31,5 +31,6 @@ std::string Errors::error404() { return generateError(404, "Not Found"); }
 std::string Errors::error406() { return generateError(406, "Not Acceptable"); }
 std::string Errors::error415() { return generateError(415, "Unsupported Media Type"); }
 std::string Errors::error500() { return generateError(500, "Internal Server Error"); }
+std::string Errors::error507() { return generateError(507, "Insufficient Storage"); }
 
 Errors::~Errors() {}

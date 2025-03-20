@@ -19,6 +19,7 @@ class Errors
         std::string error406();
         std::string error415();
         std::string error500();
+        std::string error507();
 
     private:
         Response _response;
