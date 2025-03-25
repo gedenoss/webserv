@@ -1,0 +1,11 @@
+server
+{
+    root /doc/www/html
+    port 8080;
+
+}
+
+location /
+{
+
+}
