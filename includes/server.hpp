@@ -11,11 +11,16 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+
 #include <poll.h>
 
-struct ServerConfig{
-    std::string ip;
-    int port;
-};
+#include "config.hpp"
+
+// struct ServerConfig{
+//     std::string ip;
+//     int port;
+// };
+
+int launchServer(Config config, ServerConfig server);
 
 #endif

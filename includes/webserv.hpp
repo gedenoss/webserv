@@ -5,13 +5,14 @@
 #include <string>
 #include <vector>
 #include <ctime>
+#include "config.hpp"
 
 class Webserv {
     public : 
         Webserv();
         ~Webserv();
 
-        void webserv(char *argv);
+        void webserv(const Config& config);
 };
 
 #endif

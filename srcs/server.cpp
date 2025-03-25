@@ -1,4 +1,7 @@
 #include "../includes/server.hpp"
+#include "../includes/request.hpp"
+#include "../includes/response.hpp"
+#include "../includes/utils.hpp"
 
 // ServerConfig parseConfig(const std::string &filename){
 //     ServerConfig config;
@@ -130,39 +133,6 @@
 // }
 
 
-ServerConfig parseConfig(const std::string &filename) {
-    ServerConfig config;
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "ERROR: Error while opening the configuration file" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    std::string line;
-    while (std::getline(file, line)) {
-        if (line.empty() || line[0] == '#')
-            continue;
-        std::istringstream iss(line);
-        std::string key, value;
-        if (std::getline(iss, key, '=') && std::getline(iss, value)) {
-            if (key == "IP")
-                config.ip = value;
-            else if (key == "PORT")
-                config.port = std::stoi(value);
-        }
-    }
-    return config;
-}
-
-std::string readFile(const std::string &filename) {
-    std::ifstream file(filename, std::ios::binary);
-    if (!file.is_open()) {
-        return "";
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
 std::string getFileExtension(const std::string &path) {
     size_t dotPos = path.find_last_of(".");
     if (dotPos != std::string::npos)
@@ -179,9 +149,7 @@ std::string getContentType(const std::string &ext) {
     return "application/octet-stream";
 }
 
-int main() {
-    ServerConfig config = parseConfig("server.conf");
-    std::cout << "IP: " << config.ip << ", PORT: " << config.port << std::endl;
+int launchServer(Config config, ServerConfig server) {
     
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
@@ -199,8 +167,8 @@ int main() {
     struct sockaddr_in server_address;
     memset(&server_address, 0, sizeof(server_address));
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(config.port);
-    if (inet_pton(AF_INET, config.ip.c_str(), &server_address.sin_addr) <= 0) {
+    server_address.sin_port = htons(server.getPort());
+    if (inet_pton(AF_INET, "127.0.0.1", &server_address.sin_addr) <= 0) {
         perror("ERROR: IP conversion");
         close(server_fd);
         exit(EXIT_FAILURE);
@@ -218,11 +186,12 @@ int main() {
         exit(EXIT_FAILURE);
     }
     
-    std::cout << "Server launched and listening on " << config.ip 
-              << ":" << config.port << std::endl;
-    
     std::vector<pollfd> fds;
-    fds.push_back({server_fd, POLLIN, 0});
+    pollfd server_pollfd;
+    server_pollfd.fd = server_fd;
+    server_pollfd.events = POLLIN;
+    server_pollfd.revents = 0;
+    fds.push_back(server_pollfd);
     
     while (true) {
         int pol_ret = poll(fds.data(), fds.size(), -1);
@@ -239,44 +208,39 @@ int main() {
                     int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
                     if (client_fd >= 0) {
                         std::cout << "New connection accepted" << std::endl;
-                        fds.push_back({client_fd, POLLIN, 0});
+                        pollfd client_pollfd;
+                        client_pollfd.fd = client_fd;
+                        client_pollfd.events = POLLIN;
+                        client_pollfd.revents = 0;
+                        fds.push_back(client_pollfd);
                     } else {
                         perror("ERROR: accept failed");
                     }
                 } else {
-                    char buffer[1024];
+                    char buffer[4096];
                     int bytes_read = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
                     if (bytes_read > 0) {
                         buffer[bytes_read] = '\0';
-                        std::string request(buffer);
-                        std::string filename = "index.html";
-                        size_t start = request.find("GET ") + 4;
-                        size_t end = request.find(" ", start);
-                        if (start != std::string::npos && end != std::string::npos) {
-                            std::string path = request.substr(start, end - start);
-                            if (path == "/") {
-                                filename = "index.html";
-                            } else {
-                                filename = path.substr(1);
-                            }
-                        }
-                        std::string fileContent = readFile(filename);
-                        std::string fileExt = getFileExtension(filename);
+                        std::string rawRequest(buffer);
+                        std::cout << rawRequest << std::endl;
+
+                        Request request(1024,1024);
+                        request.parse(rawRequest, config);
+                        std::cout << request.getErrorCode() << std::endl;
+                        request.printRequest();
+                        Response response(request);
+                        std::string sendResponse = response.sendResponse(request);
+                        
+                        std::string fileContent = readFile("index.html");
+                        std::string fileExt = getFileExtension("index.html");
                         std::string contentType = getContentType(fileExt);
                         if (!fileContent.empty()) {
-                            std::string response = "HTTP/1.1 200 OK\r\n"
-                                                   "Content-Type: " + contentType + "\r\n"
-                                                   "Content-Length: " + std::to_string(fileContent.size()) + "\r\n"
-                                                   "\r\n" +
-                                                   fileContent;
-                            send(fds[i].fd, response.c_str(), response.size(), 0);
-                        } else {
-                            std::string notFound = "HTTP/1.1 404 Not Found\r\n"
-                                                   "Content-Type: text/html\r\n"
-                                                   "Content-Length: 46\r\n"
-                                                   "\r\n"
-                                                   "<h1>Erreur 404: Page ou fichier non trouvé</h1>";
-                            send(fds[i].fd, notFound.c_str(), notFound.size(), 0);
+                            // std::string response = "HTTP/1.1 200 OK\r\n"
+                            //                        "Content-Type: " + contentType + "\r\n"
+                            //                        "Content-Length: " + std::to_string(fileContent.size()) + "\r\n"
+                            //                        "\r\n" +
+                            //                        fileContent;
+                            send(fds[i].fd, sendResponse.c_str(), sendResponse.size(), 0);
                         }
                     } else {
                         std::cout << "Disconnected client" << std::endl;

@@ -160,9 +160,14 @@ std::string Response::getContentType()
 
 std::string Response::getLanguage()
 {
-    std::string accept_language = request.getHeaders().at("Accept-Language");
-    if (accept_language.empty())
+    std::string accept_language = "";
+    std::map<std::string, std::string>::iterator it = request.getHeaders().find("Accept-Language");
+    if (it != request.getHeaders().end()) {
+        accept_language = it->second;
+    }
+    if (accept_language.empty()) {
         return "en-US";
+    }
     std::vector<std::pair<std::string, double> > languages;
     std::istringstream ss(accept_language);
     std::string token;
@@ -202,6 +207,7 @@ std::string Response::response200(Errors &errors)
     setStatusCode(200);
     setStatusMessage("OK");
     setTime();
+    setBody(_body);
     setContentType();
     setContentLength();
     setContentLanguage();
@@ -209,7 +215,6 @@ std::string Response::response200(Errors &errors)
     setEtag(_path);
     if (_headers["Content-Language"] == "")
         return errors.error400();
-    setBody(_body);
     return generateResponse();
 }
 
@@ -356,15 +361,19 @@ std::string Response::handleUpload(Errors &errors)
 
 std::string Response::getResponse(const Request &request, Errors &errors, const std::string &root)
 {
-    _path = root + request.getUrl();
+    if (request.getUrl() == "/favicon.ico" || request.getUrl() == "/")
+        _path = "./index.html";
+    else 
+        _path = root + request.getUrl();
+    std::cout << _path << std::endl;
     if (!fileExists(_path))
         return (errors.error404());
     if (!isAcceptable())
         return (errors.error406());
     if (!hasReadPermission(_path) ||!handleDirectory())
         return (errors.error403());
-    if (!handleIfModifiedSince(request.getHeaders()) || isNotModified(request.getHeaders()))
-        return (errors.error304());
+    // if (!handleIfModifiedSince(request.getHeaders()) || isNotModified(request.getHeaders()))
+    //     return (errors.error304());
     if (isCGI())
         handleCGI();
     return (response200(errors));
@@ -387,7 +396,6 @@ std::string Response::postResponse(const Request &request, Errors &errors, const
 std::string Response::deleteResponse(const Request &request, Errors &errors, const std::string &root)
 {
     _path = root + request.getUrl();
-    std::cout << _path << std::endl;
     if (!fileExists(_path))
         return (errors.error404());
     else if (!hasWritePermission(_path))
@@ -403,7 +411,7 @@ std::string Response::sendResponse(const Request &given_request)
     Errors errors(*this);
     request = given_request;
     if (request.getMethod() == "GET") {
-        return (getResponse(request, errors, "./static"));
+        return (getResponse(request, errors, "."));
     } 
     else if (request.getMethod() == "POST") {
         return (postResponse(request, errors, "./static"));
