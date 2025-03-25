@@ -4,11 +4,19 @@ server {
     host 127.0.0.1;
     root doc/www/html;
     client_max_body_size 10M;
-	index indeex.html;
+	index index.html;
     error_page 404 error_pages/404.html;
 
     location / {
         allow_methods  DELETE POST GET;
         autoindex off;
     }
+    location /admin {
+        allow_methods POST;
+    }
+
+    location /api {
+        allow_methods GET POST DELETE;
+    }
 }
+
