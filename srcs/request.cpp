@@ -138,17 +138,20 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	setHttpVersion(httpVersion);
 	
 	if (!isValidMethod())	{
-		errorCode =	501;	
-		return;
-	}
-
-	
-	if (!isValidUrl()) {
 		errorCode =	400;	
 		return;
 	}
 
 	
+	if (!isValidUrl()) {
+		if(method != "GET"	|| method != "POST"	|| method != "DELETE")
+			errorCode = 501;
+		else
+			errorCode =	400;	
+		return;
+	}
+
+
 	if (!isMethodAllowedForRoute(config)) {
 		errorCode =	405;	
 		return;
@@ -279,11 +282,11 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		}
 
 		
-		// if ((method	== "POST") && 
-		// 	getHeaders().find("Content-Type") == getHeaders().end()) {
-		// 	errorCode =	400;	
-		// 	return ;
-		// }
+		if ((method	== "POST") && 
+			getHeaders().find("Content-Type") == getHeaders().end()) {
+			errorCode =	400;	
+			return ;
+		}
 
 		
 		std::map<std::string, std::string>::const_iterator contentTypeIt = getHeaders().find("Content-Type");
