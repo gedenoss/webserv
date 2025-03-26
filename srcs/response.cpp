@@ -115,18 +115,20 @@ std::string Response::getBody() const
     return _body;
 }
 
+
 std::string Response::generateResponse()
 {
     std::stringstream response;
+    std::cout << std::endl;
     response << "HTTP/1.1 " << _status_code << " " << _status_message << "\r\n";
     for(std::vector<std::string>::iterator it = _order.begin(); it != _order.end(); ++it)
     {
         if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
             response << *it << ": " << _headers[*it] << "\r\n";
     }
+    std::cout << response.str() << std::endl;
     response << "\r\n";
     response << _body;
-    std::cout << response.str() << std::endl;
     return response.str();
 }
 

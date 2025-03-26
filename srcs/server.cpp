@@ -222,11 +222,10 @@ int launchServer(Config config, ServerConfig server) {
                     if (bytes_read > 0) {
                         buffer[bytes_read] = '\0';
                         std::string rawRequest(buffer);
-                        std::cout << rawRequest << std::endl;
+                        // std::cout << rawRequest << std::endl;
 
                         Request request(1024,1024);
                         request.parse(rawRequest, config);
-                        std::cout << request.getErrorCode() << std::endl;
                         request.printRequest();
                         Response response(request);
                         std::string sendResponse = response.sendResponse(request);
@@ -235,11 +234,6 @@ int launchServer(Config config, ServerConfig server) {
                         std::string fileExt = getFileExtension("index.html");
                         std::string contentType = getContentType(fileExt);
                         if (!fileContent.empty()) {
-                            // std::string response = "HTTP/1.1 200 OK\r\n"
-                            //                        "Content-Type: " + contentType + "\r\n"
-                            //                        "Content-Length: " + std::to_string(fileContent.size()) + "\r\n"
-                            //                        "\r\n" +
-                            //                        fileContent;
                             send(fds[i].fd, sendResponse.c_str(), sendResponse.size(), 0);
                         }
                     } else {

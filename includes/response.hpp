@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <cstdio>
-#include "webserv.hpp"
+#include "server.hpp"
 #include "request.hpp"
 
 class Errors;

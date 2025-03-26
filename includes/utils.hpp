@@ -1,7 +1,7 @@
 #ifndef UTILS_HPP
 # define UTILS_HPP
 
-#include "webserv.hpp"
+#include "server.hpp"
 #include "response.hpp"
 #include <sys/stat.h>
 #include <ctime>

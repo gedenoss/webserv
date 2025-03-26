@@ -27,7 +27,7 @@ void Request::setBody(const	std::string& b) { body = b; }
 void Request::addHeader(const std::string& key,	const std::string& value) {	headers[key] = value; }
 
 bool Request::isMethodAllowedForRoute(Config &config) {
-    std::cout << "Checking method [" << method << "] for URL [" << url << "]\n";
+    // std::cout << "Checking method [" << method << "] for URL [" << url << "]\n";
 
 	const std::vector<ServerConfig> &servers = config.getServers();
     for (size_t i = 0; i < config.getServers().size(); ++i) {
@@ -41,30 +41,30 @@ bool Request::isMethodAllowedForRoute(Config &config) {
         for (size_t j = 0; j < locations.size(); ++j) {
             const LocationConfig &location = locations[j];  // Accède à chaque location
 
-            std::cout << "  -> Testing Location [" << location.getPath() << "]\n";
+            // std::cout << "  -> Testing Location [" << location.getPath() << "]\n";
 
             // Vérification du chemin URL par rapport à la location
             if (url.find(location.getPath()) == 0 && 
                 (url.size() == location.getPath().size() || 
                  url[location.getPath().size()] == '/' || 
                  url[location.getPath().size()] == '?')) {
-                std::cout << "  ✅ Matched Location: " << location.getPath() << "\n";
+                // std::cout << "  ✅ Matched Location: " << location.getPath() << "\n";
 
                 // Vérification des méthodes autorisées
                 for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
-                    std::cout << "     - Allowed Method: " << location.getAllowMethod()[k] << "\n";
+                    // std::cout << "     - Allowed Method: " << location.getAllowMethod()[k] << "\n";
                     if (method == location.getAllowMethod()[k]) {
-                        std::cout << "  ✅ Method allowed!\n";
+                        // std::cout << "  ✅ Method allowed!\n";
                         return true;
                     }
                 }
-                std::cout << "  ❌ Method [" << method << "] not allowed for [" << location.getPath() << "]\n";
+                // std::cout << "  ❌ Method [" << method << "] not allowed for [" << location.getPath() << "]\n";
                 return false;
             }
         }
     }
 
-    std::cout << "❌ No matching location for [" << url << "]\n";
+    // std::cout << "❌ No matching location for [" << url << "]\n";
     return false;
 }
 
@@ -131,7 +131,6 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	std::istringstream requestLine(line);
 	std::string	method,	url, httpVersion;
 	requestLine	>> method >> url >> httpVersion;
-	std::cout << method << std::endl;
 
 	if (url.length() > 8000) {
 		errorCode =	414;	
@@ -161,8 +160,6 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		errorCode =	505;	
 		return;
 	}
-
-	std::cout << "ok" << std::endl;
 	setMethod(method);
 	setUrl(url);
 	setHttpVersion(httpVersion);
