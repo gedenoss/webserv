@@ -126,9 +126,9 @@ std::string Response::generateResponse()
         if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
             response << *it << ": " << _headers[*it] << "\r\n";
     }
-    std::cout << response.str() << std::endl;
     response << "\r\n";
     response << _body;
+    std::cout << response.str() << std::endl;
     return response.str();
 }
 
@@ -416,10 +416,10 @@ std::string Response::sendResponse(const Request &given_request)
         return (getResponse(request, errors, "."));
     } 
     else if (request.getMethod() == "POST") {
-        return (postResponse(request, errors, "./static"));
+        return (postResponse(request, errors, "."));
     }
     else
-       return (deleteResponse(request, errors, "./static"));
+       return (deleteResponse(request, errors, "."));
 }
 
 

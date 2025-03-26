@@ -10,11 +10,19 @@ std::string Errors::generateError(int code, const std::string &message)
     _response.setStatusCode(code);
     _response.setStatusMessage(message);
     _response.setTime();
+    std::string errorPath = toString(code) + ".html";
+    std::cout << errorPath << std::endl;
+    if (fileExists(errorPath))
+    {
+        _response.setBody(readFile(errorPath));
+    }
+    else
+    {
+        std::string body = "<html><body><h1>" + toString(code) + " " + message + "</h1></body></html>";
+        _response.setBody(body);
+    }
     
-    std::string body = "<html><body><h1>" + toString(code) + " " + message + "</h1></body></html>";
-    _response.setBody(body);
-    
-    _response.setContentType();
+    _response.setHeaders("Content-Type", "text/html");
     _response.setContentLength();
     _response.setContentLanguage();
 
