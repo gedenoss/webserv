@@ -222,11 +222,11 @@ int launchServer(Config config, ServerConfig server) {
                     if (bytes_read > 0) {
                         buffer[bytes_read] = '\0';
                         std::string rawRequest(buffer);
-                        // std::cout << rawRequest << std::endl;
+                        std::cout << rawRequest << std::endl;
 
                         Request request(1024,1024);
                         request.parse(rawRequest, config);
-                        request.printRequest();
+                        // request.printRequest();
                         Response response(request);
                         std::string sendResponse = response.sendResponse(request);
                         

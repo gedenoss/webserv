@@ -126,9 +126,9 @@ std::string Response::generateResponse()
         if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
             response << *it << ": " << _headers[*it] << "\r\n";
     }
+    std::cout << response.str() << std::endl;
     response << "\r\n";
     response << _body;
-    std::cout << response.str() << std::endl;
     return response.str();
 }
 
@@ -412,6 +412,8 @@ std::string Response::sendResponse(const Request &given_request)
 {
     Errors errors(*this);
     request = given_request;
+    if (request.getErrorCode() != 200)
+        return (errors.generateError(request.getErrorCode()));
     if (request.getMethod() == "GET") {
         return (getResponse(request, errors, "."));
     } 

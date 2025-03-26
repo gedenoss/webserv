@@ -29,28 +29,23 @@ void Request::addHeader(const std::string& key,	const std::string& value) {	head
 bool Request::isMethodAllowedForRoute(Config &config) {
     // std::cout << "Checking method [" << method << "] for URL [" << url << "]\n";
 
+	std::string url = getUrl();
+	url = url.substr(0, url.find("/"));
+	if (url.empty())
+		url = "/";
 	const std::vector<ServerConfig> &servers = config.getServers();
     for (size_t i = 0; i < config.getServers().size(); ++i) {
-        // Accès à un serveur spécifique
         const ServerConfig &server = servers[i];
-
-        // Récupération des locations pour ce serveur
-        const std::vector<LocationConfig>& locations = server.getLocations();  // Accède aux locations pour ce serveur
-
-        // Vérification des locations
+        const std::vector<LocationConfig>& locations = server.getLocations();
         for (size_t j = 0; j < locations.size(); ++j) {
-            const LocationConfig &location = locations[j];  // Accède à chaque location
-
+            const LocationConfig &location = locations[j];
             // std::cout << "  -> Testing Location [" << location.getPath() << "]\n";
-
-            // Vérification du chemin URL par rapport à la location
             if (url.find(location.getPath()) == 0 && 
                 (url.size() == location.getPath().size() || 
                  url[location.getPath().size()] == '/' || 
                  url[location.getPath().size()] == '?')) {
                 // std::cout << "  ✅ Matched Location: " << location.getPath() << "\n";
 
-                // Vérification des méthodes autorisées
                 for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
                     // std::cout << "     - Allowed Method: " << location.getAllowMethod()[k] << "\n";
                     if (method == location.getAllowMethod()[k]) {
@@ -110,6 +105,7 @@ size_t safeStringToULong(const std::string&	str, bool& success)	{
 void Request::parse(const std::string &rawRequest,	Config &config) {
 	std::istringstream stream(rawRequest);
 	std::string	line;
+	(void)config;
 	bool headersFinished = false;
 
 	if (rawRequest.size() >	8000) {
@@ -137,32 +133,33 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		return;
 	}
 
+	setMethod(method);
+	setUrl(url);
+	setHttpVersion(httpVersion);
 	
-	if (isValidMethod())	{
+	if (!isValidMethod())	{
 		errorCode =	501;	
 		return;
 	}
 
 	
-	if (isValidUrl()) {
+	if (!isValidUrl()) {
 		errorCode =	400;	
 		return;
 	}
 
 	
-	if (isMethodAllowedForRoute(config)) {
+	if (!isMethodAllowedForRoute(config)) {
 		errorCode =	405;	
 		return;
 	}
 
 	
-	if (isValidHttpVersion()) {
+	if (!isValidHttpVersion()) {
 		errorCode =	505;	
 		return;
 	}
-	setMethod(method);
-	setUrl(url);
-	setHttpVersion(httpVersion);
+	
 
 	
 	size_t headersSize = 0;
