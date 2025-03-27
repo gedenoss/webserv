@@ -6,7 +6,7 @@ SRC_DIR = srcs/
 INC_DIR = includes/
 BUILD = build/
 
-SRC = cgi.cpp config.cpp main.cpp request.cpp response.cpp utils.cpp  errors.cpp server.cpp
+SRC = cgi.cpp config.cpp main.cpp request.cpp response.cpp utils.cpp request_utils.cpp errors.cpp server.cpp
 HEADERS = cgi.hpp request.hpp response.hpp server.hpp utils.hpp  errors.hpp config.hpp server.hpp
 
 SRCS = $(addprefix $(SRC_DIR), $(SRC))

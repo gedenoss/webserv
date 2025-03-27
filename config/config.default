@@ -2,7 +2,7 @@ server {
     listen 8080;
 	server_name localhost;
     host 127.0.0.1;
-    root /;
+    root indexx;
     client_max_body_size 10M;
 	index index.html;
 
@@ -15,7 +15,7 @@ server {
     }
 
     location /images {
-        allow_methods POST;
+        allow_methods POST GET;
         
     }
 }

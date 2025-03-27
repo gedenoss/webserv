@@ -224,7 +224,7 @@ int launchServer(Config config) {
                     if (bytes_read > 0) {
                         buffer[bytes_read] = '\0';
                         std::string rawRequest(buffer);
-                        std::cout << rawRequest << std::endl;
+                        //std::cout << rawRequest << std::endl;
 
                         Request request(1024,1024);
                         request.parse(rawRequest, config);
