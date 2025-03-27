@@ -362,12 +362,12 @@ std::string Response::handleUpload(Errors &errors)
     return "";
 }
 
-std::string Response::getResponse(Errors &errors, const std::string &root)
+std::string Response::getResponse(Errors &errors)
 {
-    if (_request.getUrl() == "/favicon.ico" || _request.getUrl() == "/")
-        _path = "./index.html";
-    else 
-        _path = root + _request.getUrl();
+    // if (_request.getUrl() == "/favicon.ico" || _request.getUrl() == "/")
+    //     _path = "./index.html";
+    // else 
+    //     _path = _root + _request.getUrl();
     std::cout << _path << std::endl;
     if (!fileExists(_path))
         return (errors.error404());
@@ -382,9 +382,8 @@ std::string Response::getResponse(Errors &errors, const std::string &root)
     return (response200(errors));
 }
 
-std::string Response::postResponse(Errors &errors, const std::string &root)
+std::string Response::postResponse(Errors &errors)
 {
-    _path = root + _request.getUrl();
     if (isCGI())
         handleCGI();
     else if (_request.getUrl() == "/upload")
@@ -396,9 +395,8 @@ std::string Response::postResponse(Errors &errors, const std::string &root)
     return ("POST");
 }
 
-std::string Response::deleteResponse(Errors &errors, const std::string &root)
+std::string Response::deleteResponse(Errors &errors)
 {
-    _path = root + _request.getUrl();
     if (!fileExists(_path))
         return (errors.error404());
     else if (!hasWritePermission(_path))
@@ -409,20 +407,48 @@ std::string Response::deleteResponse(Errors &errors, const std::string &root)
         return (response204());
 }
 
+std::string findIndexInDirectory(const std::string &dirPath)
+{
+    const std::string indexFiles[] = {"index.html", "index.htm", "default.html"};
+    DIR *dir = opendir(dirPath.c_str());
+    if (!dir)
+        return "";
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        for (size_t i = 0; i < sizeof(indexFiles) / sizeof(indexFiles[0]); i++) {
+            if (indexFiles[i] == entry->d_name) {
+                closedir(dir);
+                return dirPath + "/" + entry->d_name;
+            }
+        }
+    }
+    closedir(dir);
+    return "";
+}
+
 void Response::findLocation()
 {
     std::string url = _request.getUrl();
     url = url.substr(0, url.find_last_of('/'));
+    if (url.empty())
+        url = "/";
     std::vector<LocationConfig> locations = _server.getLocations();
     for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it)
     {
        if (url.find(it->getPath()) == 0)
        {
-            _path = it->getRoot() + _request.getUrl();
+            _root = it->getRoot();
             _autoindex = it->getAutoindex();
        }
     }
-}
+    if (_path == "/")
+        _path =
+    if (fileExists(_root + _request.getUrl()))
+        _path = _root + _request.getUrl();
+    else if (isDirectory(_root + _request.getUrl()) || _request.getUrl() == "/")
+        std::string _path = findIndexInDirectory(_root + _request.getUrl());
+    }
 
 std::string Response::sendResponse()
 {
@@ -430,14 +456,17 @@ std::string Response::sendResponse()
     if (_request.getErrorCode() != 200)
         return (errors.generateError(_request.getErrorCode()));
     findLocation();
+    std::cout << "PATH : " << _path << std::endl;
+    if (_path.empty())
+        return (errors.error404());
     if (_request.getMethod() == "GET") {
-        return (getResponse(errors, "."));
+        return (getResponse(errors));
     } 
     else if (_request.getMethod() == "POST") {
-        return (postResponse(errors, "."));
+        return (postResponse(errors));
     }
     else
-       return (deleteResponse(errors, "."));
+       return (deleteResponse(errors));
 }
 
 

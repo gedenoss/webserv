@@ -55,9 +55,9 @@ class Response {
         void handleCGI();
         std::string handleUpload(Errors &errors);
 
-        std::string getResponse(Errors &errors, const std::string &host);
-        std::string postResponse(Errors &errors, const std::string &root);
-        std::string deleteResponse(Errors &errors, const std::string &root);
+        std::string getResponse(Errors &errors);
+        std::string postResponse(Errors &errors);
+        std::string deleteResponse(Errors &errors);
 
         std::string response200(Errors &errors);
         std::string response204();
@@ -66,6 +66,7 @@ class Response {
         Request &_request;
         ServerConfig _server;
         std::string _path;
+        std::string _root;
         bool _autoindex;
         int _status_code;
         std::string _status_message;

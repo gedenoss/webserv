@@ -12,7 +12,6 @@ bool Request::isMethodAllowedForRoute(Config &config) {
     size_t lastSlash = url.find_last_of('/');
     if (lastSlash != std::string::npos)
         url = url.substr(0, lastSlash);
-    std::cout << "URL: " << url << std::endl;
     if (url.empty())
     {
         url = "/";
