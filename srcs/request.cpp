@@ -65,17 +65,19 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	setUrl(url);
 	setHttpVersion(httpVersion);
 	
-	if (!isValidMethod())	{
+
+	if (!isValidMethod())
+	{
 		_errorCode = 400;	
 		return;
 	}
-
-	
-	if (!isValidUrl()) {
-		if(method != "GET"	|| method != "POST"	|| method != "DELETE")
+	else if(method != "GET"	&& method != "POST"	&& method != "DELETE"){
 			_errorCode = 501;
-		else
-			_errorCode = 400;	
+			return;
+	}
+
+	if (!isValidUrl()) {
+				_errorCode = 400;	
 		return;
 	}
 
