@@ -235,11 +235,6 @@ int launchServer(Config config, ServerConfig server) {
                         std::string fileExt = getFileExtension("index.html");
                         std::string contentType = getContentType(fileExt);
                         if (!fileContent.empty()) {
-                            // std::string response = "HTTP/1.1 200 OK\r\n"
-                            //                        "Content-Type: " + contentType + "\r\n"
-                            //                        "Content-Length: " + std::to_string(fileContent.size()) + "\r\n"
-                            //                        "\r\n" +
-                            //                        fileContent;
                             send(fds[i].fd, sendResponse.c_str(), sendResponse.size(), 0);
                         }
                     } else {

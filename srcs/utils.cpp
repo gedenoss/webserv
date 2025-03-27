@@ -78,6 +78,16 @@ bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<s
     return a.second > b.second; // or another comparison logic
 }
 
+void checkPV(std::string value)
+{
+	if (value[value.size() - 1] != ';'){
+		std::cout << "ERROR SYNTAX: missing ';' look dumbass : " << value[value.size() - 1] << std::endl;
+		exit (1);
+	}
+}
+
+//----------------------------HAS FUNCTIONS----------------------------------------------------//
+
 bool hasReadPermission(const std::string &path)
 {
     struct stat fileStat;
@@ -98,6 +108,8 @@ bool hasWritePermission(const std::string &path)
     return true;
 }
 
+//--------------------------------------IS FUNCTIONS--------------------------------------//
+
 bool isDirectory(const std::string &path)
 {
     struct stat fileStat;
@@ -105,3 +117,64 @@ bool isDirectory(const std::string &path)
         return false;
     return S_ISDIR(fileStat.st_mode);
 }
+
+bool isValidIP(const std::string& ip)
+{
+	int	numDots	= 0;
+	int	numDigits =	0;
+	int	currentNumber =	0;
+
+	for	(size_t	i =	0; i < ip.length();	++i)
+	{
+		char c = ip[i];
+
+		if (c == '.')
+		{
+			if (currentNumber <	0 || currentNumber > 255)
+				return false;
+			numDots++;
+			currentNumber =	0;
+			numDigits =	0;
+		}
+		else if (isdigit(c))
+		{
+			currentNumber =	currentNumber *	10 + (c - '0');
+			numDigits++;
+			if (numDigits >	3)
+				return false;
+		}
+		else
+			return false;
+	}
+	if (numDots	!= 3 || currentNumber <	0 || currentNumber > 255) 
+		return false;
+	return true;
+}
+
+bool isPathValid(const std::string&	path)
+{
+	struct stat	info;
+	return (stat(path.c_str(), &info) == 0);
+}
+
+bool isFileValid(const std::string&	filePath)
+{
+	struct stat	info;
+	return (stat(filePath.c_str(), &info) == 0 && S_ISREG(info.st_mode));
+}
+
+bool isHttpErrorCodeValid(int code)
+{
+	return (code >= 400	&& code	<= 599);
+}
+
+bool isNumber(const	std::string& str)
+{
+	for	(size_t	i =	0; i < str.length(); ++i)
+	{
+		if (!isdigit(str[i]))
+			return false;
+	}
+	return true;
+}
+
