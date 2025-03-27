@@ -30,7 +30,10 @@ bool Request::isMethodAllowedForRoute(Config &config) {
     // std::cout << "Checking method [" << method << "] for URL [" << url << "]\n";
 
 	std::string url = getUrl();
-	url = url.substr(0, url.find("/"));
+	size_t lastSlash = url.find_last_of('/');
+	if (lastSlash != std::string::npos)
+		url = url.substr(0, lastSlash);
+	std::cout << "URL: " << url << std::endl;
 	if (url.empty())
 		url = "/";
 	const std::vector<ServerConfig> &servers = config.getServers();

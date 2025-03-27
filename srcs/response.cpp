@@ -3,10 +3,11 @@
 #include "../includes/utils.hpp"
 #include "../includes/errors.hpp"
 
-Response::Response(Request &req) : request(req)
+Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(serv)
 {
     _status_code = 0;
     _status_message = "";
+    _autoindex = false;
     _headers["Date"] = "";
     _headers["Server"] = "Webserv";
     _headers["Content-Type"] = "";
@@ -163,8 +164,8 @@ std::string Response::getContentType()
 std::string Response::getLanguage()
 {
     std::string accept_language = "";
-    std::map<std::string, std::string>::iterator it = request.getHeaders().find("Accept-Language");
-    if (it != request.getHeaders().end()) {
+    std::map<std::string, std::string>::iterator it = _request.getHeaders().find("Accept-Language");
+    if (it != _request.getHeaders().end()) {
         accept_language = it->second;
     }
     if (accept_language.empty()) {
@@ -231,7 +232,7 @@ std::string Response::response204()
 
 bool Response::isAcceptable()
 {
-    std::string accept = request.getHeaders().at("Accept");
+    std::string accept = _request.getHeaders().at("Accept");
     std::vector<std::string> elements;
     split(accept, ",", elements);
     if (accept.find("*/*") != std::string::npos || accept.empty())
@@ -328,13 +329,13 @@ void Response::handleCGI()
 
 std::string Response::handleUpload(Errors &errors)
 {
-    if (request.getHeaders().count("Content-Type") == 0)
+    if (_request.getHeaders().count("Content-Type") == 0)
         return (errors.error400());
-    std::string contentType = request.getHeaders().at("Content-Type");
+    std::string contentType = _request.getHeaders().at("Content-Type");
     // size_t boundaryPos = contentType.find("boundary=");
     // if (boundaryPos == std::string::npos)
     //     return errors.error400();
-    std::string lengthStr = request.getHeaders().at("Content-Length");
+    std::string lengthStr = _request.getHeaders().at("Content-Length");
 
     if (contentType.find("multipart/form-data") == std::string::npos)
         return errors.error400();
@@ -350,7 +351,7 @@ std::string Response::handleUpload(Errors &errors)
         return errors.error500();
     if (len > MAX_FILE_SIZE)
         return errors.error507();
-    std::string body = request.getBody();
+    std::string body = _request.getBody();
     if (body.empty())
         return errors.error400();
     if (body.length() != len)
@@ -361,12 +362,12 @@ std::string Response::handleUpload(Errors &errors)
     return "";
 }
 
-std::string Response::getResponse(const Request &request, Errors &errors, const std::string &root)
+std::string Response::getResponse(Errors &errors, const std::string &root)
 {
-    if (request.getUrl() == "/favicon.ico" || request.getUrl() == "/")
+    if (_request.getUrl() == "/favicon.ico" || _request.getUrl() == "/")
         _path = "./index.html";
     else 
-        _path = root + request.getUrl();
+        _path = root + _request.getUrl();
     std::cout << _path << std::endl;
     if (!fileExists(_path))
         return (errors.error404());
@@ -374,19 +375,19 @@ std::string Response::getResponse(const Request &request, Errors &errors, const 
         return (errors.error406());
     if (!hasReadPermission(_path) ||!handleDirectory())
         return (errors.error403());
-    // if (!handleIfModifiedSince(request.getHeaders()) || isNotModified(request.getHeaders()))
+    // if (!handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
     //     return (errors.error304());
     if (isCGI())
         handleCGI();
     return (response200(errors));
 }
 
-std::string Response::postResponse(const Request &request, Errors &errors, const std::string &root)
+std::string Response::postResponse(Errors &errors, const std::string &root)
 {
-    _path = root + request.getUrl();
+    _path = root + _request.getUrl();
     if (isCGI())
         handleCGI();
-    else if (request.getUrl() == "/upload")
+    else if (_request.getUrl() == "/upload")
     {
         handleUpload(errors);
     }
@@ -395,9 +396,9 @@ std::string Response::postResponse(const Request &request, Errors &errors, const
     return ("POST");
 }
 
-std::string Response::deleteResponse(const Request &request, Errors &errors, const std::string &root)
+std::string Response::deleteResponse(Errors &errors, const std::string &root)
 {
-    _path = root + request.getUrl();
+    _path = root + _request.getUrl();
     if (!fileExists(_path))
         return (errors.error404());
     else if (!hasWritePermission(_path))
@@ -408,20 +409,35 @@ std::string Response::deleteResponse(const Request &request, Errors &errors, con
         return (response204());
 }
 
-std::string Response::sendResponse(const Request &given_request)
+void Response::findLocation()
+{
+    std::string url = _request.getUrl();
+    url = url.substr(0, url.find_last_of('/'));
+    std::vector<LocationConfig> locations = _server.getLocations();
+    for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it)
+    {
+       if (url.find(it->getPath()) == 0)
+       {
+            _path = it->getRoot() + _request.getUrl();
+            _autoindex = it->getAutoindex();
+       }
+    }
+}
+
+std::string Response::sendResponse()
 {
     Errors errors(*this);
-    request = given_request;
-    if (request.getErrorCode() != 200)
-        return (errors.generateError(request.getErrorCode()));
-    if (request.getMethod() == "GET") {
-        return (getResponse(request, errors, "."));
+    if (_request.getErrorCode() != 200)
+        return (errors.generateError(_request.getErrorCode()));
+    findLocation();
+    if (_request.getMethod() == "GET") {
+        return (getResponse(errors, "."));
     } 
-    else if (request.getMethod() == "POST") {
-        return (postResponse(request, errors, "."));
+    else if (_request.getMethod() == "POST") {
+        return (postResponse(errors, "."));
     }
     else
-       return (deleteResponse(request, errors, "."));
+       return (deleteResponse(errors, "."));
 }
 
 

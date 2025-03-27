@@ -149,8 +149,10 @@ std::string getContentType(const std::string &ext) {
     return "application/octet-stream";
 }
 
-int launchServer(Config config, ServerConfig server) {
+int launchServer(Config config) {
     
+    std::vector <ServerConfig> servers = config.getServers();
+    ServerConfig server = servers[0];
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
         perror("ERROR: Error while creating the server");
@@ -227,8 +229,8 @@ int launchServer(Config config, ServerConfig server) {
                         Request request(1024,1024);
                         request.parse(rawRequest, config);
                         // request.printRequest();
-                        Response response(request);
-                        std::string sendResponse = response.sendResponse(request);
+                        Response response(request, server);
+                        std::string sendResponse = response.sendResponse();
                         
                         std::string fileContent = readFile("index.html");
                         std::string fileExt = getFileExtension("index.html");

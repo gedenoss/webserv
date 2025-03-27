@@ -2,7 +2,7 @@ server {
     listen 8000;
 	server_name localhost;
     host 127.0.0.1;
-    root doc/www/html;
+    root /;
     client_max_body_size 10M;
 	index index.html;
     error_page 404 error_pages/404.html;
@@ -13,7 +13,7 @@ server {
     }
 
     location /images {
-        allow_methods POST GET;
+        allow_methods POST;
         
     }
 }

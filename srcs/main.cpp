@@ -20,9 +20,9 @@ int	main(int argc, char* argv[])
 		std::cerr << "Error: No valid getServers() found	in config file." << std::endl;
 		return 1;
 	}
-	else	
+	else
 	{
-		launchServer(config, server[0]);
+		launchServer(config);
 	}
 		return 0;
 	}
