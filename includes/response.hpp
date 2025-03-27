@@ -18,11 +18,12 @@ const int MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
 
 class Response {
     public:
-        Response(Request &req);
+        Response(Request &req, ServerConfig &serv);
         ~Response();
 
-        std::string sendResponse(const Request &request);
+        std::string sendResponse();
         std::string generateResponse();
+        void findLocation();
 
         void setStatusCode(int status_code);
         void setStatusMessage(const std::string &status_message);
@@ -54,16 +55,18 @@ class Response {
         void handleCGI();
         std::string handleUpload(Errors &errors);
 
-        std::string getResponse(const Request &request, Errors &errors, const std::string &host);
-        std::string postResponse(const Request &request, Errors &errors, const std::string &root);
-        std::string deleteResponse(const Request &request, Errors &errors, const std::string &root);
+        std::string getResponse(Errors &errors, const std::string &host);
+        std::string postResponse(Errors &errors, const std::string &root);
+        std::string deleteResponse(Errors &errors, const std::string &root);
 
         std::string response200(Errors &errors);
         std::string response204();
 
     private:
-        Request &request;
+        Request &_request;
+        ServerConfig _server;
         std::string _path;
+        bool _autoindex;
         int _status_code;
         std::string _status_message;
         std::map<std::string, std::string> _headers;

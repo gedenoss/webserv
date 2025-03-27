@@ -23,6 +23,8 @@ class LocationConfig {
 		// LocationConfig() : autoindex(false) {}
 		void parseLocation(std::ifstream& configFile, LocationConfig& location);
 		std::string getPath() const { return path; };
+		std::string getRoot() const { return root; };
+		bool getAutoindex() const { return autoindex; };
 		std::vector<std::string> getAllowMethod() const { return allow_methods; };
 
 	friend class ServerConfig;

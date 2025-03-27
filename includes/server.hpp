@@ -21,6 +21,6 @@
 //     int port;
 // };
 
-int launchServer(Config config, ServerConfig server);
+int launchServer(Config config);
 
 #endif
