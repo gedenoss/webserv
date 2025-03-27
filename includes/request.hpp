@@ -9,52 +9,49 @@
 
 class Request {
     private:
-        size_t maxBodySize;
-        size_t maxHeadersSize;
-        std::string method;
-        std::string url;
-        std::string httpVersion;
-        std::string acceptLanguage;
-        std::map<std::string, std::string> headers;
-        std::map<std::string, std::string> queryParams;
-        std::string body;
-        int errorCode;
+        size_t _maxBodySize;
+        size_t _maxHeadersSize;
+        std::string _method;
+        std::string _url;
+        std::string _httpVersion;
+        //std::string _acceptLanguage;
+        std::map<std::string, std::string> _headers;
+        //std::map<std::string, std::string> _queryParams;
+        std::string _body;
+        int _errorCode;
 
-        void parseQueryParams();  // Nouvelle méthode pour extraire les query parameters
+        //void parseQueryParams();
 
     public:
         Request(size_t maxBodySize, size_t maxHeadersSize);
-        //Request(const Request &other);
-        //Request& operator=(const Request &other);
         ~Request();
+
         void parse(const std::string &rawRequest, Config &config);
+
+        size_t safeStringToUlong(const std::string&	str, bool& success);
 
         bool isValidMethod();
         bool isValidHttpVersion();
         bool isValidUrl();
         bool isMethodAllowedForRoute(Config &config);
-        static std::string trim(const std::string &str); // Ajout d'une méthode pour nettoyer les espaces
         
-        // Getters
         std::string getMethod() const;
         std::string getUrl() const;
         std::string getHttpVersion() const;
         std::string getBody() const;
-        int getErrorCode() const { return errorCode;};
+        int getErrorCode() const;
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;
-        std::map<std::string, std::string> getQueryParams() const; // Récupérer les paramètres GET
+        //std::map<std::string, std::string> getQueryParams() const;
 
-        // Setters
         void setMethod(const std::string& m);
         void setUrl(const std::string& u);
         void setHttpVersion(const std::string& v);
         void setBody(const std::string& b);
         void addHeader(const std::string& key, const std::string& value);
 
-        // Debug
         void printRequest() const;
 };
 
+#endif
 
-#endif // REQUEST_HPP
