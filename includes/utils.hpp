@@ -19,5 +19,12 @@ bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<s
 bool hasReadPermission(const std::string &path);
 bool hasWritePermission(const std::string &path);
 bool isDirectory(const std::string &path);
+bool isValidIP(const std::string& ip);
+bool isPathValid(const std::string&	path);
+bool isFileValid(const std::string&	filePath);
+bool isHttpErrorCodeValid(int code);
+bool isNumber(const	std::string& str);
+void checkPV(std::string value);
+
 
 #endif

@@ -20,9 +20,8 @@ class LocationConfig {
 		
 	public :
 		// ~LocationConfig();
+		// LocationConfig() : autoindex(false) {}
 		void parseLocation(std::ifstream& configFile, LocationConfig& location);
-
-		LocationConfig() : autoindex(false) {}
 		std::string getPath() const { return path; };
 		std::vector<std::string> getAllowMethod() const { return allow_methods; };
 
@@ -42,10 +41,19 @@ class ServerConfig {
 
 	public:
 		void parseServer(std::ifstream&	configFile);
-		int getPort();
+		//------------adem--------------//
+		void handleListen(std::istringstream& iss);
+		void handleHost(std::istringstream& iss);
+		void handleServerName(std::istringstream& isse);
+		void handleIndex(std::istringstream& iss);
+		void handleRoot(std::istringstream& iss);
+		void handleClientMaxBodySize(std::istringstream& iss);
+		void handleErrorPage(std::istringstream& iss);
+		void handleLocation(std::istringstream& line, std::ifstream& configFile);
+		//----------plus adem-----------//
 
+		int getPort();
 		std::vector<LocationConfig> getLocations() const;
-		 friend class LocationConfig;
 };
 
 class Config {

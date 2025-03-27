@@ -1,4 +1,5 @@
 #include "../includes/config.hpp"
+#include "../includes/utils.hpp"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -6,67 +7,28 @@
 #include <sys/stat.h>
 #include <map>
 #include <set>
+// a faire
+// parametre tout le bloc server
+// mettre ip de base si pas d ip
+//gerer les ;
+//-----------------------------------------GETTER-------------------------------------------------------//
 
-
-bool isValidIP(const std::string& ip)
+int ServerConfig::getPort()
 {
-	int	numDots	= 0;
-	int	numDigits =	0;
-	int	currentNumber =	0;
-
-	for	(size_t	i =	0; i < ip.length();	++i)
-	{
-		char c = ip[i];
-
-		if (c == '.')
-		{
-			if (currentNumber <	0 || currentNumber > 255)
-				return false;
-			numDots++;
-			currentNumber =	0;
-			numDigits =	0;
-		}
-		else if (isdigit(c))
-		{
-			currentNumber =	currentNumber *	10 + (c - '0');
-			numDigits++;
-			if (numDigits >	3)
-				return false;
-		}
-		else
-			return false;
-	}
-	if (numDots	!= 3 || currentNumber <	0 || currentNumber > 255) 
-		return false;
-	return true;
+	return port;
 }
 
-bool isPathValid(const std::string&	path)
+std::vector<LocationConfig> ServerConfig::getLocations() const
 {
-	struct stat	info;
-	return (stat(path.c_str(), &info) == 0);
+	return locations;
 }
 
-bool isFileValid(const std::string&	filePath)
+std::vector<ServerConfig> Config::getServers() const
 {
-	struct stat	info;
-	return (stat(filePath.c_str(), &info) == 0 && S_ISREG(info.st_mode));
+	return servers;
 }
 
-bool isHttpErrorCodeValid(int code)
-{
-	return (code >= 400	&& code	<= 599);
-}
-
-bool isNumber(const	std::string& str)
-{
-	for	(size_t	i =	0; i < str.length(); ++i)
-	{
-		if (!isdigit(str[i]))
-			return false;
-	}
-	return true;
-}
+//-----------------------------------------FUNCTIONS-------------------------------------------------------//
 
 std::string	cleanValue(std::string value)
 {
@@ -142,163 +104,207 @@ void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& lo
 	}
 }
 
-void ServerConfig::parseServer(std::ifstream& configFile)
-{
-	std::string	line;
-	std::set<std::string> usedKeys;
-	while (std::getline(configFile,	line))
-	{
-		std::istringstream iss(line);
-		std::string	key;
-		iss	>> key;
-		if (key.empty()) continue;
-		if (key	== "}")	break;
+//-----------------------------------------------------MODIFIED-----------------------------------------------------------------//
 
-		if (key	!= "location" && usedKeys.find(key)	!= usedKeys.end())
+void ServerConfig::handleListen(std::istringstream& iss)
+{
+	std::string listenValue;
+	iss >> listenValue;
+	checkPV(listenValue);
+	listenValue = cleanValue(listenValue);
+
+	if (listenValue.empty())
+	{
+		std::cerr << "Error: Missing value for 'listen' directive." << std::endl;
+		exit(1);
+	}
+
+	size_t colonPos = listenValue.find(':');
+	if (colonPos != std::string::npos)
+	{
+		host = listenValue.substr(0, colonPos);
+		std::string portStr = listenValue.substr(colonPos + 1);
+		if (!isNumber(portStr))
 		{
-			std::cerr << "Error: Duplicate directive in server block: "	<< key << std::endl;
+			std::cerr << "Error: Invalid port number: " << portStr << std::endl;
 			exit(1);
 		}
-		usedKeys.insert(key);			
-		if (key	== "listen")
+		port = atoi(portStr.c_str());
+		if (!isValidIP(host))
 		{
-			std::string	listenValue;
-			iss	>> listenValue;
-			listenValue	= cleanValue(listenValue);
-		
-			
-			size_t colonPos	= listenValue.find(':');
-			if (colonPos != std::string::npos)
-			{
-				host = listenValue.substr(0, colonPos);
-				std::string	portStr	= listenValue.substr(colonPos +	1);
-				if (!isNumber(portStr))
-				{
-					std::cerr << "Error: Invalid port number: "	<< portStr << std::endl;
-					exit(1);
-				}
-				port = atoi(portStr.c_str());
-				if (!isValidIP(host))
-				{
-					std::cerr << "Error: Invalid host address: " << host	<< std::endl;
-					exit(1);
-				}
-			}
-			else
-			{
-				if (!isNumber(listenValue))
-				{
-					std::cerr << "Error: Invalid port number: "	<< listenValue << std::endl;
-					exit(1);
-				}
-				port	= atoi(listenValue.c_str());
-				host	= "";  
-			}
-			if (port	< 1	|| port > 65535)
-			{
-				std::cerr << "Error: Port number out of range: " << port << std::endl;
-				exit(1);
-			}
+			std::cerr << "Error: Invalid host address: " << host << std::endl;
+			exit(1);
 		}
-		else if (key == "host")
+	}
+	else
+	{
+		if (!isNumber(listenValue))
 		{
-			iss	>> host;
-			host	= cleanValue(host);
-			if (host.empty()	|| !isValidIP(host))
-			{
-				std::cerr << "Error: Invalid host address "	<< std::endl;
-				exit(1);
-			}
+			std::cerr << "Error: Invalid port number: " << listenValue << std::endl;
+			exit(1);
 		}
-		else if (key == "server_name")
-		{
-			iss	>> server_name;
-			server_name = cleanValue(server_name);
-		}
-		else if (key == "index")
-		{
-			iss	>> index;
-			index = cleanValue(index);
-			std::string	fullPath = root + "/" + index;
-			if (!isFileValid(fullPath))
-			{
-				std::cerr << "Warning: Default index file does not exist: "	<< fullPath	<< std::endl;
-			}
-		}
-		else if (key == "root")
-		{
-			iss	>> root;
-			root	= cleanValue(root);
-			if (!isPathValid(root))
-			{
-				std::cerr << "Error: Invalid root path:	" << root << std::endl;
-				exit(1);
-			}
-		}
-		else if (key == "client_max_body_size")
-		{
-			std::string	size_str;
-			iss	>> size_str;
-			size_str = cleanValue(size_str);
-			
-			if (size_str.empty())
-			{
-				std::cerr << "Error: client_max_body_size is empty"	<< std::endl;
-				exit(1);
-			}
-			
-			char unit =	size_str[size_str.size() - 1];
-			std::string	numberPart = size_str.substr(0,	size_str.size()	- 1);
-			
-			int	multiplier = 1;
-			if (unit == 'K'	|| unit	== 'k')	multiplier = 1024;
-			else if (unit == 'M' || unit == 'm') multiplier	= 1024 * 1024;
-			else if (unit == 'G' || unit == 'g') multiplier	= 1024 * 1024 *	1024;
-			else if (isdigit(unit))	numberPart += unit;
-			else
-			{
-				std::cerr << "Error: Invalid client_max_body_size unit:	" << unit << std::endl;
-				exit(1);
-			}
-			
-			if (!isNumber(numberPart))
-			{
-				std::cerr << "Error: Invalid client_max_body_size: " << size_str << std::endl;
-				exit(1);
-			}
-			
-			client_max_body_size	= atoi(numberPart.c_str()) * multiplier;
-		}
-		else if (key == "error_page")
-		{
-			std::string	code_str, page;
-			iss	>> code_str	>> page;
-			code_str = cleanValue(code_str);
-			page = cleanValue(page);
-			if (!isNumber(code_str)	|| !isHttpErrorCodeValid(atoi(code_str.c_str())))
-			{
-				std::cerr << "Error: Invalid error code: " << code_str << std::endl;
-				exit(1);
-			}
-			error_pages[atoi(code_str.c_str())] = page;
-		}
-		else if (key == "location")
-		{
-			LocationConfig location;
-			iss	>> location.path;
-			location.path =	cleanValue(location.path);
-			std::set<std::string> newLocationKeys;
-			location.parseLocation(configFile, location);
+		port = atoi(listenValue.c_str());
+		host = "";
+	}
 
-			locations.push_back(location);
+	if (port < 1 || port > 65535)
+	{
+		std::cerr << "Error: Port number out of range: " << port << std::endl;
+		exit(1);
+	}
+}
+
+void ServerConfig::handleHost(std::istringstream& iss)
+{
+	iss >> host;
+	checkPV(host);
+	host = cleanValue(host);
+	if (host.empty() || !isValidIP(host))
+	{
+		std::cerr << "Error: Invalid host address: " << host << std::endl;
+		exit(1);
+	}
+}
+
+void ServerConfig::handleServerName(std::istringstream& iss)
+{
+	iss >> server_name;
+	checkPV(server_name);
+	server_name = cleanValue(server_name);
+}
+
+void ServerConfig::handleIndex(std::istringstream& iss)
+{
+	iss >> index;
+	checkPV(index);
+	index = cleanValue(index);
+	std::string fullPath = root + "/" + index;
+	if (!isFileValid(fullPath))
+	{
+		std::cerr << "Warning: Default index file does not exist: " << fullPath << std::endl;
+	}
+}
+
+void ServerConfig::handleRoot(std::istringstream& iss)
+{
+	iss >> root;
+	checkPV(root);
+	root = cleanValue(root);
+	if (!isPathValid(root))
+	{
+		std::cerr << "Error: Invalid root path: " << root << std::endl;
+		exit(1);
+	}
+}
+
+void ServerConfig::handleClientMaxBodySize(std::istringstream& iss)
+{
+	std::string size_str;
+	iss >> size_str;
+	checkPV(size_str);
+	size_str = cleanValue(size_str);
+	
+	if (size_str.empty())
+	{
+		std::cerr << "Error: client_max_body_size is empty" << std::endl;
+		exit(1);
+	}
+
+	char unit = size_str[size_str.size() - 1];
+	std::string numberPart = size_str.substr(0, size_str.size() - 1);
+
+	int multiplier = 1;
+	if (unit == 'K' || unit == 'k') multiplier = 1024;
+	else if (unit == 'M' || unit == 'm') multiplier = 1024 * 1024;
+	else if (unit == 'G' || unit == 'g') multiplier = 1024 * 1024 * 1024;
+	else if (isdigit(unit)) numberPart += unit;  // Si pas d'unité, remettre le chiffre final
+	else
+	{
+		std::cerr << "Error: Invalid client_max_body_size unit: " << unit << std::endl;
+		exit(1);
+	}
+
+	if (!isNumber(numberPart))
+	{
+		std::cerr << "Error: Invalid client_max_body_size: " << size_str << std::endl;
+		exit(1);
+	}
+
+	client_max_body_size = atoi(numberPart.c_str()) * multiplier;
+}
+
+void ServerConfig::handleErrorPage(std::istringstream& iss)
+{
+	std::string code_str, page;
+	iss >> code_str >> page;
+	checkPV(code_str);
+	code_str = cleanValue(code_str);
+	page = cleanValue(page);
+
+	if (!isNumber(code_str) || !isHttpErrorCodeValid(atoi(code_str.c_str())))
+	{
+		std::cerr << "Error: Invalid error code: " << code_str << std::endl;
+		exit(1);
+	}
+
+	error_pages[atoi(code_str.c_str())] = page;
+}
+
+void ServerConfig::handleLocation(std::istringstream& iss, std::ifstream& configFile)
+{
+	LocationConfig location;
+	iss >> location.path;
+	location.path = cleanValue(location.path);
+	location.parseLocation(configFile, location);
+
+	locations.push_back(location);
+}
+
+
+void ServerConfig::parseServer(std::ifstream& configFile)
+{
+	std::string line;
+	std::set<std::string> usedKeys;
+
+	while (std::getline(configFile, line))
+	{
+		std::istringstream iss(line);
+		std::string key;
+		iss >> key;
+		if (key.empty()) continue;
+		if (key == "}") break;
+
+		if (key != "location" && usedKeys.find(key) != usedKeys.end())
+		{
+			std::cerr << "Error: Duplicate directive in server block: " << key << std::endl;
+			exit(1);
 		}
+		usedKeys.insert(key);
+
+		if (key == "listen")
+			handleListen(iss);
+		else if (key == "host")
+			handleHost(iss);
+		else if (key == "server_name")
+			handleServerName(iss);
+		else if (key == "index")
+			handleIndex(iss);
+		else if (key == "root")
+			handleRoot(iss);
+		else if (key == "client_max_body_size")
+			handleClientMaxBodySize(iss);
+		else if (key == "error_page")
+			handleErrorPage(iss);
+		else if (key == "location")
+			handleLocation(iss, configFile);
 		else
 		{
-			std::cerr << "Error: Unknown directive in server block:	" << key << std::endl;
+			std::cerr << "Error: Unknown directive in server block: " << key << std::endl;
 			exit(1);
 		}
 	}
 }
+
 
 void Config::parseConfig(const std::string& filename)
 {
@@ -309,14 +315,13 @@ void Config::parseConfig(const std::string& filename)
 		exit(1);
 	}
 	std::string	line;
-	std::set<std::string> globalKeys;
 	while (std::getline(configFile,	line))
 	{
 		std::istringstream iss(line);
 		std::string	key;
 		iss	>> key;
-		if (key.empty()) continue;
-		
+		if (key.empty()) 
+			continue;
 		if (key	== "server")
 		{
 			ServerConfig server;
@@ -329,19 +334,4 @@ void Config::parseConfig(const std::string& filename)
 			exit(1);
 		}
 	}
-}
-
-int ServerConfig::getPort()
-{
-	return port;
-}
-
-std::vector<LocationConfig> ServerConfig::getLocations() const
-{
-	return locations;
-}
-
-std::vector<ServerConfig> Config::getServers() const
-{
-	return servers;
 }

@@ -1,15 +1,17 @@
 server {
-    listen 8000;
+    listen 8080;
 	server_name localhost;
-    host 127.0.0.1;
+    host 127.0.0.6;
     root doc/www/html;
     client_max_body_size 10M;
 	index index.html;
-    error_page 404 error_pages/404.html;
 
     location / {
         allow_methods  DELETE POST GET;
         autoindex off;
+    }
+    location /admin {
+        allow_methods POST GET;
     }
 
     location /images {
