@@ -25,6 +25,6 @@ bool isFileValid(const std::string&	filePath);
 bool isHttpErrorCodeValid(int code);
 bool isNumber(const	std::string& str);
 void checkPV(std::string value);
-
+int countWords(const std::string& str);
 
 #endif

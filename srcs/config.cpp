@@ -106,19 +106,20 @@ void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& lo
 
 //-----------------------------------------------------MODIFIED-----------------------------------------------------------------//
 
-void ServerConfig::handleListen(std::istringstream& iss)
+void ServerConfig::handleListen(std::istringstream& iss, std::string line)
 {
 	std::string listenValue;
 	iss >> listenValue;
 	checkPV(listenValue);
+	if (countWords(line) != 2)
+		exit(1);
+	
 	listenValue = cleanValue(listenValue);
-
 	if (listenValue.empty())
 	{
 		std::cerr << "Error: Missing value for 'listen' directive." << std::endl;
 		exit(1);
 	}
-
 	size_t colonPos = listenValue.find(':');
 	if (colonPos != std::string::npos)
 	{
@@ -280,9 +281,8 @@ void ServerConfig::parseServer(std::ifstream& configFile)
 			exit(1);
 		}
 		usedKeys.insert(key);
-
 		if (key == "listen")
-			handleListen(iss);
+			handleListen(iss, line);
 		else if (key == "host")
 			handleHost(iss);
 		else if (key == "server_name")

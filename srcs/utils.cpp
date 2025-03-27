@@ -178,3 +178,16 @@ bool isNumber(const	std::string& str)
 	return true;
 }
 
+//------------------------------------------------------------------------------------------------------------------------//
+
+int countWords(const std::string& str) {
+    std::stringstream ss(str);
+    std::string word;
+    int wordCount = 0;
+
+    while (ss >> word) {
+        wordCount++;
+    }
+
+    return wordCount;
+}

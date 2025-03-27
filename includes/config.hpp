@@ -44,7 +44,7 @@ class ServerConfig {
 	public:
 		void parseServer(std::ifstream&	configFile);
 		//------------adem--------------//
-		void handleListen(std::istringstream& iss);
+		void handleListen(std::istringstream& iss, std::string line);
 		void handleHost(std::istringstream& iss);
 		void handleServerName(std::istringstream& isse);
 		void handleIndex(std::istringstream& iss);
