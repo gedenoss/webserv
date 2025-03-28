@@ -37,83 +37,17 @@ std::string	cleanValue(std::string value)
 	return value;
 }
 
-void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& location)
-{
-	std::set<std::string> usedKeys;
-	std::string	line;
-	while (std::getline(configFile,	line))
-	{
-		std::istringstream iss(line);
-		std::string	key;
-		iss	>> key;
-		if (key.empty()) continue;
-		if (key	== "}")	break;
-		
-		if (usedKeys.find(key) != usedKeys.end())
-		{
-			std::cerr << "Error: Duplicate directive in location block:	" << key << std::endl;
-			exit(1);
-		}
-		usedKeys.insert(key);
-		if (key	== "root")
-		{
-			iss	>> location.root;
-			location.root =	cleanValue(location.root);
-			if (!isPathValid(location.root))
-			{
-				std::cerr << "Error: Invalid root path:	" << location.root << std::endl;
-				exit(1);
-			}
-		}
-		else if (key == "index")
-		{
-			iss	>> location.index;
-			location.index = cleanValue(location.index);
-			std::string	fullPath = location.root + "/" + location.index;
-			if (!isFileValid(fullPath))
-			{
-				std::cerr << "Warning: Default index file does not exist: "	<< fullPath	<< std::endl;
-			}
-		}
-		else if (key == "allow_methods")
-		{
-			std::string	method;
-			while (iss >> method)
-				location.allow_methods.push_back(cleanValue(method));
-		}
-		else if (key == "autoindex")
-		{
-			std::string	value;
-			iss	>> value;
-			value =	cleanValue(value);
-			if (value == "on")
-				location.autoindex = true;
-			else if (value == "off")
-				location.autoindex = false;
-			else
-			{
-				std::cerr << "Error: Invalid value for autoindex: "	<< value << std::endl;
-				exit(1);
-			}
-		}		
-		else
-		{
-			std::cerr << "Error: Unknown directive in location block: "	<< key << std::endl;
-			exit(1);
-		}
-	}
-}
 
-//-----------------------------------------------------MODIFIED-----------------------------------------------------------------//
+//-----------------------------------------------------SERVER HANDLER-----------------------------------------------------------------//
 
 void ServerConfig::handleListen(std::istringstream& iss, std::string line)
 {
 	std::string listenValue;
 	iss >> listenValue;
-	checkPV(listenValue);
-	if (countWords(line) != 2)
+	if (countWords(line) != 2){
 		exit(1);
-	
+	}
+	(void)line;	
 	listenValue = cleanValue(listenValue);
 	if (listenValue.empty())
 	{
@@ -158,7 +92,6 @@ void ServerConfig::handleListen(std::istringstream& iss, std::string line)
 void ServerConfig::handleHost(std::istringstream& iss)
 {
 	iss >> host;
-	checkPV(host);
 	host = cleanValue(host);
 	if (host.empty() || !isValidIP(host))
 	{
@@ -170,14 +103,12 @@ void ServerConfig::handleHost(std::istringstream& iss)
 void ServerConfig::handleServerName(std::istringstream& iss)
 {
 	iss >> server_name;
-	checkPV(server_name);
 	server_name = cleanValue(server_name);
 }
 
 void ServerConfig::handleIndex(std::istringstream& iss)
 {
 	iss >> index;
-	checkPV(index);
 	index = cleanValue(index);
 	std::string fullPath = root + "/" + index;
 	if (!isFileValid(fullPath))
@@ -189,7 +120,6 @@ void ServerConfig::handleIndex(std::istringstream& iss)
 void ServerConfig::handleRoot(std::istringstream& iss)
 {
 	iss >> root;
-	checkPV(root);
 	root = cleanValue(root);
 	if (!isPathValid(root))
 	{
@@ -202,7 +132,6 @@ void ServerConfig::handleClientMaxBodySize(std::istringstream& iss)
 {
 	std::string size_str;
 	iss >> size_str;
-	checkPV(size_str);
 	size_str = cleanValue(size_str);
 	
 	if (size_str.empty())
@@ -238,7 +167,6 @@ void ServerConfig::handleErrorPage(std::istringstream& iss)
 {
 	std::string code_str, page;
 	iss >> code_str >> page;
-	checkPV(code_str);
 	code_str = cleanValue(code_str);
 	page = cleanValue(page);
 
@@ -261,6 +189,89 @@ void ServerConfig::handleLocation(std::istringstream& iss, std::ifstream& config
 	locations.push_back(location);
 }
 
+//-------------------------------LOCATION HANDLER----------------------------------------//
+
+void LocationConfig::handleLocRoot(std::istringstream &iss, LocationConfig& location){
+	iss	>> location.root;
+	location.root =	cleanValue(location.root);
+	if (!isPathValid(location.root))
+	{
+		std::cerr << "Error: Invalid root path:	" << location.root << std::endl;
+		exit(1);
+	}
+}
+
+void LocationConfig::handleLocIndex(std::istringstream &iss, LocationConfig& location){
+	iss	>> location.index;
+	location.index = cleanValue(location.index);
+	std::string	fullPath = location.root + "/" + location.index;
+	if (!isFileValid(fullPath))
+	{
+		std::cerr << "Warning: Default index file does not exist: "	<< fullPath	<< std::endl;
+	}
+}
+
+void LocationConfig::handleLocAllMethods(std::istringstream &iss, LocationConfig& location){
+	std::string	method;
+			while (iss >> method)
+				location.allow_methods.push_back(cleanValue(method));
+}
+
+void LocationConfig::handleAutoIndex(std::istringstream &iss, LocationConfig& location){
+	std::string	value;
+			iss	>> value;
+			value =	cleanValue(value);
+			if (value == "on")
+				location.autoindex = true;
+			else if (value == "off")
+				location.autoindex = false;
+			else
+			{
+				std::cerr << "Error: Invalid value for autoindex: "	<< value << std::endl;
+				exit(1);
+			}
+}
+
+void LocationConfig::handleCGI(std::istringstream &iss, LocationConfig& location){
+	(void)iss;(void)location;
+}
+//-------------------------------PARSE FUNCTIONS---------------------------------------//
+
+
+void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& location)
+{
+	std::set<std::string> usedKeys;
+	std::string	line;
+	while (std::getline(configFile,	line))
+	{
+		std::istringstream iss(line);
+		std::string	key;
+		iss	>> key;
+		if (key.empty()) continue;
+		if (key	== "}")	break;
+		if (usedKeys.find(key) != usedKeys.end())
+		{
+			std::cerr << "Error: Duplicate directive in location block:	" << key << std::endl;
+			exit(1);
+		}
+		usedKeys.insert(key);
+		if (key	== "root")
+			handleLocRoot(iss, location);
+		else if (key == "index")
+			handleLocIndex(iss, location);
+		else if (key == "allow_methods")
+			handleLocAllMethods(iss, location);
+		else if (key == "autoindex")
+			handleAutoIndex(iss, location);
+		else if (key == "CGI")
+			handleCGI(iss, location);
+		else
+		{
+			std::cerr << "Error: Unknown directive in location block: "	<< key << std::endl;
+			exit(1);
+		}
+	}
+}
 
 void ServerConfig::parseServer(std::ifstream& configFile)
 {
@@ -270,6 +281,7 @@ void ServerConfig::parseServer(std::ifstream& configFile)
 	while (std::getline(configFile, line))
 	{
 		std::istringstream iss(line);
+		checkPV(line);
 		std::string key;
 		iss >> key;
 		if (key.empty()) continue;

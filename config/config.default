@@ -1,6 +1,6 @@
 server {
-    listen 8080 1;
-	server_name localhost;
+    listen 8080                ;
+	server_name localhost                ;
     host 127.0.0.1;
     root indexx;
     client_max_body_size 10M;

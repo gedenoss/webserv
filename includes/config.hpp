@@ -26,6 +26,13 @@ class LocationConfig {
 		std::string getRoot() const { return root; };
 		bool getAutoindex() const { return autoindex; };
 		std::vector<std::string> getAllowMethod() const { return allow_methods; };
+		//---------------adem------------------//
+		void handleLocRoot(std::istringstream &iss, LocationConfig& location);
+		void handleLocIndex(std::istringstream &iss, LocationConfig& location);
+		void handleLocAllMethods(std::istringstream &iss, LocationConfig& location);
+		void handleAutoIndex(std::istringstream &iss, LocationConfig& location);
+		void handleCGI(std::istringstream &iss, LocationConfig& location);
+		//------------plus adem----------------//
 
 	friend class ServerConfig;
 };

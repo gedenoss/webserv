@@ -78,12 +78,16 @@ bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<s
     return a.second > b.second; // or another comparison logic
 }
 
-void checkPV(std::string value)
+void checkPV(std::string& value)
 {
-	if (value[value.size() - 1] != ';'){
+    if (value.empty())
+        return;
+	else if (value[value.size() - 1] != ';' && value[value.size() - 1] != '}' && value[value.size() - 1] != '{'){
 		std::cout << "ERROR SYNTAX: missing ';' look dumbass : " << value[value.size() - 1] << std::endl;
 		exit (1);
 	}
+    if (value[value.size() - 1] == ';')
+            value.erase(value.size() - 1);
 }
 
 //----------------------------HAS FUNCTIONS----------------------------------------------------//
