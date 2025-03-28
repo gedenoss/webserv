@@ -94,7 +94,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	}
 	
 
-	
+	//le petit header bien kawaii bien sexy
 	size_t headersSize = 0;
 	while (std::getline(stream,	line)) {
 		
@@ -227,7 +227,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 				contentType.find("image/jpeg") == std::string::npos) {
 				// && contentType.find("application/x-www-form-urlencoded") == std::string::npos &&
 				//contentType.find("multipart/form-data")	== std::string::npos) {
-				//_errorCode =	415;	
+				//_errorCode =	415;	css gif jison xml pdf 
 				return ;
 			}
 		}

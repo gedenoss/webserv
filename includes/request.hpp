@@ -19,6 +19,7 @@ class Request {
         //std::map<std::string, std::string> _queryParams;
         std::string _body;
         int _errorCode;
+        LocationConfig _location;
 
         //void parseQueryParams();
 
@@ -55,3 +56,14 @@ class Request {
 
 #endif
 
+
+"text/css";
+"application/javascript";
+"image/gif";
+"text/html";
+"application/json";
+"application/xml";
+"application/pdf";
+"text/plain";
+"text/csv";
+    
