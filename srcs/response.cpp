@@ -15,6 +15,7 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _headers["Content-Language"] = "";
     _headers["Connection"] = "close";
     _available_languages.push_back("en-US");
+    _available_languages.push_back("fr-FR");
     _available_languages.push_back("fr");
     _available_languages.push_back("ar-sa");
     _available_languages.push_back("es-ES");
@@ -206,7 +207,6 @@ std::string Response::getLanguage()
 std::string Response::response200(Errors &errors)
 {
     std::string _body = readFile(_path);
-
     setStatusCode(200);
     setStatusMessage("OK");
     setTime();
@@ -362,12 +362,33 @@ std::string Response::handleUpload(Errors &errors)
     return "";
 }
 
+int Response::sendFileResponse(const std::string &filePath, size_t rangeStart = 0, size_t rangeEnd = 0, bool isPartial = false)
+{
+    struct stat fileStat;
+
+    if (stat(_path.c_str(), &fileStat) < 0)
+        return _status_code = 500;
+    size_t fileSize = fileStat.st_size;
+    if (isPartial)
+    {
+        
+    }
+    std::ifstream file(_path.c_str(), std::ios::binary);
+    if (_request.getHeaders().count("Range") == 0)
+        return true;
+    std::string range = _request.getHeaders().at("Range");
+    size_t pos = range.find("bytes=");
+    if (pos == std::string::npos)
+        return false;
+    std::string RangeStart = range.substr(pos, range.find("-"));
+    std::string RangeEnd = range.substr(range.find("-") + 1);
+    if (RangeStart.empty() && RangeEnd.empty())
+        return false;
+
+}
+
 std::string Response::getResponse(Errors &errors)
 {
-    // if (_request.getUrl() == "/favicon.ico" || _request.getUrl() == "/")
-    //     _path = "./index.html";
-    // else 
-    //     _path = _root + _request.getUrl();
     std::cout << _path << std::endl;
     if (!fileExists(_path))
         return (errors.error404());
@@ -379,6 +400,11 @@ std::string Response::getResponse(Errors &errors)
     //     return (errors.error304());
     if (isCGI())
         handleCGI();
+    else
+    {
+        // if (!isGoodRange())
+        //     return (errors.error416());
+    }
     return (response200(errors));
 }
 
@@ -407,19 +433,23 @@ std::string Response::deleteResponse(Errors &errors)
         return (response204());
 }
 
-std::string findIndexInDirectory(const std::string &dirPath)
+std::string findIndex(const std::string &dirPath, const std::string &root)
 {
-    const std::string indexFiles[] = {"index.html", "index.htm", "default.html"};
-    DIR *dir = opendir(dirPath.c_str());
+    std::string actualPath = (dirPath == "/") ? root : dirPath;
+    const std::string indexFiles[] = {"index.html", "index.htm", "index.php"};
+    DIR *dir = opendir(actualPath.c_str());
     if (!dir)
         return "";
 
     struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        for (size_t i = 0; i < sizeof(indexFiles) / sizeof(indexFiles[0]); i++) {
-            if (indexFiles[i] == entry->d_name) {
+    while ((entry = readdir(dir)) != NULL)
+    {
+        for (size_t i = 0; i < sizeof(indexFiles) / sizeof(indexFiles[0]); i++)
+        {
+            if (indexFiles[i] == entry->d_name)
+            {
                 closedir(dir);
-                return dirPath + "/" + entry->d_name;
+                return actualPath + "/" + entry->d_name;
             }
         }
     }
@@ -427,36 +457,60 @@ std::string findIndexInDirectory(const std::string &dirPath)
     return "";
 }
 
-void Response::findLocation()
+void Response::findPath()
 {
-    std::string url = _request.getUrl();
-    url = url.substr(0, url.find_last_of('/'));
-    if (url.empty())
-        url = "/";
-    std::vector<LocationConfig> locations = _server.getLocations();
-    for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it)
+    std::string path = _root + _request.getUrl();
+    std::cout << "path : " << path << std::endl;
+    if (fileExists(path) && !isDirectory(path))
     {
-       if (url.find(it->getPath()) == 0)
-       {
-            _root = it->getRoot();
-            _autoindex = it->getAutoindex();
-       }
+        _path = path;
+        return;
     }
-    if (_path == "/")
-        _path =
-    if (fileExists(_root + _request.getUrl()))
-        _path = _root + _request.getUrl();
-    else if (isDirectory(_root + _request.getUrl()) || _request.getUrl() == "/")
-        std::string _path = findIndexInDirectory(_root + _request.getUrl());
+    if (isDirectory(path))
+    {
+        if (!_index.empty())
+        {
+            std::string indexPath = path;
+            if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
+                indexPath += "/";
+            indexPath += _index;
+            if (fileExists(indexPath))
+            {
+                _path = indexPath;
+                return;
+            }
+        }
+        if (_autoindex)
+        {
+            std::string foundIndex = findIndex(path, _root);
+            if (!foundIndex.empty())
+            {
+                _path = foundIndex;
+                return;
+            }
+        }
     }
+    _path = "";
+}
 
 std::string Response::sendResponse()
 {
     Errors errors(*this);
     if (_request.getErrorCode() != 200)
         return (errors.generateError(_request.getErrorCode()));
-    findLocation();
-    std::cout << "PATH : " << _path << std::endl;
+    // _location = _request.getLocation();
+    // _root = _location.getRoot(); 
+    _root = "";
+    _autoindex = true;
+    _index = "index.html";
+    if (_root.empty())
+        _root = ".";
+    // _autoindex = _location.getAutoindex();
+    // if (_autoindex)
+    //     std::cout << "Autoindex is on" << std::endl;
+    // _index = _location.getIndex();
+    // std::cout << _index << std::endl;
+    findPath();
     if (_path.empty())
         return (errors.error404());
     if (_request.getMethod() == "GET") {

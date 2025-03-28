@@ -23,7 +23,7 @@ class Response {
 
         std::string sendResponse();
         std::string generateResponse();
-        void findLocation();
+        void findLocation(Errors &errors);
 
         void setStatusCode(int status_code);
         void setStatusMessage(const std::string &status_message);
@@ -51,6 +51,8 @@ class Response {
         bool isNotModified(const std::map<std::string, std::string> &headers);
         bool handleDirectory();
         bool isCGI();
+        int sendFileResponse(const std::string &filePath, size_t rangeStart, size_t rangeEnd, bool isPartial);
+        void findPath();
 
         void handleCGI();
         std::string handleUpload(Errors &errors);
@@ -64,10 +66,12 @@ class Response {
 
     private:
         Request &_request;
+        LocationConfig _location;
         ServerConfig _server;
         std::string _path;
         std::string _root;
         bool _autoindex;
+        std::string _index;
         int _status_code;
         std::string _status_message;
         std::map<std::string, std::string> _headers;

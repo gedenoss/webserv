@@ -19,6 +19,7 @@ class Request {
         //std::map<std::string, std::string> _queryParams;
         std::string _body;
         int _errorCode;
+        LocationConfig location;
 
         //void parseQueryParams();
 
@@ -40,6 +41,7 @@ class Request {
         std::string getHttpVersion() const;
         std::string getBody() const;
         int getErrorCode() const;
+        LocationConfig getLocation() const { return location; };
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;
         //std::map<std::string, std::string> getQueryParams() const;

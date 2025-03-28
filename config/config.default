@@ -15,6 +15,7 @@ server {
     }
 
     location /images {
+        autoindex off;
         allow_methods POST GET;
         
     }
