@@ -27,11 +27,12 @@ class LocationConfig {
 		bool getAutoindex() const { return autoindex; };
 		std::vector<std::string> getAllowMethod() const { return allow_methods; };
 		//---------------adem------------------//
-		void handleLocRoot(std::istringstream &iss, LocationConfig& location);
-		void handleLocIndex(std::istringstream &iss, LocationConfig& location);
+		void handleLocRoot(std::istringstream &iss, LocationConfig& location, std::string line);
+		void handleLocIndex(std::istringstream &iss, LocationConfig& location, std::string line);
 		void handleLocAllMethods(std::istringstream &iss, LocationConfig& location);
-		void handleAutoIndex(std::istringstream &iss, LocationConfig& location);
+		void handleAutoIndex(std::istringstream &iss, LocationConfig& location, std::string line);
 		void handleCGI(std::istringstream &iss, LocationConfig& location);
+		void handleReturn(std::istringstream &iss, LocationConfig& location, std::string line);
 		//------------plus adem----------------//
 
 	friend class ServerConfig;
@@ -52,11 +53,11 @@ class ServerConfig {
 		void parseServer(std::ifstream&	configFile);
 		//------------adem--------------//
 		void handleListen(std::istringstream& iss, std::string line);
-		void handleHost(std::istringstream& iss);
-		void handleServerName(std::istringstream& isse);
+		void handleHost(std::istringstream& iss, std::string line);
+		void handleServerName(std::istringstream& iss, std::string line);
 		void handleIndex(std::istringstream& iss);
 		void handleRoot(std::istringstream& iss);
-		void handleClientMaxBodySize(std::istringstream& iss);
+		void handleClientMaxBodySize(std::istringstream& iss, std::string line);
 		void handleErrorPage(std::istringstream& iss);
 		void handleLocation(std::istringstream& line, std::ifstream& configFile);
 		//----------plus adem-----------//

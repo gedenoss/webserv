@@ -89,10 +89,12 @@ void ServerConfig::handleListen(std::istringstream& iss, std::string line)
 	}
 }
 
-void ServerConfig::handleHost(std::istringstream& iss)
+void ServerConfig::handleHost(std::istringstream& iss, std::string line)
 {
 	iss >> host;
 	host = cleanValue(host);
+	if (countWords(line) != 2)
+		exit(1);
 	if (host.empty() || !isValidIP(host))
 	{
 		std::cerr << "Error: Invalid host address: " << host << std::endl;
@@ -100,8 +102,10 @@ void ServerConfig::handleHost(std::istringstream& iss)
 	}
 }
 
-void ServerConfig::handleServerName(std::istringstream& iss)
+void ServerConfig::handleServerName(std::istringstream& iss, std::string line)
 {
+	if (countWords(line) != 2)
+		exit(1);
 	iss >> server_name;
 	server_name = cleanValue(server_name);
 }
@@ -128,12 +132,14 @@ void ServerConfig::handleRoot(std::istringstream& iss)
 	}
 }
 
-void ServerConfig::handleClientMaxBodySize(std::istringstream& iss)
+void ServerConfig::handleClientMaxBodySize(std::istringstream& iss, std::string line)
 {
 	std::string size_str;
 	iss >> size_str;
 	size_str = cleanValue(size_str);
 	
+	if (countWords(line) != 2)
+		exit(1);
 	if (size_str.empty())
 	{
 		std::cerr << "Error: client_max_body_size is empty" << std::endl;
@@ -147,7 +153,7 @@ void ServerConfig::handleClientMaxBodySize(std::istringstream& iss)
 	if (unit == 'K' || unit == 'k') multiplier = 1024;
 	else if (unit == 'M' || unit == 'm') multiplier = 1024 * 1024;
 	else if (unit == 'G' || unit == 'g') multiplier = 1024 * 1024 * 1024;
-	else if (isdigit(unit)) numberPart += unit;  // Si pas d'unité, remettre le chiffre final
+	else if (isdigit(unit)) numberPart += unit;
 	else
 	{
 		std::cerr << "Error: Invalid client_max_body_size unit: " << unit << std::endl;
@@ -191,9 +197,12 @@ void ServerConfig::handleLocation(std::istringstream& iss, std::ifstream& config
 
 //-------------------------------LOCATION HANDLER----------------------------------------//
 
-void LocationConfig::handleLocRoot(std::istringstream &iss, LocationConfig& location){
+void LocationConfig::handleLocRoot(std::istringstream &iss, LocationConfig& location, std::string line){
+
 	iss	>> location.root;
 	location.root =	cleanValue(location.root);
+	if (countWords(line) != 2)
+		exit(1);
 	if (!isPathValid(location.root))
 	{
 		std::cerr << "Error: Invalid root path:	" << location.root << std::endl;
@@ -201,8 +210,10 @@ void LocationConfig::handleLocRoot(std::istringstream &iss, LocationConfig& loca
 	}
 }
 
-void LocationConfig::handleLocIndex(std::istringstream &iss, LocationConfig& location){
+void LocationConfig::handleLocIndex(std::istringstream &iss, LocationConfig& location, std::string line){
 	iss	>> location.index;
+	if (countWords(line) != 2)
+		exit (1);
 	location.index = cleanValue(location.index);
 	std::string	fullPath = location.root + "/" + location.index;
 	if (!isFileValid(fullPath))
@@ -213,27 +224,49 @@ void LocationConfig::handleLocIndex(std::istringstream &iss, LocationConfig& loc
 
 void LocationConfig::handleLocAllMethods(std::istringstream &iss, LocationConfig& location){
 	std::string	method;
-			while (iss >> method)
-				location.allow_methods.push_back(cleanValue(method));
+	while (iss >> method){
+		method = cleanValue(method);
+		if (method != "GET" && method != "POST" && method != "DELETE")
+			exit(1);
+		location.allow_methods.push_back(cleanValue(method));
+	}
+	(void)iss, (void)location;
 }
 
-void LocationConfig::handleAutoIndex(std::istringstream &iss, LocationConfig& location){
+void LocationConfig::handleAutoIndex(std::istringstream &iss, LocationConfig& location, std::string line){
 	std::string	value;
-			iss	>> value;
-			value =	cleanValue(value);
-			if (value == "on")
-				location.autoindex = true;
-			else if (value == "off")
-				location.autoindex = false;
-			else
-			{
-				std::cerr << "Error: Invalid value for autoindex: "	<< value << std::endl;
-				exit(1);
-			}
+	iss	>> value;
+	value =	cleanValue(value);
+	if (countWords(line) != 2)
+		exit (1);
+	if (value == "on")
+		location.autoindex = true;
+	else if (value == "off")
+		location.autoindex = false;
+	else
+	{
+		std::cerr << "Error: Invalid value for autoindex: "	<< value << std::endl;
+		exit(1);
+	}
 }
 
 void LocationConfig::handleCGI(std::istringstream &iss, LocationConfig& location){
 	(void)iss;(void)location;
+}
+
+// bool isNotUrl(std::string value)
+// {
+
+// }
+
+void LocationConfig::handleReturn(std::istringstream &iss, LocationConfig& location, std::string line){
+	std::string value;
+	iss >> value;
+	if (countWords(line) != 2)
+		exit(1);
+	// else if (isNotUrl(value))
+	// 	exit(1);
+	(void)location;
 }
 //-------------------------------PARSE FUNCTIONS---------------------------------------//
 
@@ -242,9 +275,12 @@ void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& lo
 {
 	std::set<std::string> usedKeys;
 	std::string	line;
+	int i = 0;
 	while (std::getline(configFile,	line))
 	{
+		i++;
 		std::istringstream iss(line);
+		checkPV(line);
 		std::string	key;
 		iss	>> key;
 		if (key.empty()) continue;
@@ -256,15 +292,17 @@ void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& lo
 		}
 		usedKeys.insert(key);
 		if (key	== "root")
-			handleLocRoot(iss, location);
+			handleLocRoot(iss, location, line);
 		else if (key == "index")
-			handleLocIndex(iss, location);
+			handleLocIndex(iss, location, line);
 		else if (key == "allow_methods")
 			handleLocAllMethods(iss, location);
 		else if (key == "autoindex")
-			handleAutoIndex(iss, location);
+			handleAutoIndex(iss, location, line);
 		else if (key == "CGI")
 			handleCGI(iss, location);
+		else if (key == "return")
+			handleReturn(iss, location, line);
 		else
 		{
 			std::cerr << "Error: Unknown directive in location block: "	<< key << std::endl;
@@ -296,15 +334,15 @@ void ServerConfig::parseServer(std::ifstream& configFile)
 		if (key == "listen")
 			handleListen(iss, line);
 		else if (key == "host")
-			handleHost(iss);
+			handleHost(iss, line);
 		else if (key == "server_name")
-			handleServerName(iss);
+			handleServerName(iss, line);
 		else if (key == "index")
 			handleIndex(iss);
 		else if (key == "root")
 			handleRoot(iss);
 		else if (key == "client_max_body_size")
-			handleClientMaxBodySize(iss);
+			handleClientMaxBodySize(iss, line);
 		else if (key == "error_page")
 			handleErrorPage(iss);
 		else if (key == "location")
