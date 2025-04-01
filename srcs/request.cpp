@@ -210,6 +210,11 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 			_errorCode = 411;	
 			return;
 		}
+			
+		// if (method == "POST" && contentLength == 0) {
+		// 	_errorCode = 400; 
+		// 	return;
+		// }
 
 		
 		if ((method	== "POST") && 
@@ -218,17 +223,38 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 			return ;
 		}
 
+
 		
 		std::map<std::string, std::string>::const_iterator contentTypeIt = getHeaders().find("Content-Type");
 		if (contentTypeIt != getHeaders().end()) {
-			std::string	contentType	= contentTypeIt->second;
-			if (contentType.find("text/html") == std::string::npos && 
-				contentType.find("image/png") == std::string::npos && 
-				contentType.find("image/jpeg") == std::string::npos) {
-				// && contentType.find("application/x-www-form-urlencoded") == std::string::npos &&
-				//contentType.find("multipart/form-data")	== std::string::npos) {
-				//_errorCode =	415;	css gif jison xml pdf 
-				return ;
+			std::string contentType = contentTypeIt->second;
+			
+			size_t paramPos = contentType.find(';');
+			if (paramPos != std::string::npos) {
+				contentType = contentType.substr(0, paramPos);
+			}
+		
+			size_t lastNonSpace = contentType.find_last_not_of(" \t\r");
+			if (lastNonSpace != std::string::npos)
+				contentType = contentType.substr(0, lastNonSpace + 1);
+						
+			static const std::string allowedTypes[] = {
+				"text/html", "image/png", "image/jpeg", "text/css",
+				"application/javascript", "application/json", "application/xml",
+				"application/pdf", "text/plain", "text/csv"
+			};
+			
+			bool isAllowed = false;
+			for (size_t i = 0; i < sizeof(allowedTypes)/sizeof(allowedTypes[0]); ++i) {
+				if (contentType == allowedTypes[i]) {
+					isAllowed = true;
+					break;
+				}
+			}
+			
+			if (!isAllowed) {
+				_errorCode = 415;
+				return;
 			}
 		}
 

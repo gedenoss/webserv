@@ -43,6 +43,7 @@ class Request {
         int getErrorCode() const;
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;
+        const LocationConfig& getLocation() const {return _location;}
         //std::map<std::string, std::string> getQueryParams() const;
 
         void setMethod(const std::string& m);
@@ -55,15 +56,4 @@ class Request {
 };
 
 #endif
-
-
-"text/css";
-"application/javascript";
-"image/gif";
-"text/html";
-"application/json";
-"application/xml";
-"application/pdf";
-"text/plain";
-"text/csv";
     

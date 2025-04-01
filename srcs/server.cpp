@@ -227,6 +227,16 @@ int launchServer(Config config) {
                         //std::cout << rawRequest << std::endl;
                         Request request(1024,1024);
                         request.parse(rawRequest, config);
+                        std::cout << "=== AFTER PARSE - _location values: ===" << std::endl;
+                        std::cout << "  -> _location path: " << request.getLocation().getPath() << std::endl;
+                        std::cout << "  -> _location root: " << request.getLocation().getRoot() << std::endl;
+                        std::cout << "  -> _location autoindex: " << (request.getLocation().getAutoindex() ? "true" : "false") << std::endl;
+                        std::cout << "  -> _location allowed methods: ";
+                        std::vector<std::string> allowed_methods = request.getLocation().getAllowMethod();
+                        for (std::vector<std::string>::const_iterator it = allowed_methods.begin(); it != allowed_methods.end(); ++it) {
+                            std::cout << *it << " ";
+                        }
+                        std::cout << std::endl;
                         // request.printRequest();
                         Response response(request, server);
                         std::string sendResponse = response.sendResponse();
