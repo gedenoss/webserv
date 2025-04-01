@@ -9,6 +9,7 @@
 
 class Request {
     private:
+        LocationConfig _location;
         size_t _maxBodySize;
         size_t _maxHeadersSize;
         std::string _method;

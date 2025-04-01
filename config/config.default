@@ -9,6 +9,7 @@ server {
     location / {
         allow_methods  DELETE POST GET;
         autoindex on;
+        index index.html;
     }
     location /admin {
         allow_methods POST GET;

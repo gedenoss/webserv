@@ -16,6 +16,14 @@ class Errors;
 
 const int MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
 
+struct Range
+{
+    size_t start;
+    size_t end;
+    bool isValid;
+    bool isPartial;
+};
+
 class Response {
     public:
         Response(Request &req, ServerConfig &serv);
@@ -49,13 +57,12 @@ class Response {
         bool isModifiedSince(const std::string &ifModifiedSince);
         bool handleIfModifiedSince(const std::map<std::string, std::string> &headers);
         bool isNotModified(const std::map<std::string, std::string> &headers);
-        bool handleDirectory();
         bool isCGI();
-        int sendFileResponse(const std::string &filePath, size_t rangeStart, size_t rangeEnd, bool isPartial);
+        std::string sendFileResponse();
         void findPath();
 
         void handleCGI();
-        std::string handleUpload(Errors &errors);
+        std::string handleForm(Errors &errors);
 
         std::string getResponse(Errors &errors);
         std::string postResponse(Errors &errors);
@@ -66,6 +73,7 @@ class Response {
 
     private:
         Request &_request;
+        Range _range;
         LocationConfig _location;
         ServerConfig _server;
         std::string _path;

@@ -5,6 +5,10 @@
 
 Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(serv)
 {
+    _range.start = 0;
+    _range.end = 0;
+    _range.isValid = true;
+    _range.isPartial = false;
     _status_code = 0;
     _status_message = "";
     _autoindex = false;
@@ -33,7 +37,6 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _order.push_back("Content-Language");
 
     _body = "";
-
 }
 
 void Response::setTime()
@@ -46,39 +49,25 @@ void Response::setTime()
 }
 
 void Response::setStatusCode(int status_code)
-{
-    _status_code = status_code;
-}
+{ _status_code = status_code; }
 
 void Response::setStatusMessage(const std::string &status_message)
-{
-    _status_message = status_message;
-}
+{ _status_message = status_message; }
 
 void Response::setHeaders(const std::string &key, const std::string &value)
-{
-    _headers[key] = value;
-}
+{ _headers[key] = value; }
 
 void Response::setBody(const std::string &body)
-{
-    _body = body;
-}
+{ _body = body; }
 
 void Response::setContentType()
-{
-    _headers["Content-Type"] = getContentType();
-}
+{ _headers["Content-Type"] = getContentType(); }
 
 void Response::setContentLength()
-{
-    _headers["Content-Length"] = toString(_body.length());
-}
+{  _headers["Content-Length"] = toString(_body.length()); }
 
 void Response::setContentLanguage()
-{
-    _headers["Content-Language"] = getLanguage();
-}
+{ _headers["Content-Language"] = getLanguage(); }
 
 void Response::setLastModified(const std::string &path)
 {
@@ -88,35 +77,22 @@ void Response::setLastModified(const std::string &path)
 }
 
 void Response::setEtag(const std::string &path)
-{
-    _headers["ETag"] = generateEtag(path);
-}
+{ _headers["ETag"] = generateEtag(path); }
 
 int Response::getStatusCode() const
-{
-    return _status_code;
-}
+{ return _status_code; }
 
 std::string Response::getPath() const
-{
-    return _path;
-}
+{ return _path; }
 
 std::string Response::getStatusMessage() const
-{
-    return _status_message;
-}
+{ return _status_message;}
 
 std::map<std::string, std::string> Response::getHeaders() const
-{
-    return _headers;
-}
+{ return _headers; }
 
 std::string Response::getBody() const
-{
-    return _body;
-}
-
+{   return _body; }
 
 std::string Response::generateResponse()
 {
@@ -203,12 +179,42 @@ std::string Response::getLanguage()
     return "en-US"; // Langue par défaut
 }
 
+std::string Response::sendFileResponse()
+{
+    std::string body = "";
+    if (_range.isPartial)
+    {
+        std::ifstream file(_path.c_str(), std::ios::binary);
+        if (!file.is_open())
+            return "";
+        file.seekg(_range.start);
+        size_t length = _range.end - _range.start + 1;
+        char *buffer = new char[length];
+        file.read(buffer, length);
+        body = std::string(buffer, length);
+        delete[] buffer;
+        file.close();
+    }
+    else
+        body = readFile(_path);
+    return body;
+}
 
 std::string Response::response200(Errors &errors)
 {
-    std::string _body = readFile(_path);
-    setStatusCode(200);
-    setStatusMessage("OK");
+    std::string _body = sendFileResponse();
+    if (!_range.isPartial)
+    {
+        setStatusCode(200);
+        setStatusMessage("OK");
+    }
+    else if (_status_code == 201)
+        setStatusMessage("Created");
+    else 
+    {
+        setStatusCode(206);
+        setStatusMessage("Partial Content");
+    }
     setTime();
     setBody(_body);
     setContentType();
@@ -302,16 +308,6 @@ bool Response::isNotModified(const std::map<std::string, std::string> &headers)
     return false;
 }
 
-bool Response::handleDirectory()
-{
-    if (!isDirectory(_path))
-        return true;
-    // en fait ici il faudrait récupérer le path donné dans le fichier de config qui me donne
-    // le fichier par défaut si c'est un directory
-    // gérer les répertoires interdits
-    return false;
-}
-
 bool Response::isCGI()
 {
     std::string extensions[] = {".php", ".py", ".pl", ".cgi"};
@@ -327,65 +323,42 @@ void Response::handleCGI()
     std::cout << "CGI" << std::endl;
 }
 
-std::string Response::handleUpload(Errors &errors)
+
+
+Range parseRange(const std::string &rangeHeader, long fileSize)
 {
-    if (_request.getHeaders().count("Content-Type") == 0)
-        return (errors.error400());
-    std::string contentType = _request.getHeaders().at("Content-Type");
-    // size_t boundaryPos = contentType.find("boundary=");
-    // if (boundaryPos == std::string::npos)
-    //     return errors.error400();
-    std::string lengthStr = _request.getHeaders().at("Content-Length");
+    Range range;
+    range.start = 0;
+    range.end = fileSize - 1;
+    range.isValid = true;
+    range.isPartial = false;
 
-    if (contentType.find("multipart/form-data") == std::string::npos)
-        return errors.error400();
-    size_t pos = contentType.find("boundary=");
-    std::string boundary;
-    if (pos != std::string::npos)
-        boundary = "--" + _headers["Content-Type"].substr(pos + 9);
-    else
-        return errors.error400();
-    char* endPtr;
-    double len = std::strtod(lengthStr.c_str(), &endPtr);
-    if (*endPtr != '\0' || len < 0)
-        return errors.error500();
-    if (len > MAX_FILE_SIZE)
-        return errors.error507();
-    std::string body = _request.getBody();
-    if (body.empty())
-        return errors.error400();
-    if (body.length() != len)
-        return errors.error500();
-    std::ofstream file("upload.txt", std::ios::binary);
-    file.write(body.c_str(), body.length());
-    file.close();
-    return "";
-}
-
-int Response::sendFileResponse(const std::string &filePath, size_t rangeStart = 0, size_t rangeEnd = 0, bool isPartial = false)
-{
-    struct stat fileStat;
-
-    if (stat(_path.c_str(), &fileStat) < 0)
-        return _status_code = 500;
-    size_t fileSize = fileStat.st_size;
-    if (isPartial)
-    {
-        
-    }
-    std::ifstream file(_path.c_str(), std::ios::binary);
-    if (_request.getHeaders().count("Range") == 0)
-        return true;
-    std::string range = _request.getHeaders().at("Range");
-    size_t pos = range.find("bytes=");
+    size_t pos = rangeHeader.find("bytes=");
     if (pos == std::string::npos)
-        return false;
-    std::string RangeStart = range.substr(pos, range.find("-"));
-    std::string RangeEnd = range.substr(range.find("-") + 1);
-    if (RangeStart.empty() && RangeEnd.empty())
-        return false;
+        return range;
+    pos += 6;
 
+    size_t dashPos = rangeHeader.find("-", pos);
+    if (dashPos == std::string::npos)
+        return range;
+
+    range.start = stringToSizeT(rangeHeader.substr(pos, dashPos - pos).c_str());
+
+    std::string endStr = rangeHeader.substr(dashPos + 1);
+    if (!endStr.empty())
+        range.end = stringToSizeT(endStr.c_str());
+    else
+        range.end = fileSize - 1;
+
+    if (range.start > range.end || range.end < 0 || range.start > range.end || range.end > static_cast<size_t>(fileSize))
+        range.isValid = false;
+
+    if (range.start > 0 || range.end < static_cast<size_t> (fileSize - 1))
+        range.isPartial = true;
+
+    return range;
 }
+
 
 std::string Response::getResponse(Errors &errors)
 {
@@ -394,17 +367,44 @@ std::string Response::getResponse(Errors &errors)
         return (errors.error404());
     if (!isAcceptable())
         return (errors.error406());
-    if (!hasReadPermission(_path) ||!handleDirectory())
+    if (!hasReadPermission(_path))
         return (errors.error403());
-    // if (!handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
-    //     return (errors.error304());
+    if (!handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
+        return (errors.error304());
     if (isCGI())
-        handleCGI();
-    else
     {
-        // if (!isGoodRange())
-        //     return (errors.error416());
+        handleCGI();
+        return ("CGI");
     }
+    struct stat fileStat;
+
+    if (stat(_path.c_str(), &fileStat) < 0)
+        return errors.error500();
+    size_t fileSize = fileStat.st_size;
+    if (_request.getHeaders().count("Range") > 0)
+    {
+        _range = parseRange(_request.getHeaders().at("Range"), fileSize);
+        if (!_range.isValid)
+            return (errors.error416());
+    }
+    return (response200(errors));
+}
+
+std::string Response::handleForm(Errors &errors)
+{
+    std::string body = _request.getBody();
+    std::string path = _path;
+    std::ofstream file;
+    file.open(path.c_str(), std::ios::out);
+    if (errno == EACCES)
+        return (errors.error403());
+    else if (errno == ENOENT)
+        return (errors.error404());
+    else if (!file.is_open())
+        return (errors.error500());
+    file << body;
+    file.close();
+    setStatusCode(201);
     return (response200(errors));
 }
 
@@ -412,13 +412,14 @@ std::string Response::postResponse(Errors &errors)
 {
     if (isCGI())
         handleCGI();
-    else if (_request.getUrl() == "/upload")
+    else if (_request.getHeaders().count("Content-Type") > 0)
     {
-        handleUpload(errors);
+        if (_request.getHeaders().at("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos)
+            return handleForm(errors);
+        else
+            return errors.error415();
     }
-    else
-        errors.error415();
-    return ("POST");
+    return (errors.error415());
 }
 
 std::string Response::deleteResponse(Errors &errors)
@@ -498,18 +499,18 @@ std::string Response::sendResponse()
     Errors errors(*this);
     if (_request.getErrorCode() != 200)
         return (errors.generateError(_request.getErrorCode()));
-    // _location = _request.getLocation();
-    // _root = _location.getRoot(); 
-    _root = "";
-    _autoindex = true;
-    _index = "index.html";
+    _location = _request.getLocation();
+    _root = _location.getRoot();
+    _autoindex = _location.getAutoindex();
+    _index = _location.getIndex();
+    std::cout << "Root : " << _root << "Index : " << _index << std::endl;
+    if (_autoindex)
+        std::cout << "Autoindex : true" << std::endl;
+    // _root = "";
+    // _autoindex = true;
+    // _index = "index.html";
     if (_root.empty())
         _root = ".";
-    // _autoindex = _location.getAutoindex();
-    // if (_autoindex)
-    //     std::cout << "Autoindex is on" << std::endl;
-    // _index = _location.getIndex();
-    // std::cout << _index << std::endl;
     findPath();
     if (_path.empty())
         return (errors.error404());

@@ -227,8 +227,10 @@ int launchServer(Config config) {
                         //std::cout << rawRequest << std::endl;
 
                         Request request(1024,1024);
+                        // request.addHeader("Range", "bytes=1-2000");
                         request.parse(rawRequest, config);
-                        request.printRequest();
+                        std::cout << "INDEX :" << request.getLocation().getIndex() << std::endl;
+                        request.printRequest(); 
                         Response response(request, server);
                         std::string sendResponse = response.sendResponse();
                         

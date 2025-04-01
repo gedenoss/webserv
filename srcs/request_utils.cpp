@@ -22,21 +22,16 @@ bool Request::isMethodAllowedForRoute(Config &config) {
         const std::vector<LocationConfig>& locations = server.getLocations();
         for (size_t j = 0; j < locations.size(); ++j) {
             const LocationConfig &location = locations[j];
-            //std::cout << "  -> Testing Location [" << location.getPath() << "]\n";
             if (url.find(location.getPath()) == 0 && 
                 (url.size() == location.getPath().size() || 
                  url[location.getPath().size()] == '/' || 
                  url[location.getPath().size()] == '?')) {
-                //std::cout << "  ✅ Matched Location: " << location.getPath() << "\n";
-
+                _location = LocationConfig (location);
                 for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
-                    //std::cout << "     - Allowed Method: " << location.getAllowMethod()[k] << "\n";
                     if (_method == location.getAllowMethod()[k]) {
-                    //    std::cout << "  ✅ Method allowed!\n";
                         return true;
                     }
                 }
-                //std::cout << "  ❌ Method [" << _method << "] not allowed for [" << location.getPath() << "]\n";
                 return false;
             }
         }
