@@ -9,7 +9,6 @@
 
 class Request {
     private:
-        LocationConfig _location;
         size_t _maxBodySize;
         size_t _maxHeadersSize;
         std::string _method;
@@ -20,7 +19,7 @@ class Request {
         //std::map<std::string, std::string> _queryParams;
         std::string _body;
         int _errorCode;
-        LocationConfig location;
+        LocationConfig _location;
 
         //void parseQueryParams();
 
@@ -42,9 +41,9 @@ class Request {
         std::string getHttpVersion() const;
         std::string getBody() const;
         int getErrorCode() const;
-        LocationConfig getLocation() const { return location; };
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;
+        const LocationConfig& getLocation() const {return _location;}
         //std::map<std::string, std::string> getQueryParams() const;
 
         void setMethod(const std::string& m);
@@ -57,4 +56,4 @@ class Request {
 };
 
 #endif
-
+    

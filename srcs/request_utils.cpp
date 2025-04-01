@@ -26,7 +26,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
                 (url.size() == location.getPath().size() || 
                  url[location.getPath().size()] == '/' || 
                  url[location.getPath().size()] == '?')) {
-                _location = LocationConfig (location);
+                _location = location;    
                 for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
                     if (_method == location.getAllowMethod()[k]) {
                         return true;
