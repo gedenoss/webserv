@@ -20,7 +20,7 @@ class LocationConfig {
 		
 	public :
 		// ~LocationConfig();
-		// LocationConfig() : autoindex(false) {}
+		LocationConfig() : autoindex(false) {}
 		void parseLocation(std::ifstream& configFile, LocationConfig& location);
 		std::string getPath() const { return path; };
 		std::string getRoot() const { return root; };
