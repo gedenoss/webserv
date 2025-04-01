@@ -16,6 +16,14 @@ class Errors;
 
 const int MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
 
+struct Range
+{
+    size_t start;
+    size_t end;
+    bool isValid;
+    bool isPartial;
+};
+
 class Response {
     public:
         Response(Request &req, ServerConfig &serv);
@@ -23,7 +31,7 @@ class Response {
 
         std::string sendResponse();
         std::string generateResponse();
-        void findLocation();
+        void findLocation(Errors &errors);
 
         void setStatusCode(int status_code);
         void setStatusMessage(const std::string &status_message);
@@ -49,24 +57,29 @@ class Response {
         bool isModifiedSince(const std::string &ifModifiedSince);
         bool handleIfModifiedSince(const std::map<std::string, std::string> &headers);
         bool isNotModified(const std::map<std::string, std::string> &headers);
-        bool handleDirectory();
         bool isCGI();
+        std::string sendFileResponse();
+        void findPath();
 
         void handleCGI();
-        std::string handleUpload(Errors &errors);
+        std::string handleForm(Errors &errors);
 
-        std::string getResponse(Errors &errors, const std::string &host);
-        std::string postResponse(Errors &errors, const std::string &root);
-        std::string deleteResponse(Errors &errors, const std::string &root);
+        std::string getResponse(Errors &errors);
+        std::string postResponse(Errors &errors);
+        std::string deleteResponse(Errors &errors);
 
         std::string response200(Errors &errors);
         std::string response204();
 
     private:
         Request &_request;
+        Range _range;
+        LocationConfig _location;
         ServerConfig _server;
         std::string _path;
+        std::string _root;
         bool _autoindex;
+        std::string _index;
         int _status_code;
         std::string _status_message;
         std::map<std::string, std::string> _headers;

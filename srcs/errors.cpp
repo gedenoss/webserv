@@ -53,6 +53,8 @@ std::string Errors::generateError(int code)
             return error414();
         case 415:
             return error415();
+        case 416:
+            return error416();
         case 417:   
             return error417();
         case 431:
@@ -80,6 +82,7 @@ std::string Errors::error411() { return getError(411, "Length Required"); }
 std::string Errors::error413() { return getError(413, "Payload Too Large"); }
 std::string Errors::error414() { return getError(414, "URI Too Long"); }
 std::string Errors::error415() { return getError(415, "Unsupported Media Type"); }
+std::string Errors::error416() { return getError(416, "Range Not Satisfiable"); }
 std::string Errors::error417() { return getError(417, "Expectation Failed"); }
 std::string Errors::error431() { return getError(431, "Request Header Fields Too Large"); }
 std::string Errors::error500() { return getError(500, "Internal Server Error"); }

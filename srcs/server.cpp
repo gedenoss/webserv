@@ -226,6 +226,7 @@ int launchServer(Config config) {
                         std::string rawRequest(buffer);
                         //std::cout << rawRequest << std::endl;
                         Request request(1024,1024);
+                        // request.addHeader("Range", "bytes=1-2000");
                         request.parse(rawRequest, config);
                         std::cout << "=== AFTER PARSE - _location values: ===" << std::endl;
                         std::cout << "  -> _location path: " << request.getLocation().getPath() << std::endl;

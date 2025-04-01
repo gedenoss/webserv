@@ -1,6 +1,7 @@
 #include "utils.hpp"
 #include <ctime>
 #include <cstring>
+#include <sstream>
 
 std::string toString(int value)
 {
@@ -8,6 +9,14 @@ std::string toString(int value)
     ss << value;
     return ss.str();
 }
+
+size_t stringToSizeT(const std::string &str) {
+    std::stringstream ss(str);
+    size_t result;
+    ss >> result;
+    return result;
+}
+
 
 bool fileExists(const std::string &name)
 {

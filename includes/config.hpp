@@ -25,6 +25,7 @@ class LocationConfig {
 		std::string getPath() const { return path; };
 		std::string getRoot() const { return root; };
 		bool getAutoindex() const { return autoindex; };
+		std::string getIndex() const { return index; };
 		std::vector<std::string> getAllowMethod() const { return allow_methods; };
 
 	friend class ServerConfig;
@@ -55,6 +56,7 @@ class ServerConfig {
 		//----------plus adem-----------//
 
 		int getPort();
+		std::string getIndex() { return index; };
 		std::vector<LocationConfig> getLocations() const;
 };
 

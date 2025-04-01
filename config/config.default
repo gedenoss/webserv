@@ -8,13 +8,15 @@ server {
 
     location / {
         allow_methods  DELETE POST GET;
-        autoindex off;
+        autoindex on;
+        index index.html;
     }
     location /admin {
         allow_methods POST GET;
     }
 
     location /images {
+        autoindex off;
         allow_methods POST GET;
         
     }

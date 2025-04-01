@@ -8,6 +8,7 @@
 #include "dirent.h"
 
 std::string toString(int value);
+size_t stringToSizeT(const std::string &str);
 bool endsWith(const std::string &str, const std::string &suffix);
 bool fileExists(const std::string &name);
 void split(const std::string &s, const std::string &delimiter, std::vector<std::string> &elements);

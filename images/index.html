@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEBSERV</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, rgba(255, 0, 234, 0.603), rgba(0, 204, 255, 0.8));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Barriecito', sans-serif;
+            color: white;
+            padding-top: 0;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin: 0;
+            text-shadow: 2px 2px 5px rgba(11, 65, 241, 0.7);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-evenly;
+            width: 60%;
+            margin-top: 0;
+        }
+
+        .scene {
+            width: 120px;
+            height: 120px;
+            perspective: 600px;
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotateCube 5s infinite linear;
+        }
+
+        @keyframes rotateCube {
+            from {
+                transform: rotateY(0deg);
+            }
+            to {
+                transform: rotateY(360deg);
+            }
+        }
+
+        .face {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .front  { transform: rotateY(  0deg) translateZ(60px); }
+        .back   { transform: rotateY(180deg) translateZ(60px); }
+        .left   { transform: rotateY(-90deg) translateZ(60px); }
+        .right  { transform: rotateY( 90deg) translateZ(60px); }
+        .top    { transform: rotateX( 90deg) translateZ(60px); }
+        .bottom { transform: rotateX(-90deg) translateZ(60px); }
+
+        .cube1 .face { background-image: url('../../images/anaouali.jpg'); }
+        .cube2 .face { background-image: url('../images/ocussy.jpg'); }
+        .cube3 .face { background-image: url('../images/gbouguer.jpg'); }
+
+        .buttons-container {
+            display: flex;
+            justify-content: space-evenly;
+            width: 60%;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background-color: #d534db;
+            color: rgb(0, 0, 0);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            position: relative;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+
+        .file-input {
+            margin-top: 20px;
+            font-size: 1em;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .file-input:hover {
+            background-color: #2980b9;
+        }
+
+        .scrolling-image {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            animation: scrollImage 10s linear infinite;
+        }
+
+        .scrolling-image img {
+            width: 500px;
+            margin-right: 20px;
+        }
+
+        @keyframes scrollImage {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        .glitter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.8), rgba(255, 105, 180, 0));
+            animation: glitterAnim 1s infinite;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        @keyframes glitterAnim {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2) translateY(-100px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes particle {
+            0% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) translateY(-100px);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>WEBSAVIEZ VOUS LE ? OUI JE LE SAVAIS TU</h1>
+
+    <div class="container">
+        <div class="scene">
+            <div class="cube cube1">
+                <div class="face front"></div>
+                <div class="face back"></div>
+                <div class="face left"></div>
+                <div class="face right"></div>
+                <div class="face top"></div>
+                <div class="face bottom"></div>
+            </div>
+        </div>
+
+        <div class="scene">
+            <div class="cube cube2">
+                <div class="face front"></div>
+                <div class="face back"></div>
+                <div class="face left"></div>
+                <div class="face right"></div>
+                <div class="face top"></div>
+                <div class="face bottom"></div>
+            </div>
+        </div>
+
+        <div class="scene">
+            <div class="cube cube3">
+                <div class="face front"></div>
+                <div class="face back"></div>
+                <div class="face left"></div>
+                <div class="face right"></div>
+                <div class="face top"></div>
+                <div class="face bottom"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="buttons-container">
+        <button onclick="showGlitter(event)">Accueil</button>
+        <button onclick="showGlitter(event)">Uploader un fichier</button>
+        <button onclick="showGlitter(event)">Exécuter un script CGI</button>
+        <button onclick="showGlitter(event)">Voir les logs</button>
+
+    </div class="buttons-container">
+        <button onclick="window.location.href='404.html'">ERROR 404</button>
+        <button onclick="window.location.href='403.html'">ERROR 403</button>
+        <button onclick="window.location.href='500.html'">ERROR 500</button>
+    </div>
+
+    </div>
+    <input type="file" class="file-input" onchange="uploadFile()">
+
+    <script>
+        function uploadFile() {
+            alert("Fichier téléchargé !");
+        }
+
+        function showGlitter(event) {
+            var glitter = document.createElement('div');
+            glitter.classList.add('glitter');
+            event.target.appendChild(glitter);
+            setTimeout(() => {
+                glitter.remove();
+            }, 1000);
+        }
+    </script>
+
+    <div class="scrolling-image">
+        <img src="../images/vache.png" alt="Vache">
+    </div>
+
+</body>
+</html>
