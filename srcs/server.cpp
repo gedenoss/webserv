@@ -132,6 +132,11 @@
 //     return 0;
 // }
 
+std::string intToString(int num) {
+    std::stringstream ss;
+    ss << num;
+    return ss.str();
+}
 
 std::string getFileExtension(const std::string &path) {
     size_t dotPos = path.find_last_of(".");
@@ -221,6 +226,14 @@ int launchServer(Config config) {
                 } else {
                     char buffer[4096];
                     int bytes_read = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
+                    if (bytes_read > 4096) {
+                        std::cerr << "ERROR: Request too large! Closing connection." << std::endl;
+                        send(fds[i].fd, "HTTP/1.1 413 Payload Too Large\r\n\r\n", 35, 0);
+                        close(fds[i].fd);
+                        fds.erase(fds.begin() + i);
+                        --i;
+                        continue;
+                    }
                     if (bytes_read > 0) {
                         buffer[bytes_read] = '\0';
                         std::string rawRequest(buffer);
@@ -237,6 +250,14 @@ int launchServer(Config config) {
                         std::string contentType = getContentType(fileExt);
                         if (!fileContent.empty()) {
                             send(fds[i].fd, sendResponse.c_str(), sendResponse.size(), 0);
+                        // Vérifier si c'est une erreur et afficher une page d'erreur dédiée
+                            if (response.getStatusCode() >= 400) { 
+                                std::string errorPage = "./web/errors/" + intToString(response.getStatusCode()) + ".html";
+                                std::string fileContent = readFile(errorPage);
+                                if (!fileContent.empty()) {
+                                    send(fds[i].fd, fileContent.c_str(), fileContent.size(), 0);
+                                }
+                            }
                         }
                     } else {
                         std::cout << "Disconnected client" << std::endl;
