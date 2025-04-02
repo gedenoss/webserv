@@ -241,7 +241,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 			static const std::string allowedTypes[] = {
 				"text/html", "image/png", "image/jpeg", "text/css",
 				"application/javascript", "application/json", "application/xml",
-				"application/pdf", "text/plain", "text/csv"
+				"application/pdf", "text/plain", "text/csv", "application/x-www-form-urlencoded"
 			};
 			
 			bool isAllowed = false;

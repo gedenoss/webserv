@@ -203,13 +203,13 @@ std::string Response::sendFileResponse()
 std::string Response::response200(Errors &errors)
 {
     std::string _body = sendFileResponse();
-    if (!_range.isPartial)
+    if (_status_code == 201)
+        setStatusMessage("Created");
+    else if (!_range.isPartial)
     {
         setStatusCode(200);
         setStatusMessage("OK");
     }
-    else if (_status_code == 201)
-        setStatusMessage("Created");
     else 
     {
         setStatusCode(206);
@@ -393,27 +393,35 @@ std::string Response::getResponse(Errors &errors)
 std::string Response::handleForm(Errors &errors)
 {
     std::string body = _request.getBody();
-    std::string path = _path;
-    std::ofstream file;
-    file.open(path.c_str(), std::ios::out);
-    if (errno == EACCES)
-        return (errors.error403());
-    else if (errno == ENOENT)
-        return (errors.error404());
-    else if (!file.is_open())
-        return (errors.error500());
+    std::cout << "body : " << body << " path : " << _path  << std::endl;
+    std::ofstream file(_path.c_str(), std::ios::out);
+
+    if (!file.is_open()) // Vérifier si le fichier ne s'est pas ouvert
+    {
+        if (access(_path.c_str(), F_OK) == -1) // Vérifie si le fichier existe
+            return errors.error404();
+        if (access(_path.c_str(), W_OK) == -1) // Vérifie si on a le droit d'écrire
+            return errors.error403();
+        return errors.error500();
+    }
+
     file << body;
     file.close();
     setStatusCode(201);
-    return (response200(errors));
+    return response200(errors);
 }
+
+
+
 
 std::string Response::postResponse(Errors &errors)
 {
+    std::cout << "Post response" << std::endl;
     if (isCGI())
         handleCGI();
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
+        std::cout << "Content type" << _request.getHeaders().at("Content-Type") << std::endl;
         if (_request.getHeaders().at("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos)
             return handleForm(errors);
         else
@@ -461,8 +469,7 @@ std::string findIndex(const std::string &dirPath, const std::string &root)
 void Response::findPath()
 {
     std::string path = _root + _request.getUrl();
-    std::cout << "path : " << path << std::endl;
-    if (fileExists(path) && !isDirectory(path))
+    if (!isDirectory(path) || _request.getMethod() == "POST")
     {
         _path = path;
         return;
@@ -491,7 +498,6 @@ void Response::findPath()
             }
         }
     }
-    _path = "";
 }
 
 std::string Response::sendResponse()
@@ -503,6 +509,7 @@ std::string Response::sendResponse()
     _root = _location.getRoot();
     _autoindex = _location.getAutoindex();
     _index = _location.getIndex();
+    _request.printRequest();
     std::cout << "Root : " << _root << "Index : " << _index << std::endl;
     if (_autoindex)
         std::cout << "Autoindex : true" << std::endl;
@@ -512,6 +519,7 @@ std::string Response::sendResponse()
     if (_root.empty())
         _root = ".";
     findPath();
+    std::cout << "Path : " << _path << std::endl;
     if (_path.empty())
         return (errors.error404());
     if (_request.getMethod() == "GET") {
