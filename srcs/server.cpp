@@ -241,7 +241,7 @@ int launchServer(Config config) {
                         Request request(1024,1024);
                         // request.addHeader("Range", "bytes=1-10");
                         request.parse(rawRequest, config);
-                        // request.printRequest();
+                        request.printRequest();
                         Response response(request, server);
                         std::string sendResponse = response.sendResponse();
                         
