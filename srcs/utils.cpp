@@ -87,12 +87,23 @@ bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<s
     return a.second > b.second; // or another comparison logic
 }
 
-void checkPV(std::string value)
+bool onlySpace(std::string value){
+    for(long unsigned int i = 0; i < value.size(); i++)
+        if(value[i] != ' ')
+            return false;
+    return true;
+}
+
+void checkPV(std::string& value)
 {
-	if (value[value.size() - 1] != ';'){
+    if (value.empty() || onlySpace(value) ==  true)
+        return;
+	else if (value[value.size() - 1] != ';' && value[value.size() - 1] != '}' && value[value.size() - 1] != '{'){
 		std::cout << "ERROR SYNTAX: missing ';' look dumbass : " << value[value.size() - 1] << std::endl;
 		exit (1);
 	}
+    if (value[value.size() - 1] == ';')
+            value.erase(value.size() - 1);
 }
 
 //----------------------------HAS FUNCTIONS----------------------------------------------------//
@@ -187,3 +198,16 @@ bool isNumber(const	std::string& str)
 	return true;
 }
 
+//------------------------------------------------------------------------------------------------------------------------//
+
+int countWords(const std::string& str) {
+    std::stringstream ss(str);
+    std::string word;
+    int wordCount = 0;
+
+    while (ss >> word) {
+        wordCount++;
+    }
+
+    return wordCount;
+}

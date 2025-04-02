@@ -16,11 +16,6 @@
 
 #include "config.hpp"
 
-// struct ServerConfig{
-//     std::string ip;
-//     int port;
-// };
-
 int launchServer(Config config);
 
 #endif
