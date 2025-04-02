@@ -28,7 +28,7 @@ std::vector<ServerConfig> Config::getServers() const
 	return servers;
 }
 
-//-----------------------------------------FUNCTIONS-------------------------------------------------------//
+//-----------------------------------------CLEAN FUNCTIONS-------------------------------------------------------//
 
 std::string	cleanValue(std::string value)
 {
@@ -37,6 +37,13 @@ std::string	cleanValue(std::string value)
 	return value;
 }
 
+std::string cleanForLoc(std::string line){
+	if(line[line.size() - 1] == '{'){
+		line.erase(line.size() - 1);
+		return line;
+	}
+	return NULL;
+}
 
 //-----------------------------------------------------SERVER HANDLER-----------------------------------------------------------------//
 
@@ -185,11 +192,14 @@ void ServerConfig::handleErrorPage(std::istringstream& iss)
 	error_pages[atoi(code_str.c_str())] = page;
 }
 
-void ServerConfig::handleLocation(std::istringstream& iss, std::ifstream& configFile)
+void ServerConfig::handleLocation(std::istringstream& iss, std::ifstream& configFile, std::string line)
 {
 	LocationConfig location;
 	iss >> location.path;
 	location.path = cleanValue(location.path);
+	line = cleanForLoc(line);
+	if (countWords(line) != 2)
+		exit(1);
 	location.parseLocation(configFile, location);
 
 	locations.push_back(location);
@@ -346,7 +356,7 @@ void ServerConfig::parseServer(std::ifstream& configFile)
 		else if (key == "error_page")
 			handleErrorPage(iss);
 		else if (key == "location")
-			handleLocation(iss, configFile);
+			handleLocation(iss, configFile, line);
 		else
 		{
 			std::cerr << "Error: Unknown directive in server block: " << key << std::endl;

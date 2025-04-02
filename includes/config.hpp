@@ -59,7 +59,7 @@ class ServerConfig {
 		void handleRoot(std::istringstream& iss);
 		void handleClientMaxBodySize(std::istringstream& iss, std::string line);
 		void handleErrorPage(std::istringstream& iss);
-		void handleLocation(std::istringstream& line, std::ifstream& configFile);
+		void handleLocation(std::istringstream& iss, std::ifstream& configFile, std::string line);
 		//----------plus adem-----------//
 
 		int getPort();
