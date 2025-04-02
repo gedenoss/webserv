@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<title>201</title>
+	<link href="https://fonts.googleapis.com/css2?family=Emilys+Candy&display=swap" rel="stylesheet">
+	<style>
+		body {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			background-color: #f8f9fa;
+			flex-direction: column;
+			margin: 0;
+		}
+		.message {
+			font-family: 'Emilys Candy', cursive;
+			font-size: 48px;
+			color: #d63384;
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+			margin-bottom: 20px;
+		}
+	</style>
+</head>
+<body>
+	<div class="message">201 Successfully Created</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+	<script>
+		const duration = 60 * 60 * 1000,
+			animationEnd = Date.now() + duration,
+			defaults = { startVelocity: 30, spread: 360, ticks: 500, zIndex: 0 };
+
+		function randomInRange(min, max) {
+			return Math.random() * (max - min) + min;
+		}
+
+		const interval = setInterval(function () {
+			const timeLeft = animationEnd - Date.now();
+
+			if (timeLeft <= 0) {
+				return clearInterval(interval);
+			}
+
+			const particleCount = 20 * (timeLeft / duration);
+
+			confetti(Object.assign({}, defaults, {
+				particleCount,
+				origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+			}));
+			confetti(Object.assign({}, defaults, {
+				particleCount,
+				origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+			}));
+		}, 250);
+	</script>
+</body>
+</html>
