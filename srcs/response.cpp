@@ -350,8 +350,8 @@ Range parseRange(const std::string &rangeHeader, long fileSize)
     else
         range.end = fileSize - 1;
 
-    if (range.start > range.end || range.end < 0 || range.start > range.end || range.end > static_cast<size_t>(fileSize))
-        range.isValid = false;
+    // if (range.start > range.end || range.end < 0 || range.start > range.end || range.end > static_cast<size_t>(fileSize))
+    //     range.isValid = false;
 
     if (range.start > 0 || range.end < static_cast<size_t> (fileSize - 1))
         range.isPartial = true;
