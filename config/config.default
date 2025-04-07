@@ -16,9 +16,15 @@ server {
     }
 
     location /img {
-        root images/;
-        autoindex on;
+        root ./images/;
+        autoindex off;
         allow_methods POST GET;
         
+    }
+
+        location /images {
+        root ./images/;
+        autoindex on;
+        allow_methods POST GET;
     }
 }
