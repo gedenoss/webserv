@@ -98,22 +98,6 @@
             background-color: #2980b9;
         }
         
-
-        .file-input {
-            margin-top: 20px;
-            font-size: 1em;
-            padding: 10px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .file-input:hover {
-            background-color: #2980b9;
-        }
-
         .scrolling-image {
             position: absolute;
             bottom: 0;
@@ -160,14 +144,16 @@
             }
         }
 
-        @keyframes particle {
-            0% {
-                transform: scale(1) translateY(0);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(0) translateY(-100px);
-                opacity: 0;
+        .text {
+            position: absolute;
+            font-size: 100px;
+            font-weight: bold;
+            color: rgb(0, 81, 255);
+            font-family: Arial, sans-serif;
+        }
+        @media (max-width: 768px) {
+            .text {
+                font-size: 40px;
             }
         }
     </style>
@@ -211,21 +197,19 @@
         </div>
     </div>
 
+    <div class="text">WEBSERV</div>
+
     <div class="buttons-container">
-        <button onclick="showGlitter(event)">Accueil</button>
         <button onclick="window.location.href='post.html'">Post</button>
         <button onclick="showGlitter(event)">CGI</button>
-        <button onclick="showGlitter(event)">Delete</button>
+        <button onclick="window.location.href='delete.html'">Delete</button>
+    </div>
 
-    </div class="buttons-container">
-        <button onclick="window.location.href='404.html'">ERROR 404</button>
+    <div class="buttons-container">
         <button onclick="window.location.href='404.html'">ERROR 404</button>
         <button onclick="window.location.href='403.html'">ERROR 403</button>
         <button onclick="window.location.href='500.html'">ERROR 500</button>
     </div>
-
-    </div>
-    <input type="file" class="file-input" onchange="uploadFile()">
 
     <script>
         function uploadFile() {
@@ -239,6 +223,39 @@
             setTimeout(() => {
                 glitter.remove();
             }, 1000);
+        }
+
+        const text = document.querySelector(".text");
+        const FPS = 60;
+        let xPosition = 10;
+        let yPosition = 10;
+        let xSpeed = 4;
+        let ySpeed = 4;
+
+        function update() {
+            text.style.left = xPosition + "px";
+            text.style.top = yPosition + "px";
+        }
+
+        setInterval(() => {
+            if (xPosition + text.clientWidth >= window.innerWidth || xPosition <= 0) {
+                xSpeed = -xSpeed;
+                text.style.color = randomColor();
+            }
+            if (yPosition + text.clientHeight >= window.innerHeight || yPosition <= 0) {
+                ySpeed = -ySpeed;
+                text.style.color = randomColor();
+            }
+
+            xPosition += xSpeed;
+            yPosition += ySpeed;
+            update();
+        }, 1000 / FPS);
+
+        function randomColor() {
+            let color = "#";
+            color += Math.random().toString(16).slice(2, 8).toUpperCase();
+            return color;
         }
     </script>
 

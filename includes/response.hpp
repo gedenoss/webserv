@@ -63,8 +63,6 @@ class Response {
 
         void setEnv();
         void handleCGI();
-        void handleCGIGet();
-        void handleCGIPost();
         std::string handleForm(Errors &errors);
 
         std::string getResponse(Errors &errors);

@@ -17,11 +17,8 @@ server {
 
     location /img {
         root images/;
-        autoindex off;
+        autoindex on;
         allow_methods POST GET;
         
     }
 }
-
-
-
