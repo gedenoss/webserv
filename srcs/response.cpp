@@ -566,14 +566,18 @@ void Response::findPath()
         {
             _path = subPath + _index;
             std::cout << "PATH 4 : " << _path << std::endl;
-        }
-        else
-        {
-            std::string foundIndex = findIndex(path, _root);
-            if (!foundIndex.empty())
+            if (fileExists(_path))
             {
-                _path = foundIndex;
                 return;
+            }
+            else
+            {
+                std::string foundIndex = findIndex(subPath, _root);
+                if (!foundIndex.empty())
+                {
+                    _path = foundIndex;
+                    return;
+                }
             }
         }
     }
