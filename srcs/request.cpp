@@ -83,8 +83,8 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 
 
 	if (!isMethodAllowedForRoute(config)) {
-		// _errorCode = 405;	
-		// return;
+		_errorCode = 405;	
+		return;
 	}
 
 	

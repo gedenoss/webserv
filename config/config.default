@@ -15,8 +15,8 @@ server {
         allow_methods POST GET;
     }
 
-    location /img {
-        root images/;
+    location /i {
+        root ./images;
         autoindex on;
         allow_methods POST GET;
         
