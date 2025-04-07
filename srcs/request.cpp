@@ -6,7 +6,7 @@
 #include <iostream>		
 
 
-Request::Request(size_t	maxBody, size_t	maxHeaders) :_maxBodySize(maxBody),	_maxHeadersSize(maxHeaders) {}
+Request::Request(size_t	maxBody, size_t	maxHeaders) :_maxBodySize(maxBody),	_maxHeadersSize(maxHeaders){}
 
 Request::~Request()	{}
 
@@ -168,6 +168,10 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 				_errorCode = 400;	
 				return ;
 			}
+			if (method == "POST" && contentLength == 0) {
+				_errorCode = 400; 
+				return;
+			}
 			
 			if (contentLength >	_maxBodySize) {
 				_errorCode = 413;	
@@ -210,12 +214,6 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 			_errorCode = 411;	
 			return;
 		}
-			
-		// if (method == "POST" && contentLength == 0) {
-		// 	_errorCode = 400; 
-		// 	return;
-		// }
-
 		
 		if ((method	== "POST") && 
 			getHeaders().find("Content-Type") == getHeaders().end()) {
