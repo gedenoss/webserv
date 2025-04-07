@@ -15,10 +15,13 @@ server {
         allow_methods POST GET;
     }
 
-    location /images {
+    location /img {
+        root images/;
         autoindex off;
         allow_methods POST GET;
         
     }
 }
+
+
 

@@ -311,18 +311,16 @@ bool Response::isNotModified(const std::map<std::string, std::string> &headers)
 bool Response::isCGI()
 {
     std::string extensions[] = {".php", ".py", ".pl", ".cgi"};
-    for (size_t i = 0; i < sizeof(extensions) / sizeof(extensions[0]); i++)
+    if (_path.find("/scripts/") != std::string::npos)
     {
-        if (endsWith(_path, extensions[i]))
-            return true;
+        for (size_t i = 0; i < sizeof(extensions) / sizeof(extensions[0]); i++)
+        {
+            if (endsWith(_path, extensions[i]))
+                return true;
+        }
     }
     return false;
 }
-void Response::handleCGI()
-{
-    std::cout << "CGI" << std::endl;
-}
-
 
 
 Range parseRange(const std::string &rangeHeader, long fileSize)
@@ -362,7 +360,6 @@ Range parseRange(const std::string &rangeHeader, long fileSize)
 
 std::string Response::getResponse(Errors &errors)
 {
-    std::cout << _path << std::endl;
     if (!fileExists(_path))
         return (errors.error404());
     if (!isAcceptable())
@@ -393,7 +390,6 @@ std::string Response::getResponse(Errors &errors)
 std::string Response::handleForm(Errors &errors)
 {
     std::string body = _request.getBody();
-    std::cout << "body : " << body << " path : " << _path  << std::endl;
     std::ofstream file(_path.c_str(), std::ios::out);
 
     if (!file.is_open()) // Vérifier si le fichier ne s'est pas ouvert
@@ -466,11 +462,58 @@ std::string findIndex(const std::string &dirPath, const std::string &root)
     return "";
 }
 
+std::string joinPaths(const std::string& a, const std::string& b)
+{
+    if (a.empty()) return b;
+    if (b.empty()) return a;
+
+    if (a[a.size() - 1] == '/' && b[0] == '/')
+        return a + b.substr(1); // évite double slash
+    if (a[a.size() - 1] != '/' && b[0] != '/')
+        return a + "/" + b;     // ajoute slash manquant
+    return a + b;
+}
+
+
+std::string ensureRelativeDotPath(const std::string& path)
+{
+    if (path.empty())
+        return "./";
+    if (path[0] == '/')
+        return "." + path;
+         // → "/images/..." devient "./images/..."
+    return "./" + path;      // → "images/..." devient "./images/..."
+}
+
+
 void Response::findPath()
 {
-    std::string path = _root + _request.getUrl();
+    std::string path = joinPaths(_root,_request.getUrl());
+    if (path.find_last_of("/") == path.length() - 1 && _autoindex && _index != "")
+        path = path + _index;
+    else if (path.find_last_of("/") == path.length() - 1 && _autoindex)
+        path = findIndex(path, _root);
+    // path = ensureRelativeDotPath(path);
     if (!isDirectory(path) || _request.getMethod() == "POST")
     {
+        if (fileExists(path))
+        {
+            _path = path;
+            return;
+        }
+    }
+    std::string locationPath = _location.getPath();
+    if (_request.getUrl().find(_root) == std::string::npos)
+    {
+        std::string trimmed = _request.getUrl().substr(locationPath.length());
+        std::string subPath = joinPaths(_root, trimmed);
+        subPath = ensureRelativeDotPath(subPath);
+        std::cout << subPath << std::endl;
+        if (fileExists(subPath))
+        {
+            _path = subPath;
+            return;
+        }
         _path = path;
         return;
     }
@@ -478,7 +521,7 @@ void Response::findPath()
     {
         if (!_index.empty())
         {
-            std::string indexPath = path;
+            std::string indexPath = joinPaths(path, _index);
             if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
                 indexPath += "/";
             indexPath += _index;
@@ -511,11 +554,9 @@ std::string Response::sendResponse()
     _index = _location.getIndex();
     _request.printRequest();
     std::cout << "Root : " << _root << "Index : " << _index << std::endl;
-    if (_autoindex)
-        std::cout << "Autoindex : true" << std::endl;
-    // _root = "";
-    // _autoindex = true;
-    // _index = "index.html";
+    std::cout << "Location path : " << _location.getPath() << std::endl;
+    // if (_autoindex)
+    //     std::cout << "Autoindex : true" << std::endl;
     if (_root.empty())
         _root = ".";
     findPath();

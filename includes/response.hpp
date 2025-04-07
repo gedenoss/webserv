@@ -61,7 +61,10 @@ class Response {
         std::string sendFileResponse();
         void findPath();
 
+        void setEnv();
         void handleCGI();
+        void handleCGIGet();
+        void handleCGIPost();
         std::string handleForm(Errors &errors);
 
         std::string getResponse(Errors &errors);
@@ -86,6 +89,7 @@ class Response {
         std::vector<std::string> _available_languages;
         std::string _body;
         std::vector<std::string> _order;
+        std::map<std::string, std::string> _env;
 };
 
 #endif
