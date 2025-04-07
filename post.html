@@ -69,10 +69,9 @@
     </div>
 
     <div class="form-container">
-      <form id="myForm" action="lol.html" method="post" enctype="multipart/form-data">
+      <form id="myForm" action="201.html" method="POST">
         <input type="text" id="nom" name="nom" placeholder="Nom" required>
         <input type="text" id="raison" name="raison" placeholder="Raison" required>
-        <input type="file" id="photo" name="photo" accept="image/*">
         <input type="submit" value="Envoyer">
       </form>
     </div>
@@ -125,13 +124,37 @@
       }
       setInterval(draw, 1);
 
-      // Validation supplémentaire en JavaScript
       document.getElementById("myForm").addEventListener("submit", function(e) {
         const nom = document.getElementById("nom").value.trim();
         const raison = document.getElementById("raison").value.trim();
         if (nom === "" || raison === "") {
           e.preventDefault();
           alert("Veuillez remplir les champs Nom et Raison.");
+        } else {
+          e.preventDefault();
+
+          const formData = new URLSearchParams();
+          formData.append('nom', nom);
+          formData.append('raison', raison);
+
+          fetch('responses.txt', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          })
+          .then(response => {
+            if (response.ok) {
+              window.location.href = '201.html';  // Redirige vers 201.html en cas de succès
+            } else {
+              alert("Erreur lors de l'envoi du formulaire.");
+            }
+          })
+          .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur inconnue lors de l\'envoi du formulaire.');
+          });
         }
       });
     </script>
