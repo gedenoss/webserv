@@ -496,6 +496,28 @@ std::string trimLocationPath(const std::string& url, const std::string& location
 }
 
 
+// void Response::listDirectory()
+// {
+//     DIR *dir = opendir(_path.c_str());
+//     if (dir == NULL)
+//     {
+//         if (errno == ENOENT)
+//             _status_code = 404;
+//         else if (errno == EACCES)
+//             _status_code = 403;
+//         else
+//             _status_code = 500;
+//         return ;
+//     }
+//     struct dirent *entry;
+//     while ((entry = readdir(dir)) != NULL)
+//     {
+//         if (entry->d_name[0] != '.')
+//             _body += entry->d_name + std::string("\n");
+//     }
+//     closedir(dir);
+// }
+
 void Response::findPath()
 {
     // Joindre le root avec l'URL demandée pour obtenir le chemin complet
@@ -503,11 +525,11 @@ void Response::findPath()
     // Vérifier si l'URL se termine par un '/' et que autoindex est activé
     if (path.find_last_of("/") == path.length() - 1 && _autoindex && !_index.empty())
     {
-        path = path + _index;
+        _path = path + _index;
     }
     else if (path.find_last_of("/") == path.length() - 1 && _autoindex)
     {
-        path = findIndex(path, _root);
+        _path = findIndex(path, _root);
     }
     if (!isDirectory(path) || _request.getMethod() == "POST")
     {
@@ -520,7 +542,8 @@ void Response::findPath()
     // Vérification si c'est un répertoire et que autoindex est désactivé
     if (isDirectory(path) && !_autoindex)
     {
-        std::cout << "LISTER LES DIRECTORYS" << std::endl;
+        std::cout << "DIRECTORY" << std::endl;
+        // listDirectory();
         return ;
     }
     // Remplacer le répertoire /img/ par le root de la location si ce répertoire n'existe pas

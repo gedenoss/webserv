@@ -60,6 +60,7 @@ class Response {
         bool isCGI();
         std::string sendFileResponse();
         void findPath();
+        void listDirectory();
 
         void setEnv();
         void handleCGI();
