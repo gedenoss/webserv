@@ -17,14 +17,9 @@ server {
 
     location /img {
         root ./images/;
-        autoindex off;
+        autoindex on;
+        index gbouguer.jpg;
         allow_methods POST GET;
         
-    }
-
-        location /images {
-        root ./images/;
-        autoindex on;
-        allow_methods POST GET;
     }
 }

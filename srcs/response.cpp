@@ -478,7 +478,7 @@ std::string trimLocationPath(const std::string& url, const std::string& location
 {
     // Si locationPath est vide ou juste "/", on ne touche pas à l'URL
     if (locationPath.empty() || locationPath == "/")
-        return url + "/";
+        return url;
 
     // Si l'URL commence bien par le locationPath
     if (url.find(locationPath) == 0)
@@ -525,19 +525,17 @@ void Response::findPath()
     // Vérifier si l'URL se termine par un '/' et que autoindex est activé
     if (path.find_last_of("/") == path.length() - 1 && _autoindex && !_index.empty())
     {
-        _path = path + _index;
+        path = path + _index;
     }
     else if (path.find_last_of("/") == path.length() - 1 && _autoindex)
     {
-        _path = findIndex(path, _root);
+        path = findIndex(path, _root);
     }
-    if (!isDirectory(path) || _request.getMethod() == "POST")
+    std::cout << "PATH 1 :" << path << std::endl;
+    if (fileExists(path)) 
     {
-        if (fileExists(path)) 
-        {
-            _path = path;
-            return;
-        }
+        _path = path;
+        return;
     }
     // Vérification si c'est un répertoire et que autoindex est désactivé
     if (isDirectory(path) && !_autoindex)
@@ -554,15 +552,15 @@ void Response::findPath()
     // Si le répertoire demandé n'existe pas, vérifier avec le root
     if (fileExists(subPath))
     {
-            _path = subPath;
-            return;
+        _path = subPath;
+        return;
     }
-    if (isDirectory(subPath) && !_autoindex)
+    if (isDirectory(subPath) && _index.empty())
     {
         std::cout << "DIRECTORY" << std::endl;
         return ;
     }
-    else
+    else if (_autoindex)
     {
         if (!_index.empty())
         {
@@ -600,6 +598,8 @@ std::string Response::sendResponse()
     std::cout << "Location path : " << _location.getPath() << std::endl;
     if (_autoindex)
         std::cout << "Autoindex : true" << std::endl;
+    else
+        std::cout << "Autoindex : false" << std::endl;
     if (_root.empty())
         _root = ".";
     findPath();
