@@ -9,7 +9,7 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _range.end = 0;
     _range.isValid = true;
     _range.isPartial = false;
-    _status_code = 0;
+    _status_code = 200;
     _status_message = "";
     _autoindex = false;
     _headers["Date"] = "";
@@ -496,85 +496,120 @@ std::string trimLocationPath(const std::string& url, const std::string& location
 }
 
 
-// void Response::listDirectory()
-// {
-//     DIR *dir = opendir(_path.c_str());
-//     if (dir == NULL)
-//     {
-//         if (errno == ENOENT)
-//             _status_code = 404;
-//         else if (errno == EACCES)
-//             _status_code = 403;
-//         else
-//             _status_code = 500;
-//         return ;
-//     }
-//     struct dirent *entry;
-//     while ((entry = readdir(dir)) != NULL)
-//     {
-//         if (entry->d_name[0] != '.')
-//             _body += entry->d_name + std::string("\n");
-//     }
-//     closedir(dir);
-// }
+void Response::listDirectory()
+{
+    DIR *dir = opendir(_path.c_str());
+    if (dir == NULL)
+    {
+        if (errno == ENOENT)
+            _status_code = 404;
+        else if (errno == EACCES)
+            _status_code = 403;
+        else
+            _status_code = 500;
+        return ;
+    }
+    std::stringstream html;
+    html << "<html><head><title>Index of " << _request.getUrl() << "</title></head><body>";
+    html << "<h1>Index of " << _request.getUrl() << "</h1>";
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        std::string name = entry->d_name;
+        if (name == "." || name == "..")
+            continue;
+        std::string fullPath = joinPaths(_path, name);
+        struct stat fileStat;
+        if (stat(fullPath.c_str(), &fileStat) == 0)
+        {
+            std::string displayName = name;
+            if (S_ISDIR(fileStat.st_mode))
+                displayName += "/";
+            html << "<li><a href=\"" << _request.getUrl();
+            if (_request.getUrl()[_request.getUrl().length()] != '/')
+                html << "/";
+            html << displayName << "\">" << displayName << "</a></li>";
+        }
+    }
+    closedir(dir);
+    html << "</ul><hr></body><html>/n";
+    _body = html.str();
+    _status_code = 200;
+}
+
+bool Response::tryPath(const std::string& p)
+{
+    if (fileExists(p))
+    {
+        std::cout << "PATH : " << p << std::endl;
+        _path = p;
+        return true;
+    }
+    return false;
+}
 
 void Response::findPath()
 {
     std::string path = joinPaths(_root, _request.getUrl());
     std::string trimmed = trimLocationPath(_request.getUrl(), _location.getPath());
     std::string subPath = joinPaths(_root, trimmed);
-    std::cout << "PATH 3 : " << subPath << std::endl;
-    if (path.find_last_of("/") == path.length() - 1 && _autoindex && !_index.empty())
+
+    bool pathIsDir = isDirectory(path);
+    bool subPathIsDir = isDirectory(subPath);
+
+    // 1. Fichier brut
+    if (tryPath(path) || tryPath(subPath))
+        return;
+
+    // 2. Avec index + autoindex ON
+    if (_autoindex && !_index.empty())
     {
-        path = path + _index;
-        if (fileExists(path)) 
+        std::string indexPath = joinPaths(path, _index);
+        std::string indexSubPath = joinPaths(subPath, _index);
+        if (tryPath(indexPath) || tryPath(indexSubPath))
+            return;
+    }
+
+    // 3. Autoindex activé et pas d'index : afficher un répertoire
+    if (_autoindex && _index.empty())
+    {
+        if (pathIsDir)
         {
-            _path = path;
+            std::cout << "DIRECTORY\nPATH : " << path << std::endl;
+            // listDirectory();
+            return;
+        }
+        if (subPathIsDir)
+        {
+            std::cout << "DIRECTORY\nPATH : " << subPath << std::endl;
+            // listDirectory();
             return;
         }
     }
-    else if (subPath.find_last_of("/") == subPath.length() - 1 && _autoindex && !_index.empty())
-    {
-        subPath = subPath + _index;
-        if (fileExists(subPath)) 
-        {
-            _path = subPath;
-            return;
-        }
-    }
-    if (isDirectory(path) && _autoindex && _index.empty())
-    {
-        std::cout << "DIRECTORY" << std::endl;
-        // listDirectory();
-        return ;
-    }
-    else if (isDirectory(subPath) && _autoindex && _index.empty())
-    {
-        std::cout << "DIRECTORY" << std::endl;
-        // listDirectory();
-        return ;
-    }
+
+    // 4. Index fourni mais autoindex désactivé → autorisé si index existe
     if (!_index.empty() && !_autoindex)
     {
-        if (fileExists(path))
-        {
-            _path = path;
-            std::cout << "PATH 1 : " << _path << std::endl;
+        std::string indexPath = joinPaths(path, _index);
+        std::string indexSubPath = joinPaths(subPath, _index);
+        if (tryPath(indexPath) || tryPath(indexSubPath))
             return;
-        }
-        else if (fileExists(subPath))
-        {
-            _path = subPath;
-            std::cout << "PATH 2 : " << _path << std::endl;
-            return;
-        }
     }
-    else
-        _status_code = 403; 
-    std::cout << "Chemin non trouvé." << std::endl;
-    _path = "";  // On peut retourner une erreur 404 ou 403 ici
-}
 
+    // 5. Si c’est un dossier mais autoindex désactivé → 403
+    if (!_autoindex && _index.empty() && (pathIsDir || subPathIsDir))
+    {
+        std::cout << "403 Forbidden : dossier sans index ni autoindex" << std::endl;
+        _status_code = 403;
+        _path = "";
+        return;
+    }
+
+    // 6. Sinon : rien trouvé → 404
+    std::cout << "404 Not Found : aucun chemin valide" << std::endl;
+    _status_code = 404;
+    _path = "";
+}
 
 
 std::string Response::sendResponse()
@@ -587,16 +622,21 @@ std::string Response::sendResponse()
     _autoindex = _location.getAutoindex();
     _index = _location.getIndex();
     _request.printRequest();
-    std::cout << "Root : " << _root << "Index : " << _index << std::endl;
-    std::cout << "Location path : " << _location.getPath() << std::endl;
-    if (_autoindex)
-        std::cout << "Autoindex : true" << std::endl;
-    else
-        std::cout << "Autoindex : false" << std::endl;
+    // std::cout << "Root : " << _root << "Index : " << _index << std::endl;
+    // std::cout << "Location path : " << _location.getPath() << std::endl;
+    // if (_autoindex)
+    //     std::cout << "Autoindex : true" << std::endl;
+    // else
+    //     std::cout << "Autoindex : false" << std::endl;
     if (_root.empty())
         _root = ".";
     findPath();
-    std::cout << "Path : " << _path << std::endl;
+    std::cout << "PATH FINAL" << _path << std::endl;
+    std::cout << _status_code << std::endl;
+    if (!_body.empty())
+        return (response200(errors));
+    if (_status_code != 200)
+        return (errors.generateError(_status_code));
     if (_path.empty())
         return (errors.error404());
     if (_request.getMethod() == "GET") {

@@ -22,28 +22,3 @@ server {
         
     }
 }
-
-server {
-    listen 8080;
-	server_name localhost;
-    host 127.0.0.1;
-    root indexx;
-    client_max_body_size 10M;
-	index index.html;
-
-    location / {
-        allow_methods  DELETE POST GET;
-        autoindex on;
-        index index.html;
-    }
-    location /admin {
-        allow_methods POST GET;
-    }
-
-    location /i {
-        root ./images/;
-        autoindex on;
-        allow_methods POST GET;
-        
-    }
-}

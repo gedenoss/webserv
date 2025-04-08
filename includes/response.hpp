@@ -59,6 +59,7 @@ class Response {
         bool isNotModified(const std::map<std::string, std::string> &headers);
         bool isCGI();
         std::string sendFileResponse();
+        bool tryPath(const std::string &p);
         void findPath();
         void listDirectory();
 
