@@ -90,6 +90,7 @@ class Response {
         std::string _body;
         std::vector<std::string> _order;
         std::map<std::string, std::string> _env;
+        bool _listingDirectory;
 };
 
 #endif

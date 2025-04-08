@@ -37,6 +37,7 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _order.push_back("Content-Language");
 
     _body = "";
+    _listingDirectory = false;
 }
 
 void Response::setTime()
@@ -104,9 +105,10 @@ std::string Response::generateResponse()
         if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
             response << *it << ": " << _headers[*it] << "\r\n";
     }
-    std::cout << response.str() << std::endl;
+    response << "\r\n";
     response << "\r\n";
     response << _body;
+    std::cout << response.str() << std::endl;
     return response.str();
 }
 
@@ -202,6 +204,17 @@ std::string Response::sendFileResponse()
 
 std::string Response::response200(Errors &errors)
 {
+    if (_listingDirectory == true)
+    {
+        setStatusCode(200);
+        setStatusMessage("OK");
+        setTime();
+        setBody(_body);
+        setHeaders("Content-Type", "text/html");
+        setContentLength();
+        setContentLanguage();
+        return generateResponse();
+    }
     std::string _body = sendFileResponse();
     if (_status_code == 201)
         setStatusMessage("Created");
@@ -498,6 +511,7 @@ std::string trimLocationPath(const std::string& url, const std::string& location
 
 void Response::listDirectory()
 {
+    _listingDirectory = true;
     DIR *dir = opendir(_path.c_str());
     if (dir == NULL)
     {
@@ -507,41 +521,50 @@ void Response::listDirectory()
             _status_code = 403;
         else
             _status_code = 500;
-        return ;
+        return;
     }
+
     std::stringstream html;
     html << "<html><head><title>Index of " << _request.getUrl() << "</title></head><body>";
-    html << "<h1>Index of " << _request.getUrl() << "</h1>";
+    html << "<h1>Index of " << _request.getUrl() << "</h1><hr><ul>";
+
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL)
     {
         std::string name = entry->d_name;
         if (name == "." || name == "..")
             continue;
-        std::string fullPath = joinPaths(_path, name);
+        std::string fullPath = joinPaths(_path, name);  // Chemin complet vers le fichier
         struct stat fileStat;
         if (stat(fullPath.c_str(), &fileStat) == 0)
         {
             std::string displayName = name;
             if (S_ISDIR(fileStat.st_mode))
                 displayName += "/";
-            html << "<li><a href=\"" << _request.getUrl();
-            if (_request.getUrl()[_request.getUrl().length()] != '/')
-                html << "/";
-            html << displayName << "\">" << displayName << "</a></li>";
+
+            // Générer l'URL relative en utilisant _request.getUrl()
+            std::string relativePath = _path;  // URL de base
+            if (relativePath[relativePath.length() - 1] != '/')
+                relativePath += '/';
+            relativePath += name;
+            std::cout << "Relative path : " << relativePath << std::endl;
+            // Ajout du lien vers le fichier ou dossier
+            html << "<li><a href=\"" << relativePath << "\">" << displayName << "</a></li>";
         }
     }
+
     closedir(dir);
-    html << "</ul><hr></body><html>/n";
+    html << "</ul><hr></body></html>\n";
     _body = html.str();
     _status_code = 200;
 }
+
+
 
 bool Response::tryPath(const std::string& p)
 {
     if (fileExists(p))
     {
-        std::cout << "PATH : " << p << std::endl;
         _path = p;
         return true;
     }
@@ -553,7 +576,6 @@ void Response::findPath()
     std::string path = joinPaths(_root, _request.getUrl());
     std::string trimmed = trimLocationPath(_request.getUrl(), _location.getPath());
     std::string subPath = joinPaths(_root, trimmed);
-
     bool pathIsDir = isDirectory(path);
     bool subPathIsDir = isDirectory(subPath);
 
@@ -575,14 +597,14 @@ void Response::findPath()
     {
         if (pathIsDir)
         {
-            std::cout << "DIRECTORY\nPATH : " << path << std::endl;
-            // listDirectory();
+            _path = path;
+            listDirectory();
             return;
         }
         if (subPathIsDir)
         {
-            std::cout << "DIRECTORY\nPATH : " << subPath << std::endl;
-            // listDirectory();
+            _path = subPath;
+            listDirectory();
             return;
         }
     }
@@ -599,14 +621,11 @@ void Response::findPath()
     // 5. Si c’est un dossier mais autoindex désactivé → 403
     if (!_autoindex && _index.empty() && (pathIsDir || subPathIsDir))
     {
-        std::cout << "403 Forbidden : dossier sans index ni autoindex" << std::endl;
         _status_code = 403;
         _path = "";
         return;
     }
-
     // 6. Sinon : rien trouvé → 404
-    std::cout << "404 Not Found : aucun chemin valide" << std::endl;
     _status_code = 404;
     _path = "";
 }
@@ -631,10 +650,8 @@ std::string Response::sendResponse()
     if (_root.empty())
         _root = ".";
     findPath();
-    std::cout << "PATH FINAL" << _path << std::endl;
-    std::cout << _status_code << std::endl;
-    if (!_body.empty())
-        return (response200(errors));
+    if (_listingDirectory == true)
+        return(response200(errors));
     if (_status_code != 200)
         return (errors.generateError(_status_code));
     if (_path.empty())
