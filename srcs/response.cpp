@@ -520,68 +520,57 @@ std::string trimLocationPath(const std::string& url, const std::string& location
 
 void Response::findPath()
 {
-    // Joindre le root avec l'URL demandée pour obtenir le chemin complet
     std::string path = joinPaths(_root, _request.getUrl());
-    // Vérifier si l'URL se termine par un '/' et que autoindex est activé
+    std::string trimmed = trimLocationPath(_request.getUrl(), _location.getPath());
+    std::string subPath = joinPaths(_root, trimmed);
+    std::cout << "PATH 3 : " << subPath << std::endl;
     if (path.find_last_of("/") == path.length() - 1 && _autoindex && !_index.empty())
     {
         path = path + _index;
+        if (fileExists(path)) 
+        {
+            _path = path;
+            return;
+        }
     }
-    else if (path.find_last_of("/") == path.length() - 1 && _autoindex)
+    else if (subPath.find_last_of("/") == subPath.length() - 1 && _autoindex && !_index.empty())
     {
-        path = findIndex(path, _root);
+        subPath = subPath + _index;
+        if (fileExists(subPath)) 
+        {
+            _path = subPath;
+            return;
+        }
     }
-    std::cout << "PATH 1 :" << path << std::endl;
-    if (fileExists(path)) 
-    {
-        _path = path;
-        return;
-    }
-    // Vérification si c'est un répertoire et que autoindex est désactivé
-    if (isDirectory(path) && !_autoindex)
+    if (isDirectory(path) && _autoindex && _index.empty())
     {
         std::cout << "DIRECTORY" << std::endl;
         // listDirectory();
         return ;
     }
-    // Remplacer le répertoire /img/ par le root de la location si ce répertoire n'existe pas
-    std::string trimmed = trimLocationPath(_request.getUrl(), _location.getPath());
-    std::cout << "trimmed : " << trimmed << std::endl;
-    std::string subPath = joinPaths(_root, trimmed);
-    std::cout << "PATH 3 : " << subPath << std::endl;
-    // Si le répertoire demandé n'existe pas, vérifier avec le root
-    if (fileExists(subPath))
-    {
-        _path = subPath;
-        return;
-    }
-    if (isDirectory(subPath) && _index.empty())
+    else if (isDirectory(subPath) && _autoindex && _index.empty())
     {
         std::cout << "DIRECTORY" << std::endl;
+        // listDirectory();
         return ;
     }
-    else if (_autoindex)
+    if (!_index.empty() && !_autoindex)
     {
-        if (!_index.empty())
+        if (fileExists(path))
         {
-            _path = subPath + _index;
-            std::cout << "PATH 4 : " << _path << std::endl;
-            if (fileExists(_path))
-            {
-                return;
-            }
-            else
-            {
-                std::string foundIndex = findIndex(subPath, _root);
-                if (!foundIndex.empty())
-                {
-                    _path = foundIndex;
-                    return;
-                }
-            }
+            _path = path;
+            std::cout << "PATH 1 : " << _path << std::endl;
+            return;
+        }
+        else if (fileExists(subPath))
+        {
+            _path = subPath;
+            std::cout << "PATH 2 : " << _path << std::endl;
+            return;
         }
     }
-    // Si aucune des conditions n'est satisfaite, retourner une erreur
+    else
+        _status_code = 403; 
     std::cout << "Chemin non trouvé." << std::endl;
     _path = "";  // On peut retourner une erreur 404 ou 403 ici
 }
