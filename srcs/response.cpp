@@ -428,6 +428,7 @@ std::string Response::postResponse(Errors &errors)
 
 std::string Response::deleteResponse(Errors &errors)
 {
+
     if (!fileExists(_path))
         return (errors.error404());
     else if (!hasWritePermission(_path))
@@ -570,7 +571,7 @@ std::string Response::sendResponse()
         return (postResponse(errors));
     }
     else
-       return (deleteResponse(errors));
+        return (deleteResponse(errors));
 }
 
 
