@@ -575,6 +575,7 @@ void Response::findPath()
     std::string path = joinPaths(_root, _request.getUrl());
     std::string trimmed = trimLocationPath(_request.getUrl(), _location.getPath());
     std::string subPath = joinPaths(_root, trimmed);
+    std::cout << "SUBPATH" << subPath << std::endl;
     bool pathIsDir = isDirectory(path);
     bool subPathIsDir = isDirectory(subPath);
 
