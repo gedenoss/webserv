@@ -577,6 +577,8 @@ void Response::findPath()
     std::string subPath = joinPaths(_root, trimmed);
     bool pathIsDir = isDirectory(path);
     bool subPathIsDir = isDirectory(subPath);
+    std::cout << "PATH :" << path << std::endl;
+    std::cout << "SUBPATH :" << subPath << std::endl;
 
     // 1. Fichier brut
     if (tryPath(path) || tryPath(subPath))
