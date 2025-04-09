@@ -105,10 +105,9 @@ std::string Response::generateResponse()
         if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
             response << *it << ": " << _headers[*it] << "\r\n";
     }
-    response << "\r\n";
+    std::cout << response.str() << std::endl;
     response << "\r\n";
     response << _body;
-    std::cout << response.str() << std::endl;
     return response.str();
 }
 
@@ -549,7 +548,7 @@ void Response::listDirectory()
             relativePath += name;
             std::cout << "Relative path : " << relativePath << std::endl;
             // Ajout du lien vers le fichier ou dossier
-            html << "<li><a href=\"" << relativePath << "\">" << displayName << "</a></li>";
+            html << "<li><a href=\"" << displayName << "\">" << displayName << "</a></li>";
         }
     }
 
@@ -641,21 +640,20 @@ std::string Response::sendResponse()
     _autoindex = _location.getAutoindex();
     _index = _location.getIndex();
     _request.printRequest();
-    // std::cout << "Root : " << _root << "Index : " << _index << std::endl;
-    // std::cout << "Location path : " << _location.getPath() << std::endl;
-    // if (_autoindex)
-    //     std::cout << "Autoindex : true" << std::endl;
-    // else
-    //     std::cout << "Autoindex : false" << std::endl;
+    std::cout << "Root : " << _root << "Index : " << _index << std::endl;
+    std::cout << "Location path : " << _location.getPath() << std::endl;
+    if (_autoindex)
+        std::cout << "Autoindex : true" << std::endl;
+    else
+        std::cout << "Autoindex : false" << std::endl;
     if (_root.empty())
         _root = ".";
     findPath();
+    std::cout << "Path : " << _path << std::endl;
     if (_listingDirectory == true)
         return(response200(errors));
     if (_status_code != 200)
         return (errors.generateError(_status_code));
-    if (_path.empty())
-        return (errors.error404());
     if (_request.getMethod() == "GET") {
         return (getResponse(errors));
     } 
