@@ -402,15 +402,19 @@ std::string Response::getResponse(Errors &errors)
 std::string Response::handleForm(Errors &errors)
 {
     std::string body = _request.getBody();
+    std::cout << _path << std::endl;
+    if (access(_path.c_str(), F_OK) == 0)
+        return errors.error500();
     std::ofstream file(_path.c_str(), std::ios::out);
 
     if (!file.is_open()) // Vérifier si le fichier ne s'est pas ouvert
     {
         if (access(_path.c_str(), F_OK) == -1) // Vérifie si le fichier existe
             return errors.error404();
-        if (access(_path.c_str(), W_OK) == -1) // Vérifie si on a le droit d'écrire
+        else if (access(_path.c_str(), W_OK) == -1) // Vérifie si le fichier est accessible en écriture
             return errors.error403();
-        return errors.error500();
+        else
+            return errors.error500();
     }
 
     file << body;
@@ -424,12 +428,10 @@ std::string Response::handleForm(Errors &errors)
 
 std::string Response::postResponse(Errors &errors)
 {
-    std::cout << "Post response" << std::endl;
     if (isCGI())
         handleCGI();
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
-        std::cout << "Content type" << _request.getHeaders().at("Content-Type") << std::endl;
         if (_request.getHeaders().at("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos)
             return handleForm(errors);
         else
@@ -575,13 +577,15 @@ void Response::findPath()
     std::string path = joinPaths(_root, _request.getUrl());
     std::string trimmed = trimLocationPath(_request.getUrl(), _location.getPath());
     std::string subPath = joinPaths(_root, trimmed);
-    std::cout << "SUBPATH" << subPath << std::endl;
     bool pathIsDir = isDirectory(path);
     bool subPathIsDir = isDirectory(subPath);
-    std::cout << "PATH :" << path << std::endl;
-    std::cout << "SUBPATH :" << subPath << std::endl;
 
     // 1. Fichier brut
+    if (_request.getMethod() == "POST")
+    {
+        _path = path;
+        return;
+    }
     if (tryPath(path) || tryPath(subPath))
         return;
 

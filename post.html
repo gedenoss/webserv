@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville&display=swap" rel="stylesheet">
@@ -125,37 +126,44 @@
       setInterval(draw, 1);
 
       document.getElementById("myForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+
         const nom = document.getElementById("nom").value.trim();
         const raison = document.getElementById("raison").value.trim();
+
         if (nom === "" || raison === "") {
-          e.preventDefault();
           alert("Veuillez remplir les champs Nom et Raison.");
-        } else {
-          e.preventDefault();
-
-          const formData = new URLSearchParams();
-          formData.append('nom', nom);
-          formData.append('raison', raison);
-
-          fetch('responses.txt', {
-            method: 'POST',
-            body: formData,
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-          })
-          .then(response => {
-            if (response.ok) {
-              window.location.href = '201.html';  // Redirige vers 201.html en cas de succès
-            } else {
-              alert("Erreur lors de l'envoi du formulaire.");
-            }
-          })
-          .catch(error => {
-            console.error('Erreur:', error);
-            alert('Erreur inconnue lors de l\'envoi du formulaire.');
-          });
+          return;
         }
+
+        // === Génère un nom de fichier simple ===
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/[:.]/g, '-');
+        const randomNumber = Math.floor(Math.random() * 9000) + 1000;
+        const filename = `response_${randomNumber.toString(36).substring(2, 10)}.txt`;
+
+        const formData = new URLSearchParams();
+        formData.append('nom', nom);
+        formData.append('raison', raison);
+
+        fetch(`/prop/${filename}`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        })
+        .then(response => {
+          if (response.ok) {
+            window.location.href = '201.html';  // Redirection si succès
+          } else {
+            window.location.href = '500.html';
+          }
+        })
+        .catch(error => {
+          window.location.href = '500.html';
+          alert();
+        });
       });
     </script>
   </body>

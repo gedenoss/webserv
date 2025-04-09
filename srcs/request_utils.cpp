@@ -39,21 +39,21 @@ bool Request::isMethodAllowedForRoute(Config &config) {
         }
         
         // Second attempt - try to find a matching location with a root that could serve this URL
-        for (size_t j = 0; j < locations.size(); ++j) {
-            const LocationConfig &location = locations[j];
-            if (!location.getRoot().empty()) {
-                //std::cout << "Checking root location [" << location.getPath() << "] with root [" << location.getRoot() << "] for URL [" << url << "]\n";
-                _location = location;
-                for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
-                    if (_method == location.getAllowMethod()[k]) {
-                //        std::cout << "✅ Found matching root location for [" << url << "]\n";
-                        return true;
-                    }
-                }
-            //    std::cout << "❌ Method not allowed in root location for [" << url << "]\n";
-                return false;
-            }
-        }
+        // for (size_t j = 0; j < locations.size(); ++j) {
+        //     const LocationConfig &location = locations[j];
+        //     if (!location.getRoot().empty()) {
+        //         //std::cout << "Checking root location [" << location.getPath() << "] with root [" << location.getRoot() << "] for URL [" << url << "]\n";
+        //         _location = location;
+        //         for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
+        //             if (_method == location.getAllowMethod()[k]) {
+        //         //        std::cout << "✅ Found matching root location for [" << url << "]\n";
+        //                 return true;
+        //             }
+        //         }
+        //     //    std::cout << "❌ Method not allowed in root location for [" << url << "]\n";
+        //         return false;
+        //     }
+        // }
     }
 
     std::cout << "❌ No matching location or root for [" << url << "]\n";

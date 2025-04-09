@@ -2,7 +2,7 @@ server {
     listen 8000;
 	server_name localhost;
     host 127.0.0.1;
-    root indexx;
+    root ./;
     client_max_body_size 10M;
 	index index.html;
 
@@ -16,9 +16,15 @@ server {
     }
 
     location /img {
-        root ./images/;
+        root ./images;
         autoindex on;
         allow_methods POST GET;
         
     }
+
+    location /prop {
+        root ./;
+        allow_methods POST DELETE;
+    }
+
 }
