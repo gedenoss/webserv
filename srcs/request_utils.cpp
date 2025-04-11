@@ -6,9 +6,9 @@
 #include <iostream>	
 
 bool Request::isMethodAllowedForRoute(Config &config) {
-    //std::cout << "Checking method [" << _method << "] for URL [" << _url << "]\n";
+    std::cout << "Checking method [" << _method << "] for URL [" << _url << "]\n";
 
-	std::string url = getUrl();
+    std::string url = getUrl();
     size_t lastSlash = url.find_last_of('/');
     if (lastSlash != std::string::npos)
         url = url.substr(0, lastSlash);
@@ -16,7 +16,9 @@ bool Request::isMethodAllowedForRoute(Config &config) {
     {
         url = "/";
     }
-	const std::vector<ServerConfig> &servers = config.getServers();
+    const std::vector<ServerConfig> &servers = config.getServers();
+    
+    // First attempt - exact path match
     for (size_t i = 0; i < config.getServers().size(); ++i) {
         const ServerConfig &server = servers[i];
         const std::vector<LocationConfig>& locations = server.getLocations();
@@ -26,7 +28,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
                 (url.size() == location.getPath().size() || 
                  url[location.getPath().size()] == '/' || 
                  url[location.getPath().size()] == '?')) {
-                _location = location;    
+                _location = location;   
                 for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
                     if (_method == location.getAllowMethod()[k]) {
                         return true;
@@ -35,9 +37,26 @@ bool Request::isMethodAllowedForRoute(Config &config) {
                 return false;
             }
         }
+        
+        // Second attempt - try to find a matching location with a root that could serve this URL
+        // for (size_t j = 0; j < locations.size(); ++j) {
+        //     const LocationConfig &location = locations[j];
+        //     if (!location.getRoot().empty()) {
+        //         //std::cout << "Checking root location [" << location.getPath() << "] with root [" << location.getRoot() << "] for URL [" << url << "]\n";
+        //         _location = location;
+        //         for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
+        //             if (_method == location.getAllowMethod()[k]) {
+        //         //        std::cout << "✅ Found matching root location for [" << url << "]\n";
+        //                 return true;
+        //             }
+        //         }
+        //     //    std::cout << "❌ Method not allowed in root location for [" << url << "]\n";
+        //         return false;
+        //     }
+        // }
     }
 
-    // std::cout << "❌ No matching location for [" << url << "]\n";
+    std::cout << "❌ No matching location or root for [" << url << "]\n";
     return false;
 }
 

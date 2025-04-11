@@ -20,8 +20,10 @@ size_t stringToSizeT(const std::string &str) {
 
 bool fileExists(const std::string &name)
 {
-    struct stat buffer;
-    return (stat(name.c_str(), &buffer) == 0);
+    struct stat pathStat;
+    if (stat(name.c_str(), &pathStat) != 0)
+        return false; // Impossible d'accéder au fichier
+    return S_ISREG(pathStat.st_mode);
 }
 
 bool endsWith(const std::string &str, const std::string &suffix)

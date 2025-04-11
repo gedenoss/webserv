@@ -9,7 +9,7 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _range.end = 0;
     _range.isValid = true;
     _range.isPartial = false;
-    _status_code = 0;
+    _status_code = 200;
     _status_message = "";
     _autoindex = false;
     _headers["Date"] = "";
@@ -37,6 +37,7 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _order.push_back("Content-Language");
 
     _body = "";
+    _listingDirectory = false;
 }
 
 void Response::setTime()
@@ -202,6 +203,17 @@ std::string Response::sendFileResponse()
 
 std::string Response::response200(Errors &errors)
 {
+    if (_listingDirectory == true)
+    {
+        setStatusCode(200);
+        setStatusMessage("OK");
+        setTime();
+        setBody(_body);
+        setHeaders("Content-Type", "text/html");
+        setContentLength();
+        setContentLanguage();
+        return generateResponse();
+    }
     std::string _body = sendFileResponse();
     if (_status_code == 201)
         setStatusMessage("Created");
@@ -370,7 +382,7 @@ std::string Response::getResponse(Errors &errors)
         return (errors.error304());
     if (isCGI())
     {
-        handleCGI();
+        handleCGI(errors);
         return ("CGI");
     }
     struct stat fileStat;
@@ -390,15 +402,19 @@ std::string Response::getResponse(Errors &errors)
 std::string Response::handleForm(Errors &errors)
 {
     std::string body = _request.getBody();
+    std::cout << _path << std::endl;
+    if (access(_path.c_str(), F_OK) == 0)
+        return errors.error500();
     std::ofstream file(_path.c_str(), std::ios::out);
 
     if (!file.is_open()) // Vérifier si le fichier ne s'est pas ouvert
     {
         if (access(_path.c_str(), F_OK) == -1) // Vérifie si le fichier existe
             return errors.error404();
-        if (access(_path.c_str(), W_OK) == -1) // Vérifie si on a le droit d'écrire
+        else if (access(_path.c_str(), W_OK) == -1) // Vérifie si le fichier est accessible en écriture
             return errors.error403();
-        return errors.error500();
+        else
+            return errors.error500();
     }
 
     file << body;
@@ -412,12 +428,10 @@ std::string Response::handleForm(Errors &errors)
 
 std::string Response::postResponse(Errors &errors)
 {
-    std::cout << "Post response" << std::endl;
     if (isCGI())
-        handleCGI();
+        handleCGI(errors);
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
-        std::cout << "Content type" << _request.getHeaders().at("Content-Type") << std::endl;
         if (_request.getHeaders().at("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos)
             return handleForm(errors);
         else
@@ -439,110 +453,6 @@ std::string Response::deleteResponse(Errors &errors)
         return (response204());
 }
 
-std::string findIndex(const std::string &dirPath, const std::string &root)
-{
-    std::string actualPath = (dirPath == "/") ? root : dirPath;
-    const std::string indexFiles[] = {"index.html", "index.htm", "index.php"};
-    DIR *dir = opendir(actualPath.c_str());
-    if (!dir)
-        return "";
-
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL)
-    {
-        for (size_t i = 0; i < sizeof(indexFiles) / sizeof(indexFiles[0]); i++)
-        {
-            if (indexFiles[i] == entry->d_name)
-            {
-                closedir(dir);
-                return actualPath + "/" + entry->d_name;
-            }
-        }
-    }
-    closedir(dir);
-    return "";
-}
-
-std::string joinPaths(const std::string& a, const std::string& b)
-{
-    if (a.empty()) return b;
-    if (b.empty()) return a;
-
-    if (a[a.size() - 1] == '/' && b[0] == '/')
-        return a + b.substr(1); // évite double slash
-    if (a[a.size() - 1] != '/' && b[0] != '/')
-        return a + "/" + b;     // ajoute slash manquant
-    return a + b;
-}
-
-
-std::string ensureRelativeDotPath(const std::string& path)
-{
-    if (path.empty())
-        return "./";
-    if (path[0] == '/')
-        return "." + path;
-         // → "/images/..." devient "./images/..."
-    return "./" + path;      // → "images/..." devient "./images/..."
-}
-
-
-void Response::findPath()
-{
-    std::string path = joinPaths(_root,_request.getUrl());
-    if (path.find_last_of("/") == path.length() - 1 && _autoindex && _index != "")
-        path = path + _index;
-    else if (path.find_last_of("/") == path.length() - 1 && _autoindex)
-        path = findIndex(path, _root);
-    // path = ensureRelativeDotPath(path);
-    if (!isDirectory(path) || _request.getMethod() == "POST")
-    {
-        if (fileExists(path))
-        {
-            _path = path;
-            return;
-        }
-    }
-    std::string locationPath = _location.getPath();
-    if (_request.getUrl().find(_root) == std::string::npos)
-    {
-        std::string trimmed = _request.getUrl().substr(locationPath.length());
-        std::string subPath = joinPaths(_root, trimmed);
-        subPath = ensureRelativeDotPath(subPath);
-        std::cout << subPath << std::endl;
-        if (fileExists(subPath))
-        {
-            _path = subPath;
-            return;
-        }
-        _path = path;
-        return;
-    }
-    if (isDirectory(path))
-    {
-        if (!_index.empty())
-        {
-            std::string indexPath = joinPaths(path, _index);
-            if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
-                indexPath += "/";
-            indexPath += _index;
-            if (fileExists(indexPath))
-            {
-                _path = indexPath;
-                return;
-            }
-        }
-        if (_autoindex)
-        {
-            std::string foundIndex = findIndex(path, _root);
-            if (!foundIndex.empty())
-            {
-                _path = foundIndex;
-                return;
-            }
-        }
-    }
-}
 
 std::string Response::sendResponse()
 {
@@ -556,14 +466,18 @@ std::string Response::sendResponse()
     _request.printRequest();
     std::cout << "Root : " << _root << "Index : " << _index << std::endl;
     std::cout << "Location path : " << _location.getPath() << std::endl;
-    // if (_autoindex)
-    //     std::cout << "Autoindex : true" << std::endl;
+    if (_autoindex)
+        std::cout << "Autoindex : true" << std::endl;
+    else
+        std::cout << "Autoindex : false" << std::endl;
     if (_root.empty())
         _root = ".";
     findPath();
     std::cout << "Path : " << _path << std::endl;
-    if (_path.empty())
-        return (errors.error404());
+    if (_listingDirectory == true)
+        return(response200(errors));
+    if (_status_code != 200)
+        return (errors.generateError(_status_code));
     if (_request.getMethod() == "GET") {
         return (getResponse(errors));
     } 
