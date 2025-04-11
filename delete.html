@@ -1,4 +1,4 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -64,54 +64,6 @@
             fileInput.click();
         }
     </script>
-
-</body>
-</html> -->
-
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Supprimer un fichier</title>
-</head>
-<body>
-
-  <h2>Supprimer un fichier</h2>
-
-  <label for="filename">Nom du fichier :</label>
-  <input type="text" id="filename" placeholder="ex: fichier.txt">
-  <button onclick="deleteFile()">Supprimer</button>
-
-  <script>
-    function deleteFile() {
-      const fileName = document.getElementById("filename").value;
-
-      if (!fileName) {
-        alert("Veuillez entrer un nom de fichier.");
-        return;
-      }
-
-      const url = `/prop/${encodeURIComponent(fileName)}`; // Ton endpoint DELETE
-
-      fetch(url, {
-        method: 'DELETE'
-      })
-      .then(response => {
-    if (response.ok) {
-    // Récupère le chemin à rediriger après la suppression
-        response.text().then((url) => {
-      // Effectue la redirection vers la page spécifiée par le serveur
-        window.location.href = url;
-        });
-    } 
-    // else {
-    //     alert("Erreur lors de la suppression du fichier.");
-    // }
-    })
-
-    }
-  </script>
 
 </body>
 </html>

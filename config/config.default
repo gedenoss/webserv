@@ -22,7 +22,7 @@ server {
         
     }
 
-    location /prp {
+    location /prop {
         root ./prop;
         allow_methods POST DELETE;
     }
