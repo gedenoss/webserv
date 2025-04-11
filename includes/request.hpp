@@ -14,6 +14,7 @@ class Request {
         std::string _method;
         std::string _url;
         std::string _httpVersion;
+        std::string _queryString;
         //std::string _acceptLanguage;
         std::map<std::string, std::string> _headers;
         //std::map<std::string, std::string> _queryParams;
@@ -40,6 +41,7 @@ class Request {
         std::string getUrl() const;
         std::string getHttpVersion() const;
         std::string getBody() const;
+        std::string getQueryString() const { return _queryString; };
         int getErrorCode() const;
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;
