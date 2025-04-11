@@ -43,6 +43,8 @@ void Response::handleCGI(Errors &errors)
 void Response::childRoutine()
 {
     std::vector<char *> envp;
+    std::vector<char *> args;
+
     if (_request.getMethod() == "POST")
         manageBodyForCgi();
     manageCgiOutfile();
@@ -57,6 +59,9 @@ void Response::childRoutine()
         envp.push_back(envCStr);
     }
     envp.push_back(NULL);
+    args.push_back(const_cast<char *>(_cgiScriptName.c_str()));
+    execve(_cgiPath.c_str(), args.data(), envp.data());
+    throw ExitChild();
 }
 
 void Response::manageBodyForCgi()
