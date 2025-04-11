@@ -1,19 +1,59 @@
 #ifndef REQUEST_HPP
-# define REQUEST_HPP
+#define REQUEST_HPP
 
-#include <string>
+#include <iostream>
+#include <sstream>
 #include <map>
+#include <string>
+#include "config.hpp"
 
 class Request {
+    private:
+        size_t _maxBodySize;
+        size_t _maxHeadersSize;
+        std::string _method;
+        std::string _url;
+        std::string _httpVersion;
+        //std::string _acceptLanguage;
+        std::map<std::string, std::string> _headers;
+        //std::map<std::string, std::string> _queryParams;
+        std::string _body;
+        int _errorCode;
+        LocationConfig _location;
+
+        //void parseQueryParams();
+
     public:
-        Request();
+        Request(size_t maxBodySize, size_t maxHeadersSize);
         ~Request();
 
-        std::string method;
-        std::string url;
-        std::string version;
-        std::map<std::string, std::string> headers;
-        std::string body;
+        void parse(const std::string &rawRequest, Config &config);
+
+        size_t safeStringToUlong(const std::string&	str, bool& success);
+
+        bool isValidMethod();
+        bool isValidHttpVersion();
+        bool isValidUrl();
+        bool isMethodAllowedForRoute(Config &config);
+        
+        std::string getMethod() const;
+        std::string getUrl() const;
+        std::string getHttpVersion() const;
+        std::string getBody() const;
+        int getErrorCode() const;
+        std::map<std::string, std::string>& getHeaders();
+        const std::map<std::string, std::string>& getHeaders() const;
+        const LocationConfig& getLocation() const {return _location;}
+        //std::map<std::string, std::string> getQueryParams() const;
+
+        void setMethod(const std::string& m);
+        void setUrl(const std::string& u);
+        void setHttpVersion(const std::string& v);
+        void setBody(const std::string& b);
+        void addHeader(const std::string& key, const std::string& value);
+
+        void printRequest() const;
 };
 
 #endif
+    

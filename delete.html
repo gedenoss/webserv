@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete File with Trash Can</title>
+    <style>
+        body {
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .trash-can {
+            width: 600px;
+            height: 300px;
+            cursor: pointer;
+        }
+
+        .trash-can:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <img src="/images/trash.png" alt="Delete" class="trash-can" onclick="deleteFile()">
+
+    <script>
+        function deleteFile() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '*/*';
+            fileInput.onchange = function() {
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    alert('No file selected.');
+                    return;
+                }
+
+                const filename = file.name;
+
+                fetch('/prop/' + encodeURIComponent(filename), {
+                    method: 'DELETE',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('File deleted successfully.');
+                    } else {
+                        alert('Failed to delete the file.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error occurred while deleting the file.');
+                });
+            };
+
+            fileInput.click();
+        }
+    </script>
+
+</body>
+</html>

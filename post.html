@@ -1,0 +1,162 @@
+<html>
+  <head>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville&display=swap" rel="stylesheet">
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100%;
+        font-family: sans-serif;
+        color: white;
+        cursor: crosshair;
+      }
+      #canvas1 {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        image-rendering: pixelated;
+        z-index: -1;
+      }
+      .centered-text {
+        position: absolute;
+        top: 20%;
+        width: 100%;
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+        pointer-events: none;
+        font-family: 'Libre Baskerville', sans-serif;
+      }
+      .form-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      .form-container input[type="text"],
+      .form-container input[type="file"] {
+        display: block;
+        margin: 10px auto;
+        padding: 8px;
+        width: 300px;
+        border: none;
+        border-bottom: 1px solid white;
+        background: transparent;
+        color: white;
+        font-size: 1rem;
+        outline: none;
+      }
+      .form-container input[type="submit"] {
+        margin-top: 15px;
+        padding: 8px 16px;
+        border: none;
+        background: #e74d3c00;
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas1"></canvas>
+
+    <div class="centered-text">
+      BALANCE TON OPS
+    </div>
+
+    <div class="form-container">
+      <form id="myForm" action="201.html" method="POST">
+        <input type="text" id="nom" name="nom" placeholder="Nom" required>
+        <input type="text" id="raison" name="raison" placeholder="Raison" required>
+        <input type="submit" value="Envoyer">
+      </form>
+    </div>
+
+    <script type="text/javascript">
+      const canvas = document.getElementById("canvas1");
+      const ctx = canvas.getContext("2d");
+      let imageData;
+      const particleSize = 4;
+
+      function resizeCanvas() {
+        canvas.width = Math.floor(window.innerWidth / particleSize);
+        canvas.height = Math.floor(window.innerHeight / particleSize);
+        imageData = ctx.createImageData(canvas.width, canvas.height);
+      }
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      function setPixel(x, y, r, g, b, a) {
+        const index = (x + (canvas.height - 1 - y) * canvas.width) * 4;
+        imageData.data[index + 0] = r;
+        imageData.data[index + 1] = g;
+        imageData.data[index + 2] = b;
+        imageData.data[index + 3] = a;
+      }
+
+      function draw() {
+        const width = canvas.width;
+        const height = canvas.height;
+        for (let i = 0; i < width; i++) {
+          setPixel(i, 0, Math.floor(Math.random() * 256), 0, 0, 255);
+        }
+        for (let y = height - 1; y > 0; y--) {
+          for (let xi = 1; xi < 100; xi++) {
+            const x = Math.floor(Math.random() * width);
+            const indexLeft = ((x - 1) + (height - y) * width) * 4;
+            const indexCenter = (x + (height - y) * width) * 4;
+            const indexRight = ((x + 1) + (height - y) * width) * 4;
+            const r1 = imageData.data[indexLeft] || 0;
+            const r2 = imageData.data[indexCenter] || 0;
+            const r3 = imageData.data[indexRight] || 0;
+            let r = (r1 + r2 + r3) / 3;
+            if (r > 50) {
+              r = r + Math.floor(Math.random() * 100) - 50;
+            }
+            setPixel(x, y, r, 0, 0, 255);
+          }
+        }
+        ctx.putImageData(imageData, 0, 0);
+      }
+      setInterval(draw, 1);
+
+      document.getElementById("myForm").addEventListener("submit", function(e) {
+        const nom = document.getElementById("nom").value.trim();
+        const raison = document.getElementById("raison").value.trim();
+        if (nom === "" || raison === "") {
+          e.preventDefault();
+          alert("Veuillez remplir les champs Nom et Raison.");
+        } else {
+          e.preventDefault();
+
+          const formData = new URLSearchParams();
+          formData.append('nom', nom);
+          formData.append('raison', raison);
+
+          fetch('responses.txt', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          })
+          .then(response => {
+            if (response.ok) {
+              window.location.href = '201.html';  // Redirige vers 201.html en cas de succès
+            } else {
+              alert("Erreur lors de l'envoi du formulaire.");
+            }
+          })
+          .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur inconnue lors de l\'envoi du formulaire.');
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

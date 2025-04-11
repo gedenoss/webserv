@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload File with Icon</title>
+    <style>
+        body {
+            background-image: url('/images/squat.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .upload-icon {
+            width: 300px;
+            height: 300px;
+            cursor: pointer;
+        }
+
+        .upload-icon:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <img src="/images/bal.png" alt="Upload" class="upload-icon" onclick="uploadFile()">
+
+    <script>
+        function uploadFile() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '*/*';
+
+            fileInput.onchange = function() {
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    alert('No file selected.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('File uploaded successfully.');
+                    } else {
+                        alert('Failed to upload the file.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error occurred while uploading the file.');
+                });
+            };
+
+            fileInput.click();
+        }
+    </script>
+
+</body>
+</html>

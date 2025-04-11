@@ -1,114 +1,578 @@
 #include "../includes/response.hpp"
+#include "../includes/request.hpp"
+#include "../includes/utils.hpp"
+#include "../includes/errors.hpp"
 
-Response::Response()
+Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(serv)
 {
+    _range.start = 0;
+    _range.end = 0;
+    _range.isValid = true;
+    _range.isPartial = false;
     _status_code = 0;
     _status_message = "";
+    _autoindex = false;
     _headers["Date"] = "";
-    _headers["Server"] = "";
+    _headers["Server"] = "Webserv";
     _headers["Content-Type"] = "";
     _headers["Content-Length"] = "";
-    _headers["Connection"] = "";
+    _headers["Content-Language"] = "";
+    _headers["Connection"] = "close";
+    _available_languages.push_back("en-US");
+    _available_languages.push_back("fr-FR");
+    _available_languages.push_back("fr");
+    _available_languages.push_back("ar-sa");
+    _available_languages.push_back("es-ES");
+    _available_languages.push_back("de-DE");
+    _available_languages.push_back("en-GB");
+    _available_languages.push_back("nl");
+
+    _order.push_back("Connection");
+    _order.push_back("Date");
+    _order.push_back("ETag");
+    _order.push_back("Last-Modified");
+    _order.push_back("Server");
+    _order.push_back("Content-Type");
+    _order.push_back("Content-Length");
+    _order.push_back("Content-Language");
+
     _body = "";
 }
 
-char *Response::set_time()
+void Response::setTime()
 {
     time_t now = time(0);
     tm *utc = gmtime(&now);
     char buffer[100];
     std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", utc);
-    std::cout << "Time of day in UTC : " << buffer << std::endl;
-    return (buffer);
+    _headers["Date"] = buffer;
 }
 
-void Response::send_response()
+void Response::setStatusCode(int status_code)
+{ _status_code = status_code; }
+
+void Response::setStatusMessage(const std::string &status_message)
+{ _status_message = status_message; }
+
+void Response::setHeaders(const std::string &key, const std::string &value)
+{ _headers[key] = value; }
+
+void Response::setBody(const std::string &body)
+{ _body = body; }
+
+void Response::setContentType()
+{ _headers["Content-Type"] = getContentType(); }
+
+void Response::setContentLength()
+{  _headers["Content-Length"] = toString(_body.length()); }
+
+void Response::setContentLanguage()
+{ _headers["Content-Language"] = getLanguage(); }
+
+void Response::setLastModified(const std::string &path)
 {
-    std::cout << "HTTP/1.1 " << _status_code << " " << _status_message << std::endl;
-    for (std::map<std::string, std::string>::iterator it = _headers.begin(); it != _headers.end(); it++)
-    {
-        std::cout << it->first << ": " << it->second << std::endl;
-    }
-    std::cout << std::endl;
-    std::cout << _body << std::endl;
+    struct stat fileStat;
+    stat(path.c_str(), &fileStat);
+    _headers["Last-Modified"] = formatHttpDate(fileStat.st_mtime);
 }
 
-void Response::set_status_code(int status_code)
-{
-    _status_code = status_code;
-}
+void Response::setEtag(const std::string &path)
+{ _headers["ETag"] = generateEtag(path); }
 
-void Response::set_status_message(const std::string &status_message)
-{
-    _status_message = status_message;
-}
+int Response::getStatusCode() const
+{ return _status_code; }
 
-bool file_exists(const std::string &name)
-{
-    struct stat buffer;
-    return (stat(name.c_str(), &buffer) == 0);
-}
+std::string Response::getPath() const
+{ return _path; }
 
-std::string read_file(const std::string& path)
-{
-    std::ifstream file(path);
-    if (!file.is_open())
-        return "";
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-    
-}
+std::string Response::getStatusMessage() const
+{ return _status_message;}
 
-std::string generate_404_response()
+std::map<std::string, std::string> Response::getHeaders() const
+{ return _headers; }
+
+std::string Response::getBody() const
+{   return _body; }
+
+std::string Response::generateResponse()
 {
-    std::string body = read_file("../static/404.html");
-    if (body.empty())
-    {
-        body = "<html><body><h1>404 Not Found</h1></body></html>";
-    }
     std::stringstream response;
-    response << "HTTP/1.1 404 Not Found\r\n";
-    response << "Content-Type: text/html\r\n";
-    response << "Content-Length: " << body.size() << "\r\n";
+    std::cout << std::endl;
+    response << "HTTP/1.1 " << _status_code << " " << _status_message << "\r\n";
+    for(std::vector<std::string>::iterator it = _order.begin(); it != _order.end(); ++it)
+    {
+        if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
+            response << *it << ": " << _headers[*it] << "\r\n";
+    }
+    std::cout << response.str() << std::endl;
     response << "\r\n";
-    response << body;
-
+    response << _body;
     return response.str();
 }
 
-std::string generate_200_response(const std::string &path)
+std::string Response::getContentType()
 {
+    std::map<std::string, std::string> mime_types;
     
+    mime_types[".html"] = "text/html";
+    mime_types[".css"] = "text/css";
+    mime_types[".js"] = "application/javascript";
+    mime_types[".png"] = "image/png";
+    mime_types[".jpg"] = "image/jpeg";
+    mime_types[".jpeg"] = "image/jpeg";
+    mime_types[".gif"] = "image/gif";
+    mime_types[".php"] = "text/html";
+    mime_types[".json"] = "application/json";
+    mime_types[".xml"] = "application/xml";
+    mime_types[".pdf"] = "application/pdf";
+    mime_types[".txt"] = "text/plain";
+    mime_types[".csv"] = "text/csv";
+    mime_types[".xhtml"] = "text/xhtml";
+
+    size_t dot_pos = _path.find_last_of(".");
+    if (dot_pos != std::string::npos) {
+        std::string ext = _path.substr(dot_pos);
+        if (mime_types.count(ext))
+            return mime_types[ext];
+    }
+    return "application/octet-stream"; // Type par défaut pour fichiers inconnus
 }
 
-std::string Response::get_response(const Request &request, const std::string &root)
+std::string Response::getLanguage()
 {
-    std::string path = root + request.url;
-    if (!file_exists(path))
+    std::string accept_language = "";
+    std::map<std::string, std::string>::iterator it = _request.getHeaders().find("Accept-Language");
+    if (it != _request.getHeaders().end()) {
+        accept_language = it->second;
+    }
+    if (accept_language.empty()) {
+        return "en-US";
+    }
+    std::vector<std::pair<std::string, double> > languages;
+    std::istringstream ss(accept_language);
+    std::string token;
+    while (std::getline(ss, token, ','))
     {
-        return (generate_404_response());
+        size_t q_pos = token.find("q=");
+        double q_value = 1.0;
+        if (q_pos != std::string::npos)
+        {
+            q_value = std::atof(token.substr(q_pos + 2).c_str());
+            if (q_value > 1.0 || q_value < 0.0)
+                return "";
+            token = token.substr(0, q_pos - 1);
+        }
+        token.erase(std::remove(token.begin(), token.end(), ' '), token.end());
+        languages.push_back(std::make_pair(token, q_value));
+    }
+    std::sort(languages.begin(), languages.end(), compareLanguages);
+    for (size_t i = 0; i < languages.size(); i++)
+    {
+        std::string lang = languages[i].first;
+        std::vector<std::string>::iterator it = std::find(_available_languages.begin(), _available_languages.end(), lang);
+        int found = (it != _available_languages.end()) ? std::distance(_available_languages.begin(), it) : -1;
+        if (found != -1)
+        {
+            return lang; // Langue trouvée
+        }
+    }
+    return "en-US"; // Langue par défaut
+}
+
+std::string Response::sendFileResponse()
+{
+    std::string body = "";
+    if (_range.isPartial)
+    {
+        std::ifstream file(_path.c_str(), std::ios::binary);
+        if (!file.is_open())
+            return "";
+        file.seekg(_range.start);
+        size_t length = _range.end - _range.start + 1;
+        char *buffer = new char[length];
+        file.read(buffer, length);
+        body = std::string(buffer, length);
+        delete[] buffer;
+        file.close();
     }
     else
-    {
-        return (generate_200_response(path));
-    }
-
+        body = readFile(_path);
+    return body;
 }
 
-std::string Response::send_response(const Request &request)
+std::string Response::response200(Errors &errors)
 {
-    if (request.method == "GET") {
-        return (get_response(request, "/var/http/www"));
-    } 
-    else if (request.method == "POST") {
-        post_response(request, "www");
+    std::string _body = sendFileResponse();
+    if (_status_code == 201)
+        setStatusMessage("Created");
+    else if (!_range.isPartial)
+    {
+        setStatusCode(200);
+        setStatusMessage("OK");
     }
-    else if (request.method == "DELETE") {
-       delete_response(request, "www");
+    else 
+    {
+        setStatusCode(206);
+        setStatusMessage("Partial Content");
+    }
+    setTime();
+    setBody(_body);
+    setContentType();
+    setContentLength();
+    setContentLanguage();
+    setLastModified(_path);
+    setEtag(_path);
+    if (_headers["Content-Language"] == "")
+        return errors.error400();
+    return generateResponse();
+}
+
+std::string Response::response204()
+{
+    setStatusCode(204);
+    setStatusMessage("No Content");
+    setTime();
+    setEtag(_path);
+    return generateResponse();
+}
+
+bool Response::isAcceptable()
+{
+    std::string accept = _request.getHeaders().at("Accept");
+    std::vector<std::string> elements;
+    split(accept, ",", elements);
+    if (accept.find("*/*") != std::string::npos || accept.empty())
+        return true;
+    std::string content_type = getContentType();
+    std::size_t pos = content_type.find("/");
+    std::string type_content = content_type.substr(0, pos);
+    std::string subtype_content = content_type.substr(pos + 1);
+    for (std::vector<std::string>::iterator it = elements.begin(); it != elements.end(); ++it)
+    {
+        std::string element = *it;
+        std::size_t pos = element.find("/");
+        if (pos != std::string::npos)
+        {
+            std::string type = element.substr(0, pos);
+            std::string subtype = element.substr(pos + 1);
+            if (type == "*")
+            {
+                if (subtype == "*")
+                    return true;
+                else if (subtype == subtype_content)
+                    return true;
+            }
+            else if (type == type_content)
+            {
+                if (subtype == "*")
+                    return true;
+                else if (subtype == subtype_content)
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool Response::isModifiedSince(const std::string &ifModifiedSince)
+{
+    struct stat fileStat;
+
+    if (stat(_path.c_str(), &fileStat) != 0)
+        return true;
+    time_t client_time = parseHttpDate(ifModifiedSince);
+    if (client_time == 0)
+        return true;
+    return fileStat.st_mtime > client_time;
+}
+
+bool Response::handleIfModifiedSince(const std::map<std::string, std::string> &headers)
+{
+    std::map<std::string, std::string>::const_iterator it = headers.find("If-Modified-Since");
+    if (it == headers.end())
+        return true;
+    if (!isModifiedSince(it->second))
+        return false;
+    return true;
+}
+
+bool Response::isNotModified(const std::map<std::string, std::string> &headers)
+{
+    std::string etag = generateEtag(_path);
+    if (headers.count("If-None-Match") > 0)
+    {
+        std::string client_etag = headers.at("If-None-Match");
+        if (client_etag == etag)
+            return true;
+    }
+    return false;
+}
+
+bool Response::isCGI()
+{
+    std::string extensions[] = {".php", ".py", ".pl", ".cgi"};
+    if (_path.find("/scripts/") != std::string::npos)
+    {
+        for (size_t i = 0; i < sizeof(extensions) / sizeof(extensions[0]); i++)
+        {
+            if (endsWith(_path, extensions[i]))
+                return true;
+        }
+    }
+    return false;
+}
+
+
+Range parseRange(const std::string &rangeHeader, long fileSize)
+{
+    Range range;
+    range.start = 0;
+    range.end = fileSize - 1;
+    range.isValid = true;
+    range.isPartial = false;
+
+    size_t pos = rangeHeader.find("bytes=");
+    if (pos == std::string::npos)
+        return range;
+    pos += 6;
+
+    size_t dashPos = rangeHeader.find("-", pos);
+    if (dashPos == std::string::npos)
+        return range;
+
+    range.start = stringToSizeT(rangeHeader.substr(pos, dashPos - pos).c_str());
+
+    std::string endStr = rangeHeader.substr(dashPos + 1);
+    if (!endStr.empty())
+        range.end = stringToSizeT(endStr.c_str());
+    else
+        range.end = fileSize - 1;
+
+    // if (range.start > range.end || range.end < 0 || range.start > range.end || range.end > static_cast<size_t>(fileSize))
+    //     range.isValid = false;
+
+    if (range.start > 0 || range.end < static_cast<size_t> (fileSize - 1))
+        range.isPartial = true;
+
+    return range;
+}
+
+
+std::string Response::getResponse(Errors &errors)
+{
+    if (!fileExists(_path))
+        return (errors.error404());
+    if (!isAcceptable())
+        return (errors.error406());
+    if (!hasReadPermission(_path))
+        return (errors.error403());
+    if (!handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
+        return (errors.error304());
+    if (isCGI())
+    {
+        handleCGI();
+        return ("CGI");
+    }
+    struct stat fileStat;
+
+    if (stat(_path.c_str(), &fileStat) < 0)
+        return errors.error500();
+    size_t fileSize = fileStat.st_size;
+    if (_request.getHeaders().count("Range") > 0)
+    {
+        _range = parseRange(_request.getHeaders().at("Range"), fileSize);
+        if (!_range.isValid)
+            return (errors.error416());
+    }
+    return (response200(errors));
+}
+
+std::string Response::handleForm(Errors &errors)
+{
+    std::string body = _request.getBody();
+    std::ofstream file(_path.c_str(), std::ios::out);
+
+    if (!file.is_open()) // Vérifier si le fichier ne s'est pas ouvert
+    {
+        if (access(_path.c_str(), F_OK) == -1) // Vérifie si le fichier existe
+            return errors.error404();
+        if (access(_path.c_str(), W_OK) == -1) // Vérifie si on a le droit d'écrire
+            return errors.error403();
+        return errors.error500();
+    }
+
+    file << body;
+    file.close();
+    setStatusCode(201);
+    return response200(errors);
+}
+
+
+
+
+std::string Response::postResponse(Errors &errors)
+{
+    std::cout << "Post response" << std::endl;
+    if (isCGI())
+        handleCGI();
+    else if (_request.getHeaders().count("Content-Type") > 0)
+    {
+        std::cout << "Content type" << _request.getHeaders().at("Content-Type") << std::endl;
+        if (_request.getHeaders().at("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos)
+            return handleForm(errors);
+        else
+            return errors.error415();
+    }
+    return (errors.error415());
+}
+
+std::string Response::deleteResponse(Errors &errors)
+{
+
+    if (!fileExists(_path))
+        return (errors.error404());
+    else if (!hasWritePermission(_path))
+        return (errors.error403());
+    else if (std::remove(_path.c_str()) != 0)
+        return (errors.error500());
+    else 
+        return (response204());
+}
+
+std::string findIndex(const std::string &dirPath, const std::string &root)
+{
+    std::string actualPath = (dirPath == "/") ? root : dirPath;
+    const std::string indexFiles[] = {"index.html", "index.htm", "index.php"};
+    DIR *dir = opendir(actualPath.c_str());
+    if (!dir)
+        return "";
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        for (size_t i = 0; i < sizeof(indexFiles) / sizeof(indexFiles[0]); i++)
+        {
+            if (indexFiles[i] == entry->d_name)
+            {
+                closedir(dir);
+                return actualPath + "/" + entry->d_name;
+            }
+        }
+    }
+    closedir(dir);
+    return "";
+}
+
+std::string joinPaths(const std::string& a, const std::string& b)
+{
+    if (a.empty()) return b;
+    if (b.empty()) return a;
+
+    if (a[a.size() - 1] == '/' && b[0] == '/')
+        return a + b.substr(1); // évite double slash
+    if (a[a.size() - 1] != '/' && b[0] != '/')
+        return a + "/" + b;     // ajoute slash manquant
+    return a + b;
+}
+
+
+std::string ensureRelativeDotPath(const std::string& path)
+{
+    if (path.empty())
+        return "./";
+    if (path[0] == '/')
+        return "." + path;
+         // → "/images/..." devient "./images/..."
+    return "./" + path;      // → "images/..." devient "./images/..."
+}
+
+
+void Response::findPath()
+{
+    std::string path = joinPaths(_root,_request.getUrl());
+    if (path.find_last_of("/") == path.length() - 1 && _autoindex && _index != "")
+        path = path + _index;
+    else if (path.find_last_of("/") == path.length() - 1 && _autoindex)
+        path = findIndex(path, _root);
+    // path = ensureRelativeDotPath(path);
+    if (!isDirectory(path) || _request.getMethod() == "POST")
+    {
+        if (fileExists(path))
+        {
+            _path = path;
+            return;
+        }
+    }
+    std::string locationPath = _location.getPath();
+    if (_request.getUrl().find(_root) == std::string::npos)
+    {
+        std::string trimmed = _request.getUrl().substr(locationPath.length());
+        std::string subPath = joinPaths(_root, trimmed);
+        subPath = ensureRelativeDotPath(subPath);
+        std::cout << subPath << std::endl;
+        if (fileExists(subPath))
+        {
+            _path = subPath;
+            return;
+        }
+        _path = path;
+        return;
+    }
+    if (isDirectory(path))
+    {
+        if (!_index.empty())
+        {
+            std::string indexPath = joinPaths(path, _index);
+            if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
+                indexPath += "/";
+            indexPath += _index;
+            if (fileExists(indexPath))
+            {
+                _path = indexPath;
+                return;
+            }
+        }
+        if (_autoindex)
+        {
+            std::string foundIndex = findIndex(path, _root);
+            if (!foundIndex.empty())
+            {
+                _path = foundIndex;
+                return;
+            }
+        }
     }
 }
 
+std::string Response::sendResponse()
+{
+    Errors errors(*this);
+    if (_request.getErrorCode() != 200)
+        return (errors.generateError(_request.getErrorCode()));
+    _location = _request.getLocation();
+    _root = _location.getRoot();
+    _autoindex = _location.getAutoindex();
+    _index = _location.getIndex();
+    _request.printRequest();
+    std::cout << "Root : " << _root << "Index : " << _index << std::endl;
+    std::cout << "Location path : " << _location.getPath() << std::endl;
+    // if (_autoindex)
+    //     std::cout << "Autoindex : true" << std::endl;
+    if (_root.empty())
+        _root = ".";
+    findPath();
+    std::cout << "Path : " << _path << std::endl;
+    if (_path.empty())
+        return (errors.error404());
+    if (_request.getMethod() == "GET") {
+        return (getResponse(errors));
+    } 
+    else if (_request.getMethod() == "POST") {
+        return (postResponse(errors));
+    }
+    else
+        return (deleteResponse(errors));
+}
 
 
 Response::~Response()
