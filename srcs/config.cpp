@@ -119,15 +119,22 @@ void ServerConfig::handleServerName(std::istringstream& iss, std::string line)
 
 void ServerConfig::handleIndex(std::istringstream& iss)
 {
-	iss >> index;
-	index = cleanValue(index);
-	std::string fullPath = root + "/" + index;
-	if (!isFileValid(fullPath))
-	{
-		std::cerr << "Warning: Default index file does not exist: " << fullPath << std::endl;
-	}
+    iss >> index;
+    index = cleanValue(index);
+    
+	if (!root.empty()) {
+        std::string fullPath;
+        if (root[root.size() - 1] == '/')
+            fullPath = root + index;
+        else
+            fullPath = root + "/" + index;
+            
+        if (!isFileValid(fullPath))
+        {
+            std::cerr << "Warning: Default index file not found at: " << fullPath << std::endl;
+        }
+    }
 }
-
 void ServerConfig::handleRoot(std::istringstream& iss)
 {
 	iss >> root;
@@ -221,15 +228,23 @@ void LocationConfig::handleLocRoot(std::istringstream &iss, LocationConfig& loca
 }
 
 void LocationConfig::handleLocIndex(std::istringstream &iss, LocationConfig& location, std::string line){
-	iss	>> location.index;
-	if (countWords(line) != 2)
-		exit (1);
-	location.index = cleanValue(location.index);
-	std::string	fullPath = location.root + "/" + location.index;
-	if (!isFileValid(fullPath))
-	{
-		std::cerr << "Warning: Default index file does not exist: "	<< fullPath	<< std::endl;
-	}
+    iss >> location.index;
+    if (countWords(line) != 2)
+        exit(1);
+    location.index = cleanValue(location.index);
+    
+    if (!location.root.empty()) {
+        std::string fullPath;
+        if (location.root[location.root.size() - 1] == '/')
+            fullPath = location.root + location.index;
+        else
+            fullPath = location.root + "/" + location.index;
+            
+        if (!isFileValid(fullPath))
+        {
+            std::cerr << "Warning: Default index file not found at: " << fullPath << std::endl;
+        }
+    }
 }
 
 void LocationConfig::handleLocAllMethods(std::istringstream &iss, LocationConfig& location){
