@@ -34,8 +34,7 @@
         function deleteFile() {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = '*/*';  // Permet de sélectionner n'importe quel type de fichier
-
+            fileInput.accept = '*/*';
             fileInput.onchange = function() {
                 const file = fileInput.files[0];
 
@@ -46,7 +45,7 @@
 
                 const filename = file.name;
 
-                fetch('/images/' + encodeURIComponent(filename), {
+                fetch('/prop/' + encodeURIComponent(filename), {
                     method: 'DELETE',
                 })
                 .then(response => {
