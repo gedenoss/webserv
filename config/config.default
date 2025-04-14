@@ -16,7 +16,7 @@ server {
     }
 
     location /images {
-        root ./images;
+        root ./;
         autoindex on;
         allow_methods POST GET;
         
@@ -33,7 +33,7 @@ server {
     listen 1234;
 	server_name localhost;
     host 127.0.0.1;
-    root indexx;
+    root ./;
     client_max_body_size 10M;
 	index index.html;
 
@@ -46,8 +46,8 @@ server {
         allow_methods POST GET;
     }
 
-    location /img {
-        root images/;
+    location /images {
+        root ./;
         autoindex on;
         allow_methods POST GET;
         
@@ -58,7 +58,7 @@ server {
     listen 8080;
 	server_name localhost;
     host 127.0.0.1;
-    root indexx;
+    root ./;
     client_max_body_size 10M;
 	index index.html;
 
@@ -71,8 +71,8 @@ server {
         allow_methods POST GET;
     }
 
-    location /img {
-        root images/;
+    location /images {
+        root ./;
         autoindex on;
         allow_methods POST GET DELETE;
         
