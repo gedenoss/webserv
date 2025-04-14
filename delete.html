@@ -32,11 +32,9 @@
 
     <script>
         function deleteFile() {
-            // Fonction pour supprimer le fichier
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = '*/*';  // Permet de sélectionner n'importe quel type de fichier
-
+            fileInput.accept = '*/*';
             fileInput.onchange = function() {
                 const file = fileInput.files[0];
 
@@ -45,12 +43,10 @@
                     return;
                 }
 
-                const formData = new FormData();
-                formData.append('file', file);
+                const filename = file.name;
 
-                fetch('/', {
+                fetch('/prop/' + encodeURIComponent(filename), {
                     method: 'DELETE',
-                    body: formData
                 })
                 .then(response => {
                     if (response.ok) {
@@ -64,10 +60,10 @@
                     alert('Error occurred while deleting the file.');
                 });
             };
-
             fileInput.click();
         }
     </script>
+
 
 </body>
 </html>

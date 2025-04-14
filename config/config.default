@@ -33,6 +33,37 @@ server {
     listen 1234;
     server_name localhost;
     host 127.0.0.1;
+    root ./;
+    client_max_body_size 10M;
+	index index.html;
+
+    location / {
+        allow_methods  DELETE POST GET;
+        autoindex on;
+        index index.html;
+    }
+    location /admin {
+        allow_methods POST GET;
+    }
+
+    location /images {
+        root ./images;
+        autoindex on;
+        allow_methods POST GET;
+        
+    }
+
+    location /prop {
+        root ./prop;
+        allow_methods POST;
+    }
+
+}
+
+server {
+    listen 1234;
+	server_name localhost;
+    host 127.0.0.1;
     root indexx;
     client_max_body_size 10M;
     index index.html;
@@ -53,13 +84,14 @@ server {
         
     }
 }
+
 server {
-    listen 8090;
-    server_name localhost;
+    listen 8080;
+	server_name localhost;
     host 127.0.0.1;
-    root ./;
+    root indexx;
     client_max_body_size 10M;
-    index index.html;
+	index index.html;
 
     location / {
         allow_methods  DELETE POST GET;
@@ -70,15 +102,10 @@ server {
         allow_methods POST GET;
     }
 
-    location /images {
-        root ./images;
+    location /img {
+        root images/;
         autoindex on;
-        allow_methods POST;
+        allow_methods POST GET DELETE;
         
-    }
-
-    location /prop {
-        root ./prop;
-        allow_methods POST;
     }
 }

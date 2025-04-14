@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
+#include <iostream>
+#include <exception>
 #include <unistd.h>
 #include <algorithm>
 #include <cstdio>
@@ -28,6 +30,13 @@ class Response {
     public:
         Response(Request &req, ServerConfig &serv);
         ~Response();
+
+        class ExitChild : public std::exception {
+            public:
+                const char *what() const throw() {
+                    return "Exit child process";
+                }
+        };
 
         std::string sendResponse();
         std::string generateResponse();
@@ -64,7 +73,10 @@ class Response {
         void listDirectory();
 
         void setEnv();
-        void handleCGI();
+        void handleCGI(Errors &errors);
+        void childRoutine();
+        void manageBodyForCgi();
+        void manageCgiOutfile();
         std::string handleForm(Errors &errors);
 
         std::string getResponse(Errors &errors);
@@ -89,8 +101,14 @@ class Response {
         std::vector<std::string> _available_languages;
         std::string _body;
         std::vector<std::string> _order;
-        std::map<std::string, std::string> _env;
+        std::vector<std::string> _env;
         bool _listingDirectory;
+        std::string _cgiPath;
+        std::string _cgiScriptName;
+        std::string _cgiInfilePath;
+        std::string _cgiOutfilePath;
+        int _cgiPid;
+        std::string _cgiInfileSize;
 };
 
 #endif

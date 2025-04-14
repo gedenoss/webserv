@@ -65,6 +65,7 @@ class ServerConfig {
 
 		int getPort();
 		std::string getIndex() { return index; };
+		std::string getServerName() { return server_name; };
 		std::vector<LocationConfig> getLocations() const;
 };
 
