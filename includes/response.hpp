@@ -31,12 +31,12 @@ class Response {
         Response(Request &req, ServerConfig &serv);
         ~Response();
 
-        class ExitChild : public std::exception {
-            public:
-                const char *what() const throw() {
-                    return "Exit child process";
-                }
-        };
+        // class ExitChild : public std::exception {
+        //     public:
+        //         const char *what() const throw() {
+        //             return "Exit child process";
+        //         }
+        // };
 
         std::string sendResponse();
         std::string generateResponse();
@@ -77,6 +77,7 @@ class Response {
         void childRoutine();
         void manageBodyForCgi();
         void manageCgiOutfile();
+        void parent();
         std::string handleForm(Errors &errors);
 
         std::string getResponse(Errors &errors);
@@ -102,13 +103,16 @@ class Response {
         std::string _body;
         std::vector<std::string> _order;
         std::vector<std::string> _env;
+        std::vector<std::string> _arg;
         bool _listingDirectory;
         std::string _cgiPath;
+        std::string _cgiBinPath;
         std::string _cgiScriptName;
         std::string _cgiInfilePath;
         std::string _cgiOutfilePath;
         int _cgiPid;
         std::string _cgiInfileSize;
+        bool _cgiIsRunning;
 };
 
 #endif

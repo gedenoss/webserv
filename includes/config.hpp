@@ -14,9 +14,8 @@ class LocationConfig {
 		std::string root;                  
 		std::string index;                
 		bool autoindex;                    
-		std::string upload_dir;            
-		std::string cgi_extension;         
-		std::string cgi_path;
+		std::string upload_dir;
+		std::map<std::string, std::string> cgi;
 		
 	public :
 		// ~LocationConfig();
@@ -26,6 +25,7 @@ class LocationConfig {
 		std::string getRoot() const { return root; };
 		bool getAutoindex() const { return autoindex; };
 		std::string getIndex() const { return index; };
+		const std::map<std::string, std::string>& getCgi() const { return cgi; };
 		std::vector<std::string> getAllowMethod() const { return allow_methods; };
 		//---------------adem------------------//
 		void handleLocRoot(std::istringstream &iss, LocationConfig& location, std::string line);

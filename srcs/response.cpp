@@ -310,14 +310,12 @@ bool Response::isNotModified(const std::map<std::string, std::string> &headers)
 
 bool Response::isCGI()
 {
-    std::string extensions[] = {".php", ".py", ".pl", ".cgi"};
-    if (_path.find("/scripts/") != std::string::npos)
+    std::string extension = _path.substr(_path.find_last_of("."), std::string::npos);
+    std::map<std::string, std::string>::const_iterator it = _location.getCgi().find(extension);
+    if (it != _location.getCgi().end())
     {
-        for (size_t i = 0; i < sizeof(extensions) / sizeof(extensions[0]); i++)
-        {
-            if (endsWith(_path, extensions[i]))
-                return true;
-        }
+        _cgiBinPath = it->second;
+        return true;
     }
     return false;
 }
@@ -370,7 +368,7 @@ std::string Response::getResponse(Errors &errors)
         return (errors.error304());
     if (isCGI())
     {
-        handleCGI();
+        handleCGI(errors);
         return ("CGI");
     }
     struct stat fileStat;
@@ -414,7 +412,7 @@ std::string Response::postResponse(Errors &errors)
 {
     std::cout << "Post response" << std::endl;
     if (isCGI())
-        handleCGI();
+        handleCGI(errors);
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
         std::cout << "Content type" << _request.getHeaders().at("Content-Type") << std::endl;
@@ -439,43 +437,6 @@ std::string Response::deleteResponse(Errors &errors)
         return (response204());
 }
 
-std::string findIndex(const std::string &dirPath, const std::string &root)
-{
-    std::string actualPath = (dirPath == "/") ? root : dirPath;
-    const std::string indexFiles[] = {"index.html", "index.htm", "index.php"};
-    DIR *dir = opendir(actualPath.c_str());
-    if (!dir)
-        return "";
-
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL)
-    {
-        for (size_t i = 0; i < sizeof(indexFiles) / sizeof(indexFiles[0]); i++)
-        {
-            if (indexFiles[i] == entry->d_name)
-            {
-                closedir(dir);
-                return actualPath + "/" + entry->d_name;
-            }
-        }
-    }
-    closedir(dir);
-    return "";
-}
-
-std::string joinPaths(const std::string& a, const std::string& b)
-{
-    if (a.empty()) return b;
-    if (b.empty()) return a;
-
-    if (a[a.size() - 1] == '/' && b[0] == '/')
-        return a + b.substr(1); // évite double slash
-    if (a[a.size() - 1] != '/' && b[0] != '/')
-        return a + "/" + b;     // ajoute slash manquant
-    return a + b;
-}
-
-
 std::string ensureRelativeDotPath(const std::string& path)
 {
     if (path.empty())
@@ -484,64 +445,6 @@ std::string ensureRelativeDotPath(const std::string& path)
         return "." + path;
          // → "/images/..." devient "./images/..."
     return "./" + path;      // → "images/..." devient "./images/..."
-}
-
-
-void Response::findPath()
-{
-    std::string path = joinPaths(_root,_request.getUrl());
-    if (path.find_last_of("/") == path.length() - 1 && _autoindex && _index != "")
-        path = path + _index;
-    else if (path.find_last_of("/") == path.length() - 1 && _autoindex)
-        path = findIndex(path, _root);
-    // path = ensureRelativeDotPath(path);
-    if (!isDirectory(path) || _request.getMethod() == "POST")
-    {
-        if (fileExists(path))
-        {
-            _path = path;
-            return;
-        }
-    }
-    std::string locationPath = _location.getPath();
-    if (_request.getUrl().find(_root) == std::string::npos)
-    {
-        std::string trimmed = _request.getUrl().substr(locationPath.length());
-        std::string subPath = joinPaths(_root, trimmed);
-        subPath = ensureRelativeDotPath(subPath);
-        std::cout << subPath << std::endl;
-        if (fileExists(subPath))
-        {
-            _path = subPath;
-            return;
-        }
-        _path = path;
-        return;
-    }
-    if (isDirectory(path))
-    {
-        if (!_index.empty())
-        {
-            std::string indexPath = joinPaths(path, _index);
-            if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
-                indexPath += "/";
-            indexPath += _index;
-            if (fileExists(indexPath))
-            {
-                _path = indexPath;
-                return;
-            }
-        }
-        if (_autoindex)
-        {
-            std::string foundIndex = findIndex(path, _root);
-            if (!foundIndex.empty())
-            {
-                _path = foundIndex;
-                return;
-            }
-        }
-    }
 }
 
 std::string Response::sendResponse()

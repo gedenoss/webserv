@@ -169,19 +169,7 @@ int launchServer(Config config) {
                     Response response(request, servers[0]);
                     std::string sendResponse = response.sendResponse();
 
-                    std::string fileContent = readFile("index.html");
-                    std::string fileExt = getFileExtension("index.html");
-                    std::string contentType = getContentType(fileExt);
-                    if (!fileContent.empty()) {
-                        send(fd, sendResponse.c_str(), sendResponse.size(), 0);
-                        if (response.getStatusCode() >= 400) {
-                            std::string errorPage = "./web/errors/" + intToString(response.getStatusCode()) + ".html";
-                            std::string errorContent = readFile(errorPage);
-                            if (!errorContent.empty()) {
-                                send(fd, errorContent.c_str(), errorContent.size(), 0);
-                            }
-                        }
-                    }
+                    send(fd, sendResponse.c_str(), sendResponse.size(), 0);
                 } else {
                     std::cout << "Disconnected client" << std::endl;
                     close(fd);

@@ -17,6 +17,15 @@ size_t stringToSizeT(const std::string &str) {
     return result;
 }
 
+void	vectorToCStringTab(const std::vector<std::string>& str, std::vector<char *>& cstr) {
+	cstr.reserve(str.size() + 1);
+	for (size_t i = 0; i < str.size(); ++i) {
+		cstr.push_back(const_cast<char *>(str[i].c_str()));
+	}
+	cstr.push_back(NULL);
+	return ;
+}
+
 
 bool fileExists(const std::string &name)
 {
@@ -26,12 +35,6 @@ bool fileExists(const std::string &name)
     return S_ISREG(pathStat.st_mode);
 }
 
-bool endsWith(const std::string &str, const std::string &suffix)
-{
-    if (str.length() < suffix.length())
-        return false;
-    return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
-}
 
 void split(const std::string &s, const std::string &delimiter, std::vector<std::string> &elements)
 {

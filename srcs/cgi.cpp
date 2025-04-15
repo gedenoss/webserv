@@ -35,9 +35,12 @@ void Response::handleCGI(Errors &errors)
     else if (_cgiPid == 0)
         childRoutine();
     else
-    {
-        
-    }
+        parent();
+}
+
+void Response::parent()
+{
+   _cgiIsRunning = true;
 }
 
 void Response::childRoutine()
@@ -45,23 +48,34 @@ void Response::childRoutine()
     std::vector<char *> envp;
     std::vector<char *> args;
 
-    if (_request.getMethod() == "POST")
-        manageBodyForCgi();
-    manageCgiOutfile();
-    if (chdir(_cgiPath.c_str()) == -1)
-        throw ExitChild();
-    setEnv();
-    for (size_t i = 0; i < _env.size(); i++)
-    {
-        const std::string &envStr = _env[i];
-        char *envCStr = new char[envStr.size() + 1];
-        std::strcpy(envCStr, envStr.c_str());
-        envp.push_back(envCStr);
+    try {
+        if (_request.getMethod() == "POST")
+            manageBodyForCgi();
+        manageCgiOutfile();
+        if (chdir(_cgiPath.c_str()) == -1) 
+        {
+            perror("chdir");
+            exit(errno);
+        }
+    
+        setEnv();
+        vectorToCStringTab(_env, envp);
+        _arg.push_back(_cgiBinPath);
+        _arg.push_back(_cgiScriptName);
+        vectorToCStringTab(_arg, args);
+
+        // On execute le script CGI
+        execve(args[0], &args[0], &envp[0]);
+        perror("execve");
+        for (size_t i = 0; i < envp.size(); i++)
+            delete[] envp[i];
+        exit(1);
     }
-    envp.push_back(NULL);
-    args.push_back(const_cast<char *>(_cgiScriptName.c_str()));
-    execve(_cgiPath.c_str(), args.data(), envp.data());
-    throw ExitChild();
+    catch(const std::exception &e)
+    {
+        perror("childRoutine exception");
+        exit(errno);
+    }
 }
 
 void Response::manageBodyForCgi()
@@ -71,7 +85,7 @@ void Response::manageBodyForCgi()
     //On ouvre l'infile
     infile.open(file.c_str());
     if (infile.fail())
-        throw ExitChild();
+        exit(errno);
     //On écrit le body dans l'infile
     infile << _request.getBody();
     std::stringstream ss;
@@ -81,10 +95,10 @@ void Response::manageBodyForCgi()
     infile.close();
     const int fd = open(file.c_str(), O_CREAT, O_RDWR);
     if (fd < 0)
-        throw ExitChild();
+        exit(errno);
     //On redirige l'entrée standard vers l'infile
     if (dup2(fd, STDIN_FILENO) == -1)
-        throw ExitChild();
+        exit(errno);
     close(fd);
 }
 
@@ -94,10 +108,10 @@ void Response::manageCgiOutfile()
     const std::string file = _cgiOutfilePath;
     const int fd = open(file.c_str(), O_CREAT | O_RDWR, 0644);
     if (fd < 0)
-        throw ExitChild();
+        exit(errno);
     //On redirige la sortie standard vers l'outfile
     if (dup2(fd, STDOUT_FILENO) == -1)
-        throw ExitChild();
+        exit(errno);
     close(fd);
 }
 
