@@ -21,6 +21,7 @@ std::string generateFileName(const std::string &scriptName, std::string typeOfFi
 
 void Response::handleCGI(Errors &errors)
 {
+    std::cout << "Handling CGI" << std::endl;   
     _cgiPath = _path.substr(0, _path.find_last_of('/') + 1);
     _cgiScriptName = _path.substr(_path.find_last_of('/') + 1, _path.npos);
     if (_request.getMethod() == "POST")
@@ -35,12 +36,54 @@ void Response::handleCGI(Errors &errors)
     else if (_cgiPid == 0)
         childRoutine();
     else
-        parent();
+    {
+        _cgiIsRunning = true;
+        checkCgiStatus();
+    }
 }
 
-void Response::parent()
+void Response::checkCgiStatus() 
 {
-   _cgiIsRunning = true;
+    std::cout << _status_code << std::endl;
+    int status;
+    if (waitpid(_cgiPid, &status, ) == -1)
+
+    else if (WIFEXITED(status) != true || WEXITSTATUS(status) != 0)
+        _status_code = 500;
+    else
+        readOutfile();
+    _cgiIsRunning = false;
+    _responseIsReady = true;
+    return;
+}
+
+void Response::readOutfile()
+{
+    std::cout << "Reading outfile" << std::endl;
+    std::ifstream toSend;
+    toSend.open(_cgiOutfilePath.c_str());
+    if (toSend.fail())
+        _status_code = 500;
+    else
+    {
+        std::stringstream buffer;
+        buffer << toSend.rdbuf();
+        _body = buffer.str();
+        std::cout << _body << std::endl;
+        toSend.close();
+    }
+}
+
+void Response::killCgi()
+{
+    if (_cgiIsRunning)
+    {
+        kill(_cgiPid, SIGKILL);
+    }
+    if (waitpid(_cgiPid, NULL, 0) < 0)
+        _status_code = 500;
+    _cgiIsRunning = false;
+    _responseIsReady = true;
 }
 
 void Response::childRoutine()
@@ -60,7 +103,7 @@ void Response::childRoutine()
     
         setEnv();
         vectorToCStringTab(_env, envp);
-        _arg.push_back(_cgiBinPath);
+        _arg.push_back("/usr/bin/python3");
         _arg.push_back(_cgiScriptName);
         vectorToCStringTab(_arg, args);
 

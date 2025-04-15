@@ -77,7 +77,9 @@ class Response {
         void childRoutine();
         void manageBodyForCgi();
         void manageCgiOutfile();
-        void parent();
+        void checkCgiStatus();
+        void readOutfile();
+        void killCgi();
         std::string handleForm(Errors &errors);
 
         std::string getResponse(Errors &errors);
@@ -113,6 +115,7 @@ class Response {
         int _cgiPid;
         std::string _cgiInfileSize;
         bool _cgiIsRunning;
+        bool _responseIsReady;
 };
 
 #endif

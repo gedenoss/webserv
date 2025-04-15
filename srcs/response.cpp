@@ -224,6 +224,16 @@ std::string Response::response200(Errors &errors)
     setEtag(_path);
     if (_headers["Content-Language"] == "")
         return errors.error400();
+    if (_cgiInfilePath != "")
+    {
+        remove(_cgiInfilePath.c_str());
+        _cgiInfilePath = "";
+    }
+    if (_cgiOutfilePath != "")
+    {
+        remove(_cgiOutfilePath.c_str());
+        _cgiOutfilePath = "";
+    }
     return generateResponse();
 }
 
@@ -310,6 +320,7 @@ bool Response::isNotModified(const std::map<std::string, std::string> &headers)
 
 bool Response::isCGI()
 {
+    return true;
     std::string extension = _path.substr(_path.find_last_of("."), std::string::npos);
     std::map<std::string, std::string>::const_iterator it = _location.getCgi().find(extension);
     if (it != _location.getCgi().end())
@@ -358,18 +369,22 @@ Range parseRange(const std::string &rangeHeader, long fileSize)
 
 std::string Response::getResponse(Errors &errors)
 {
-    if (!fileExists(_path))
-        return (errors.error404());
-    if (!isAcceptable())
-        return (errors.error406());
-    if (!hasReadPermission(_path))
-        return (errors.error403());
-    if (!handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
-        return (errors.error304());
     if (isCGI())
     {
         handleCGI(errors);
-        return ("CGI");
+        if (_status_code != 0)
+            return (errors.generateError(_status_code));
+    }
+    else 
+    {
+        if (!fileExists(_path))
+            return (errors.error404());
+        if (!isAcceptable())
+            return (errors.error406());
+        if (!hasReadPermission(_path))
+            return (errors.error403());
+        if (!handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
+            return (errors.error304());
     }
     struct stat fileStat;
 
@@ -412,7 +427,11 @@ std::string Response::postResponse(Errors &errors)
 {
     std::cout << "Post response" << std::endl;
     if (isCGI())
+    {
         handleCGI(errors);
+        if (_status_code != 200)
+        return (errors.generateError(_status_code));
+    }
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
         std::cout << "Content type" << _request.getHeaders().at("Content-Type") << std::endl;

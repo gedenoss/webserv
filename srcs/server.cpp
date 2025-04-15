@@ -171,7 +171,7 @@ int launchServer(Config config) {
 
                     send(fd, sendResponse.c_str(), sendResponse.size(), 0);
                 } else {
-                    std::cout << "Disconnected client" << std::endl;
+                    // std::cout << "Disconnected client" << std::endl;
                     close(fd);
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
                 }
