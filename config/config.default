@@ -10,6 +10,7 @@ server {
         allow_methods  DELETE POST GET;
         autoindex on;
         index index.html;
+        cgi .py /usr/bin/python3;
     }
     location /admin {
         allow_methods POST GET;

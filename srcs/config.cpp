@@ -260,8 +260,24 @@ void LocationConfig::handleAutoIndex(std::istringstream &iss, LocationConfig& lo
 	}
 }
 
-void LocationConfig::handleCGI(std::istringstream &iss, LocationConfig& location){
-	(void)iss;(void)location;
+void LocationConfig::handleCGI(std::istringstream &iss, LocationConfig& location, std::string line){
+	std::string	ext, path;
+	iss	>> ext >> path;
+	ext = cleanValue(ext);
+	path = cleanValue(path);
+	if (countWords(cleanValue(line)) != 3)
+		exit(1);
+	if (ext.empty() || path.empty())
+	{
+		std::cerr << "Error: Missing value for cgi directive." << std::endl;
+		exit(1);
+	}
+	if (!isPathValid(path))
+	{
+		std::cerr << "Error: Invalid cgi path: " << path << std::endl;
+		exit(1);
+	}
+	location.cgi[ext] = path;
 }
 
 // bool isNotUrl(std::string value)
@@ -309,8 +325,8 @@ void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& lo
 			handleLocAllMethods(iss, location);
 		else if (key == "autoindex")
 			handleAutoIndex(iss, location, line);
-		else if (key == "CGI")
-			handleCGI(iss, location);
+		else if (key == "cgi")
+			handleCGI(iss, location, line);
 		else if (key == "return")
 			handleReturn(iss, location, line);
 		else

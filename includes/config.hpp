@@ -32,7 +32,7 @@ class LocationConfig {
 		void handleLocIndex(std::istringstream &iss, LocationConfig& location, std::string line);
 		void handleLocAllMethods(std::istringstream &iss, LocationConfig& location);
 		void handleAutoIndex(std::istringstream &iss, LocationConfig& location, std::string line);
-		void handleCGI(std::istringstream &iss, LocationConfig& location);
+		void handleCGI(std::istringstream &iss, LocationConfig& location, std::string line);
 		void handleReturn(std::istringstream &iss, LocationConfig& location, std::string line);
 		//------------plus adem----------------//
 

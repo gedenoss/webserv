@@ -111,6 +111,16 @@ void checkPV(std::string& value)
             value.erase(value.size() - 1);
 }
 
+std::string ensureRelativeDotPath(const std::string& path)
+{
+    if (path.empty())
+        return "./";
+    if (path[0] == '/')
+        return "." + path;
+         // → "/images/..." devient "./images/..."
+    return "./" + path;      // → "images/..." devient "./images/..."
+}
+
 //----------------------------HAS FUNCTIONS----------------------------------------------------//
 
 bool hasReadPermission(const std::string &path)

@@ -31,15 +31,10 @@ class Response {
         Response(Request &req, ServerConfig &serv);
         ~Response();
 
-        // class ExitChild : public std::exception {
-        //     public:
-        //         const char *what() const throw() {
-        //             return "Exit child process";
-        //         }
-        // };
 
         std::string sendResponse();
         std::string generateResponse();
+        std::string generateResponseCgi();
         void findLocation(Errors &errors);
 
         void setStatusCode(int status_code);
@@ -52,6 +47,9 @@ class Response {
         void setContentLanguage();
         void setLastModified(const std::string &path);
         void setEtag(const std::string &path);
+        void setHeadersForResponse();
+        void setStatusCodeAndMessage();
+        void setInfoRequest();
 
         int getStatusCode() const;
         std::string getPath() const;
@@ -67,6 +65,9 @@ class Response {
         bool handleIfModifiedSince(const std::map<std::string, std::string> &headers);
         bool isNotModified(const std::map<std::string, std::string> &headers);
         bool isCGI();
+        bool isContentLanguageEmpty();
+        bool handleFileErrors();
+        bool handleRange();
         std::string sendFileResponse();
         bool tryPath(const std::string &p);
         void findPath();
@@ -89,6 +90,8 @@ class Response {
         std::string response200(Errors &errors);
         std::string response204();
 
+        void cleanUpCgiFiles();
+
     private:
         Request &_request;
         Range _range;
@@ -103,10 +106,12 @@ class Response {
         std::map<std::string, std::string> _headers;
         std::vector<std::string> _available_languages;
         std::string _body;
+        std::string _headerCgi;
         std::vector<std::string> _order;
         std::vector<std::string> _env;
         std::vector<std::string> _arg;
         bool _listingDirectory;
+        bool _getBody;
         std::string _cgiPath;
         std::string _cgiBinPath;
         std::string _cgiScriptName;

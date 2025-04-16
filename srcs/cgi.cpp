@@ -44,12 +44,15 @@ void Response::handleCGI(Errors &errors)
 
 void Response::checkCgiStatus() 
 {
-    std::cout << _status_code << std::endl;
     int status;
-    if (waitpid(_cgiPid, &status, ) == -1)
-
+    if (waitpid(_cgiPid, &status, 0) == -1)
+    {
+        perror("waitpid");
+        setStatusCode(500);
+        return;
+    }
     else if (WIFEXITED(status) != true || WEXITSTATUS(status) != 0)
-        _status_code = 500;
+        setStatusCode(500);
     else
         readOutfile();
     _cgiIsRunning = false;
@@ -63,14 +66,23 @@ void Response::readOutfile()
     std::ifstream toSend;
     toSend.open(_cgiOutfilePath.c_str());
     if (toSend.fail())
-        _status_code = 500;
+        setStatusCode(500);
     else
     {
         std::stringstream buffer;
         buffer << toSend.rdbuf();
-        _body = buffer.str();
-        std::cout << _body << std::endl;
-        toSend.close();
+        std::string full = buffer.str();
+    size_t pos = full.find("\r\n\r\n");
+    if (pos == std::string::npos)
+        pos = full.find("\n\n");
+
+    if (pos != std::string::npos) {
+        _headerCgi = full.substr(0, pos);
+        _body = full.substr(pos + 4);
+    } else {
+        _body = full;  // fallback si pas de headers
+    }
+
     }
 }
 
@@ -81,7 +93,7 @@ void Response::killCgi()
         kill(_cgiPid, SIGKILL);
     }
     if (waitpid(_cgiPid, NULL, 0) < 0)
-        _status_code = 500;
+        setStatusCode(500);
     _cgiIsRunning = false;
     _responseIsReady = true;
 }

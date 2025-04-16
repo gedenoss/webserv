@@ -67,11 +67,11 @@ void Response::listDirectory()
     if (dir == NULL)
     {
         if (errno == ENOENT)
-            _status_code = 404;
+            setStatusCode(404);
         else if (errno == EACCES)
-            _status_code = 403;
+            setStatusCode(403);
         else
-            _status_code = 500;
+            setStatusCode(500);
         return;
     }
 
@@ -107,7 +107,7 @@ void Response::listDirectory()
     closedir(dir);
     html << "</ul><hr></body></html>\n";
     _body = html.str();
-    _status_code = 200;
+    setStatusCode(200);
 }
 
 bool Response::tryPath(const std::string& p)
@@ -141,7 +141,7 @@ void Response::findPath()
             _path = subPath;
             return;
         }
-        _status_code = 404;
+        setStatusCode(403);
         return;
     }
     if (tryPath(path) || tryPath(subPath))
@@ -185,11 +185,11 @@ void Response::findPath()
     // 5. Si c’est un dossier mais autoindex désactivé → 403
     if (!_autoindex && _index.empty() && (pathIsDir || subPathIsDir))
     {
-        _status_code = 403;
+        setStatusCode(403);
         _path = "";
         return;
     }
     // 6. Sinon : rien trouvé → 404
-    _status_code = 404;
+    setStatusCode(404);
     _path = "";
 }
