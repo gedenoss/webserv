@@ -78,6 +78,7 @@ class Response {
         void manageBodyForCgi();
         void manageCgiOutfile();
         std::string handleForm(Errors &errors);
+        std::string handleUpload(Errors &errors);
 
         std::string getResponse(Errors &errors);
         std::string postResponse(Errors &errors);

@@ -154,10 +154,8 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		return ;
 	}
 
-	std::cout << "content legenth: " << getHeaders().find("Content-Length")->second << std::endl;
 	if (headersFinished) {
-		std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");
-		
+		std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");	
 		if (contentLengthIt	!= getHeaders().end()) {
 			
 			bool conversionSuccess = false;
@@ -199,9 +197,6 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 				
 				delete[] buffer;
 				setBody(bodyContent);
-				std::cout << "Body1:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
-				
-				
 				if (bodyContent.length() != contentLength) {
 					std::cout << "Warning: Body	length (" << bodyContent.length() 
 							  << ") does not match Content-Length (" << contentLength << ")" << std::endl;
@@ -304,5 +299,5 @@ void Request::printRequest() const {
 			std::cout << "  " << it->first << ": " << it->second << "\n";
 	}
 
-	std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
+	//std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
 }

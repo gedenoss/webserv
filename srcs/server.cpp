@@ -199,44 +199,30 @@ int launchServer(Config config) {
                 }
 
                 // Traite la requête après lecture complète
-                Request request(1024, 1024);
+                Request request(1024 * 1024, 1024 * 1024);
                 
                 request.parse(fullRequest, config);
                 request.printRequest();
-
-                // Gérer /upload POST
-                if (request.getMethod() == "POST" && request.getUrl() == "/upload") {
-                    try {
-                        handleUpload(request, "/home/gbouguer/42/webserv/upload");
-                        std::string response = "HTTP/1.1 201 Created\r\n\r\nFile uploaded successfully.";
-                        send(fd, response.c_str(), response.size(), 0);
-                    } catch (const std::exception &e) {
-                        std::string response = "HTTP/1.1 500 Internal Server Error\r\n\r\n" + std::string(e.what());
-                        send(fd, response.c_str(), response.size(), 0);
-                    }
-                } else {
                     // Choix du serveur par défaut
-                    Response response(request, servers[0]);
-                    std::string sendResponse = response.sendResponse();
+                Response response(request, servers[0]);
+                std::string sendResponse = response.sendResponse();
 
-                    std::string fileContent = readFile("index.html");
-                    std::string fileExt = getFileExtension("index.html");
-                    std::string contentType = getContentType(fileExt);
-                    if (!fileContent.empty()) {
-                        send(fd, sendResponse.c_str(), sendResponse.size(), 0);
-                        if (response.getStatusCode() >= 400) {
-                            std::string errorPage = "./web/errors/" + intToString(response.getStatusCode()) + ".html";
-                            std::string errorContent = readFile(errorPage);
-                            if (!errorContent.empty()) {
-                                send(fd, errorContent.c_str(), errorContent.size(), 0);
-                            }
+                std::string fileContent = readFile("index.html");
+                std::string fileExt = getFileExtension("index.html");
+                std::string contentType = getContentType(fileExt);
+                if (!fileContent.empty()) {
+                    send(fd, sendResponse.c_str(), sendResponse.size(), 0);
+                    if (response.getStatusCode() >= 400) {
+                        std::string errorPage = "./web/errors/" + intToString(response.getStatusCode()) + ".html";
+                        std::string errorContent = readFile(errorPage);
+                        if (!errorContent.empty()) {
+                            send(fd, errorContent.c_str(), errorContent.size(), 0);
                         }
                     }
                 }
             }
         }
     }
-
     // Fermeture des descripteurs de fichiers
     for (size_t i = 0; i < server_fds.size(); i++) {
         close(server_fds[i]);

@@ -2,6 +2,7 @@
 #include "../includes/request.hpp"
 #include "../includes/utils.hpp"
 #include "../includes/errors.hpp"
+#include "../includes/upload.hpp"
 
 Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(serv)
 {
@@ -432,12 +433,16 @@ std::string Response::postResponse(Errors &errors)
         handleCGI(errors);
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
-        if (_request.getHeaders().at("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos)
+        const std::string &contentType = _request.getHeaders().at("Content-Type");
+
+        if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
             return handleForm(errors);
+        else if (contentType.find("multipart/form-data") != std::string::npos)
+            return handleUpload(errors);
         else
             return errors.error415();
     }
-    return (errors.error415());
+    return errors.error415();
 }
 
 std::string Response::deleteResponse(Errors &errors)

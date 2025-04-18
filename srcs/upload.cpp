@@ -1,6 +1,7 @@
 #include "../includes/request.hpp"
 #include "../includes/response.hpp"
 #include "../includes/utils.hpp"
+#include "../includes/errors.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -18,56 +19,46 @@ std::string extractBoundary(const std::string &contentType) {
 }
 
 // Fonction pour gérer l'upload
-void handleUpload(const Request &request, const std::string &uploadDir) {
-    std::string contentType = request.getHeaders().at("Content-Type");
-    std::string boundary = extractBoundary(contentType);
-    if (boundary.empty()) throw std::runtime_error("No boundary");
+std::string Response::handleUpload(Errors &errors)
+{
+    try {
+        std::string body = _request.getBody();
+        std::string boundary = "--" + _request.getHeaders().at("Content-Type").substr(
+            _request.getHeaders().at("Content-Type").find("boundary=") + 9);
 
-    // Stocker le body en binaire
-    const std::string &bodyStr = request.getBody();
-    std::vector<char> body(bodyStr.begin(), bodyStr.end());
+        size_t pos = 0;
+        while ((pos = body.find(boundary, pos)) != std::string::npos)
+        {
+            pos += boundary.length();
+            size_t endPos = body.find(boundary, pos);
+            if (endPos == std::string::npos)
+                break;
 
-    std::string fullBoundary = boundary;
-    std::string endBoundary = boundary + "--";
+            std::string part = body.substr(pos, endPos - pos);
+            size_t fileNamePos = part.find("filename=\"");
+            if (fileNamePos != std::string::npos)
+            {
+                size_t fileNameEnd = part.find("\"", fileNamePos + 10);
+                std::string fileName = part.substr(fileNamePos + 10, fileNameEnd - (fileNamePos + 10));
+                size_t fileContentStart = part.find("\r\n\r\n", fileNameEnd) + 4;
+                size_t fileContentEnd = part.rfind("\r\n", endPos);
+                std::string fileContent = part.substr(fileContentStart, fileContentEnd - fileContentStart);
 
-    size_t pos = 0;
-    while (true) {
-        // Chercher le prochain boundary
-        size_t boundaryStart = std::search(body.begin() + pos, body.end(), fullBoundary.begin(), fullBoundary.end()) - body.begin();
-        if (boundaryStart == body.size()) break;
-        pos = boundaryStart + fullBoundary.length();
-
-        // Chercher la fin des headers de la part
-        std::string headerEndSeq = "\r\n\r\n";
-        size_t headerEnd = std::search(body.begin() + pos, body.end(), headerEndSeq.begin(), headerEndSeq.end()) - body.begin();
-        if (headerEnd == body.size()) break;
-
-        std::string partHeaders(body.begin() + pos, body.begin() + headerEnd);
-        pos = headerEnd + 4;
-
-        if (partHeaders.find("filename=\"") != std::string::npos) {
-            // Extraire le nom de fichier
-            size_t filenameStart = partHeaders.find("filename=\"") + 10;
-            size_t filenameEnd = partHeaders.find("\"", filenameStart);
-            std::string filename = partHeaders.substr(filenameStart, filenameEnd - filenameStart);
-
-            // Chercher le prochain boundary
-            size_t partEnd = std::search(body.begin() + pos, body.end(), fullBoundary.begin(), fullBoundary.end()) - body.begin();
-            if (partEnd == body.size()) break;
-
-            // Retirer les \r\n de fin de section
-            size_t fileEnd = partEnd;
-            if (fileEnd >= 2 && body[fileEnd - 2] == '\r' && body[fileEnd - 1] == '\n')
-                fileEnd -= 2;
-
-            // Écrire le fichier
-            std::string filepath = uploadDir + "/" + filename;
-            std::ofstream out(filepath.c_str(), std::ios::binary);
-            out.write(&body[pos], fileEnd - pos);
-            out.close();
-
-            std::cout << "✅ Uploaded: " << filename << " (" << (fileEnd - pos) << " bytes)\n";
-            pos = partEnd;
+                std::ofstream outFile(("/home/gbouguer/42/webserv/upload/" + fileName).c_str(), std::ios::binary);
+                if (!outFile.is_open())
+                    throw std::runtime_error("Failed to open file for writing");
+                outFile.write(fileContent.c_str(), fileContent.size());
+                outFile.close();
+            }
+            pos = endPos;
         }
+
+        setStatusCode(201);
+        setStatusMessage("Created");
+        setHeaders("Content-Type", "text/plain");
+        setBody("File uploaded successfully.");
+        return generateResponse();
+    } catch (const std::exception &e) {
+        return errors.error500();
     }
 }
