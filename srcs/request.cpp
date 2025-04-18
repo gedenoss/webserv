@@ -35,8 +35,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	std::string	line;
 	(void)config;
 	bool headersFinished = false;
-
-	if (rawRequest.size() >	8000) {
+	if (rawRequest.size() >	8000 * 100 * 100) {
 		_errorCode = 431;	
 		return;
 	}
@@ -155,7 +154,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		return ;
 	}
 
-	
+	std::cout << "content legenth: " << getHeaders().find("Content-Length")->second << std::endl;
 	if (headersFinished) {
 		std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");
 		
@@ -200,6 +199,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 				
 				delete[] buffer;
 				setBody(bodyContent);
+				std::cout << "Body1:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
 				
 				
 				if (bodyContent.length() != contentLength) {
@@ -269,6 +269,17 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		
 		_errorCode = 400;	
 		return ;
+	}
+	std::map<std::string, std::string>::const_iterator multipartIt = getHeaders().find("Content-Type");
+	if (multipartIt != getHeaders().end()) {
+    std::string contentType = multipartIt->second;
+    if (contentType.find("multipart/form-data") != std::string::npos) {
+        size_t boundaryPos = contentType.find("boundary=");
+        if (boundaryPos != std::string::npos) {
+            std::string boundary = contentType.substr(boundaryPos + 9);
+            parseMultipartFormData(getBody(), boundary);
+        	}
+    	}
 	}
 
 	_errorCode = 200;	

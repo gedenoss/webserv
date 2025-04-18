@@ -88,3 +88,40 @@ size_t Request::safeStringToUlong(const std::string&	str, bool& success) {
 	success	= true;
 	return static_cast<size_t>(result);
 }
+
+void Request::parseMultipartFormData(const std::string& body, const std::string& boundary) {
+    std::string delimiter = "--" + boundary;
+    size_t pos = 0;
+
+    while ((pos = body.find(delimiter, pos)) != std::string::npos) {
+        size_t start = pos + delimiter.length();
+        if (body.compare(start, 2, "--") == 0)
+            break; // End of multipart
+
+        start += 2; // skip \r\n
+        size_t headersEnd = body.find("\r\n\r\n", start);
+        if (headersEnd == std::string::npos) break;
+
+        std::string partHeaders = body.substr(start, headersEnd - start);
+        size_t contentStart = headersEnd + 4;
+        size_t nextDelimiter = body.find(delimiter, contentStart);
+
+        std::string content = body.substr(contentStart, nextDelimiter - contentStart);
+
+        // Chercher filename et nom
+        if (partHeaders.find("filename=") != std::string::npos) {
+            // Extraire le nom du fichier
+            size_t fnameStart = partHeaders.find("filename=\"") + 10;
+            size_t fnameEnd = partHeaders.find("\"", fnameStart);
+            std::string filename = partHeaders.substr(fnameStart, fnameEnd - fnameStart);
+
+            std::ofstream outFile(("uploads/" + filename).c_str(), std::ios::binary);
+            outFile.write(content.c_str(), content.size());
+            outFile.close();
+
+            std::cout << "✔️ Fichier extrait : " << filename << std::endl;
+        }
+
+        pos = nextDelimiter;
+    }
+}

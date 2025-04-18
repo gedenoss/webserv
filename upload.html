@@ -28,10 +28,19 @@
         .upload-icon:hover {
             opacity: 0.8;
         }
+
+        #loading {
+            position: absolute;
+            top: 10%;
+            color: white;
+            font-size: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
+    <div id="loading">Uploading...</div>
     <img src="/images/bal.png" alt="Upload" class="upload-icon" onclick="uploadFile()">
 
     <script>
@@ -51,18 +60,25 @@
                 const formData = new FormData();
                 formData.append('file', file);
 
+                const loadingIndicator = document.getElementById('loading');
+                loadingIndicator.style.display = 'block'; // Afficher pendant l'upload
+
                 fetch('/upload', {
                     method: 'POST',
                     body: formData
                 })
                 .then(response => {
+                    loadingIndicator.style.display = 'none'; // Cacher après l'upload
                     if (response.ok) {
                         alert('File uploaded successfully.');
+                    } else if (response.status === 413) {
+                        alert('File is too large.');
                     } else {
-                        alert('Failed to upload the file.');
+                        alert('Failed to upload the file. Status: ' + response.status);
                     }
                 })
                 .catch(error => {
+                    loadingIndicator.style.display = 'none'; // Cacher après une erreur
                     console.error('Error:', error);
                     alert('Error occurred while uploading the file.');
                 });
@@ -71,6 +87,13 @@
             fileInput.click();
         }
     </script>
+
+    <noscript>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button type="submit">Upload</button>
+        </form>
+    </noscript>
 
 </body>
 </html>

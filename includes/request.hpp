@@ -36,7 +36,7 @@ class Request {
         bool isValidHttpVersion();
         bool isValidUrl();
         bool isMethodAllowedForRoute(Config &config);
-        
+        void parseMultipartFormData(const std::string& body, const std::string& boundary);
         std::string getMethod() const;
         std::string getUrl() const;
         std::string getHttpVersion() const;
