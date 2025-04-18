@@ -52,6 +52,7 @@ class Request {
         void setUrl(const std::string& u);
         void setHttpVersion(const std::string& v);
         void setBody(const std::string& b);
+        void setQueryString(const std::string& q) { _queryString = q; }
         void addHeader(const std::string& key, const std::string& value);
 
         void printRequest() const;

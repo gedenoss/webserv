@@ -87,7 +87,7 @@ class Response {
         std::string postResponse(Errors &errors);
         std::string deleteResponse(Errors &errors);
 
-        std::string response200(Errors &errors);
+        std::string validResponse(Errors &errors);
         std::string response204();
 
         void cleanUpCgiFiles();

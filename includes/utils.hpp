@@ -28,5 +28,6 @@ bool isNumber(const	std::string& str);
 void checkPV(std::string &value);
 int countWords(const std::string& str);
 std::string ensureRelativeDotPath(const std::string& path);
+std::string readPartialFile(const std::string &path, Range &range);
 
 #endif

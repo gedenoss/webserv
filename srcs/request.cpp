@@ -53,7 +53,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	}
 
 	std::istringstream requestLine(line);
-	std::string	method,	url, httpVersion;
+	std::string	method,	url, httpVersion, queryString;
 	requestLine	>> method >> url >> httpVersion;
 
 	if (url.length() > 8000) {
@@ -61,10 +61,14 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		return;
 	}
 
+	if (url.find("?") != std::string::npos) {
+		url = url.substr(0, url.find("?"));
+		queryString = url.substr(url.find("?") + 1);
+	}
 	setMethod(method);
 	setUrl(url);
 	setHttpVersion(httpVersion);
-	
+	setQueryString(queryString);
 
 	if (!isValidMethod())
 	{
@@ -255,6 +259,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 				return;
 			}
 		}
+		
 
 		
 		std::map<std::string, std::string>::const_iterator expectIt	= getHeaders().find("Expect");

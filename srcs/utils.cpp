@@ -121,6 +121,22 @@ std::string ensureRelativeDotPath(const std::string& path)
     return "./" + path;      // → "images/..." devient "./images/..."
 }
 
+std::string readPartialFile(const std::string &path, Range &range)
+{
+    std::string body;
+    std::ifstream file(path.c_str(), std::ios::binary);
+    if (!file.is_open())
+        return "";
+    file.seekg(range.start);
+    size_t length = range.end - range.start + 1;
+    char *buffer = new char[length];
+    file.read(buffer, length);
+    body = std::string(buffer, length);
+    delete[] buffer;
+    file.close();
+    return body;
+}
+
 //----------------------------HAS FUNCTIONS----------------------------------------------------//
 
 bool hasReadPermission(const std::string &path)

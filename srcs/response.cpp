@@ -23,18 +23,7 @@ std::string Response::sendFileResponse()
 {
     std::string body = "";
     if (_range.isPartial)
-    {
-        std::ifstream file(_path.c_str(), std::ios::binary);
-        if (!file.is_open())
-            return "";
-        file.seekg(_range.start);
-        size_t length = _range.end - _range.start + 1;
-        char *buffer = new char[length];
-        file.read(buffer, length);
-        body = std::string(buffer, length);
-        delete[] buffer;
-        file.close();
-    }
+        body = readPartialFile(_path, _range);
     else
         body = readFile(_path);
     return body;
@@ -55,34 +44,41 @@ bool Response::isCGI()
     return false;
 }
 
-std::string Response::response200(Errors &errors)
+std::string Response::validResponse(Errors &errors)
 {
     setStatusCodeAndMessage();
-    
     if (isContentLanguageEmpty()) {
         return errors.error400();
     }
-    
     cleanUpCgiFiles();
-
     return generateResponse();
 }
 
 void Response::setStatusCodeAndMessage()
 {
-    if (_status_code == 201) {
+    if (_status_code == 204)
+    {
+        setStatusMessage("No Content");
+        setTime();
+        setEtag(_path);
+    }
+    else if (_status_code == 201) {
+    { 
         setStatusMessage("Created");
+        setHeadersForResponse();
+    }
     } else if (!_range.isPartial) {
         setStatusCode(200);
         setStatusMessage("OK");
+        setHeadersForResponse();
     } else {
         setStatusCode(206);
         setStatusMessage("Partial Content");
+        setHeadersForResponse();
     }
 }
 
-bool Response::isContentLanguageEmpty()
-{
+bool Response::isContentLanguageEmpty() {
     return _headers["Content-Language"].empty();
 }
 
@@ -96,16 +92,6 @@ void Response::cleanUpCgiFiles()
         remove(_cgiOutfilePath.c_str());
         _cgiOutfilePath.clear();
     }
-}
-
-
-std::string Response::response204()
-{
-    setStatusCode(204);
-    setStatusMessage("No Content");
-    setTime();
-    setEtag(_path);
-    return generateResponse();
 }
 
 bool Response::isAcceptable()
@@ -202,7 +188,7 @@ Range parseRange(const std::string &rangeHeader, long fileSize)
         range.end = stringToSizeT(endStr.c_str());
     else
         range.end = fileSize - 1;
-    if (range.start > range.end || range.end < 0 || range.start > range.end || range.end > static_cast<size_t>(fileSize))
+    if (range.start < 0 || range.end < 0 || range.start > range.end || range.end >= static_cast<size_t>(fileSize))
         range.isValid = false;
     if (range.start > 0 || range.end < static_cast<size_t> (fileSize - 1))
         range.isPartial = true;
@@ -254,7 +240,7 @@ bool Response::handleFileErrors()
     if (handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
     {
         setStatusCode(304);
-        return true;
+        return false;
     }
     return false;
 }
@@ -282,8 +268,12 @@ bool Response::handleRange()
 
 std::string Response::getResponse(Errors &errors)
 {
+    //Check all the errors
+    if (handleFileErrors())
+        return (errors.generateError(_status_code));
     if (handleRange())
         return (errors.generateError(_status_code));
+    //CGI handling
     if (isCGI())
     {
         handleCGI(errors);
@@ -291,11 +281,8 @@ std::string Response::getResponse(Errors &errors)
             return (errors.generateError(_status_code));
         return (generateResponseCgi());
     }
-    if (handleFileErrors())
-        return (errors.generateError(_status_code));
-    if (_getBody == true)
-        _body = sendFileResponse();
-    return (response200(errors));
+    _body = sendFileResponse();
+    return (validResponse(errors));
 }
 
 std::string Response::handleForm(Errors &errors)
@@ -315,12 +302,17 @@ std::string Response::handleForm(Errors &errors)
     file << body;
     file.close();
     setStatusCode(201);
-    return response200(errors);
+    return validResponse(errors);
 }
+
+std::string handleUpload(Errors &errors)
+{
+    std::cout << "Handle upload" << std::endl;
+}
+
 
 std::string Response::postResponse(Errors &errors)
 {
-    std::cout << "Post response" << std::endl;
     if (isCGI())
     {
         handleCGI(errors);
@@ -331,12 +323,12 @@ std::string Response::postResponse(Errors &errors)
     {
         if (_request.getHeaders().at("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos)
             return handleForm(errors);
-        else
-            return errors.error415();
+        else if (_request.getHeaders().at("Content-Type").find("multipart/form-data") != std::string::npos)
+            return handleUpload(errors);
+        return errors.error415();
     }
     return (errors.error415());
 }
-
 std::string Response::deleteResponse(Errors &errors)
 {
     if (!fileExists(_path))
@@ -345,8 +337,9 @@ std::string Response::deleteResponse(Errors &errors)
         return (errors.error403());
     else if (std::remove(_path.c_str()) != 0)
         return (errors.error500());
-    else 
-        return (response204());
+    _status_code = 204;
+    return (validResponse(errors));
+    
 }
 
 std::string Response::sendResponse()
@@ -356,8 +349,10 @@ std::string Response::sendResponse()
         return (errors.generateError(_request.getErrorCode()));
     setInfoRequest();
     findPath();
-    if (_path.empty())
-        return (errors.error404());
+    //Do i find the file ? -> no error 404
+    //Do I have the right to read/write it ? -> no error 403
+    if (_status_code != 0)
+        return (errors.generateError(_status_code));
     if (_request.getMethod() == "GET") {
         return (getResponse(errors));
     } 
