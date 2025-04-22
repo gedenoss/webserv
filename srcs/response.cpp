@@ -180,6 +180,30 @@ std::string Response::getLanguage()
     return "en-US"; // Langue par défaut
 }
 
+int Response::getContentLength() {
+    const std::map<std::string, std::string> &headers = _request.getHeaders();
+    std::map<std::string, std::string>::const_iterator it = headers.find("Content-Length");
+
+    if (it == headers.end())
+        return -10;
+
+    const std::string &value = it->second;
+
+    for (size_t i = 0; i < value.length(); ++i) {
+        if (!std::isdigit(value[i]))
+            return -11;
+    }
+
+    std::istringstream iss(value);
+    int length;
+    iss >> length;
+
+    if (iss.fail() || length < 0)
+        return -1;
+
+    return length;
+}
+
 std::string Response::sendFileResponse()
 {
     std::string body = "";

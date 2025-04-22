@@ -61,6 +61,8 @@ class Response {
 
         std::string getContentType();
         std::string getLanguage();
+        int getContentLength();
+
 
         bool isAcceptable();
         bool isModifiedSince(const std::string &ifModifiedSince);
