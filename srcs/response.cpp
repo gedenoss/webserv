@@ -31,16 +31,15 @@ std::string Response::sendFileResponse()
 
 bool Response::isCGI()
 {
+    return true;
     std::string extension = _path.substr(_path.find_last_of("."), std::string::npos);
     std::map<std::string, std::string>::const_iterator it = _location.getCgi().find(extension);
     if (it != _location.getCgi().end())
     {
         _cgiBinPath = it->second;
-        std::cout << "CGI bin path : " << _cgiBinPath << std::endl;
         _getBody = false;
         return true;
     }
-    std::cout << "Is not a CGI " << std::endl;
     return false;
 }
 
@@ -198,8 +197,11 @@ Range parseRange(const std::string &rangeHeader, long fileSize)
 std::string Response::generateResponseCgi()
 {
     std::stringstream response;
+    std::cout << std::endl;
     if (_range.isPartial)
         _status_code = 206; // HTTP 206 Partial Content
+    else
+        _status_code = 200; // HTTP 200 OK
     response << "HTTP/1.1 " << _status_code << " " << (_status_code == 206 ? "Partial Content" : "OK") << "\r\n";
     response << _headerCgi << "\r\n";
     if (_range.isPartial)
@@ -217,6 +219,7 @@ std::string Response::generateResponseCgi()
     }
     else
         response << _body;
+    cleanUpCgiFiles();
     return response.str();
 }
 
@@ -237,11 +240,11 @@ bool Response::handleFileErrors()
         setStatusCode(403);
         return true;
     }
-    if (handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
-    {
-        setStatusCode(304);
-        return false;
-    }
+    // if (handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
+    // {
+    //     setStatusCode(304);
+    //     return false;
+    // }
     return false;
 }
 
@@ -276,6 +279,7 @@ std::string Response::getResponse(Errors &errors)
     //CGI handling
     if (isCGI())
     {
+        std::cout << "CGI" << std::endl;
         handleCGI(errors);
         if (_status_code != 0)
             return (errors.generateError(_status_code));
@@ -307,7 +311,8 @@ std::string Response::handleForm(Errors &errors)
 
 std::string handleUpload(Errors &errors)
 {
-    std::cout << "Handle upload" << std::endl;
+    // std::cout << "Handle upload" << std::endl;
+    return errors.error500();
 }
 
 

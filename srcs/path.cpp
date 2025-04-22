@@ -98,7 +98,6 @@ void Response::listDirectory()
             if (relativePath[relativePath.length() - 1] != '/')
                 relativePath += '/';
             relativePath += name;
-            std::cout << "Relative path : " << relativePath << std::endl;
             // Ajout du lien vers le fichier ou dossier
             html << "<li><a href=\"" << displayName << "\">" << displayName << "</a></li>";
         }

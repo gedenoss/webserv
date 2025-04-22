@@ -6,7 +6,7 @@
 #include <iostream>	
 
 bool Request::isMethodAllowedForRoute(Config &config) {
-    std::cout << "Checking method [" << _method << "] for URL [" << _url << "]\n";
+    // std::cout << "Checking method [" << _method << "] for URL [" << _url << "]\n";
 
     std::string url = getUrl();
     size_t lastSlash = url.find_last_of('/');
@@ -56,7 +56,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
         // }
     }
 
-    std::cout << "❌ No matching location or root for [" << url << "]\n";
+    // std::cout << "❌ No matching location or root for [" << url << "]\n";
     return false;
 }
 

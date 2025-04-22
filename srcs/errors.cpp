@@ -11,7 +11,6 @@ std::string Errors::getError(int code, const std::string &message)
     _response.setStatusMessage(message);
     _response.setTime();
     std::string errorPath = toString(code) + ".html";
-    std::cout << errorPath << std::endl;
     if (fileExists(errorPath))
         _response.setBody(readFile(errorPath));
     else

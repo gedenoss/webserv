@@ -17,13 +17,15 @@ size_t stringToSizeT(const std::string &str) {
     return result;
 }
 
-void	vectorToCStringTab(const std::vector<std::string>& str, std::vector<char *>& cstr) {
-	cstr.reserve(str.size() + 1);
-	for (size_t i = 0; i < str.size(); ++i) {
-		cstr.push_back(const_cast<char *>(str[i].c_str()));
-	}
-	cstr.push_back(NULL);
-	return ;
+void vectorToCStringTab(const std::vector<std::string>& str, std::vector<char*>& cstr) {
+    cstr.reserve(str.size() + 1);  // Allouer de l'espace pour les éléments et le NULL final
+    for (size_t i = 0; i < str.size(); ++i) {
+        // Créer une copie de chaque chaîne et l'ajouter à cstr
+        char* tmp = new char[str[i].size() + 1];  // +1 pour le caractère de fin '\0'
+        std::strcpy(tmp, str[i].c_str());
+        cstr.push_back(tmp);
+    }
+    cstr.push_back(NULL);  // Ajouter un NULL à la fin du tableau pour execve
 }
 
 

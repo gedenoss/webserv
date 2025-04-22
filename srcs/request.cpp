@@ -62,8 +62,8 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	}
 
 	if (url.find("?") != std::string::npos) {
+		queryString = url.substr(url.find("?") + 1, std::string::npos);
 		url = url.substr(0, url.find("?"));
-		queryString = url.substr(url.find("?") + 1);
 	}
 	setMethod(method);
 	setUrl(url);

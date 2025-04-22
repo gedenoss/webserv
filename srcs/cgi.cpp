@@ -21,9 +21,17 @@ std::string generateFileName(const std::string &scriptName, std::string typeOfFi
 
 void Response::handleCGI(Errors &errors)
 {
-    std::cout << "Handling CGI" << std::endl;   
-    _cgiPath = _path.substr(0, _path.find_last_of('/') + 1);
+    char buffer[PATH_MAX];
+    std::string cwd = getcwd(buffer, sizeof(buffer)) ? std::string(buffer) : "";
+    if (cwd.empty()) {
+    perror("getcwd");
+    errors.error500();
+    return;
+    }
+    std::string fullpath = cwd + "/";
+    // _cgiPath = _path.substr(0, _path.find_last_of('/') + 1);
     _cgiScriptName = _path.substr(_path.find_last_of('/') + 1, _path.npos);
+    _cgiPath = fullpath;
     if (_request.getMethod() == "POST")
     {
         std::string infileName = generateFileName(_cgiScriptName, "infile");
@@ -51,18 +59,27 @@ void Response::checkCgiStatus()
         setStatusCode(500);
         return;
     }
-    else if (WIFEXITED(status) != true || WEXITSTATUS(status) != 0)
+
+    if (WIFEXITED(status)) {
+        if (WEXITSTATUS(status) != 0) {
+            std::cerr << "CGI script exited with non-zero status: " << WEXITSTATUS(status) << std::endl;
+            setStatusCode(500);
+        } else {
+            // Script CGI s'est exécuté avec succès
+            readOutfile();
+        }
+    } else {
+        std::cerr << "CGI script did not exit normally." << std::endl;
         setStatusCode(500);
-    else
-        readOutfile();
+    }
+
     _cgiIsRunning = false;
     _responseIsReady = true;
-    return;
 }
+
 
 void Response::readOutfile()
 {
-    std::cout << "Reading outfile" << std::endl;
     std::ifstream toSend;
     toSend.open(_cgiOutfilePath.c_str());
     if (toSend.fail())
@@ -79,10 +96,9 @@ void Response::readOutfile()
     if (pos != std::string::npos) {
         _headerCgi = full.substr(0, pos);
         _body = full.substr(pos + 4);
-    } else {
+        } else {
         _body = full;  // fallback si pas de headers
-    }
-
+        }
     }
 }
 
@@ -115,10 +131,13 @@ void Response::childRoutine()
     
         setEnv();
         vectorToCStringTab(_env, envp);
-        _arg.push_back("/usr/bin/python3");
-        _arg.push_back(_cgiScriptName);
+        _arg.push_back("/usr/bin/php");
+        _arg.push_back(_cgiPath + _cgiScriptName);
         vectorToCStringTab(_arg, args);
-
+        for (size_t i = 0; i < envp.size(); ++i) {
+            std::cout << "Env[" << i << "]: " << envp[i] << std::endl;
+        }
+        
         // On execute le script CGI
         execve(args[0], &args[0], &envp[0]);
         perror("execve");

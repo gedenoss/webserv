@@ -9,6 +9,7 @@
 #include <iostream>
 #include <exception>
 #include <unistd.h>
+#include <cstring>
 #include <algorithm>
 #include <cstdio>
 #include "server.hpp"
