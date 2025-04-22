@@ -29,6 +29,7 @@ class Request {
         ~Request();
 
         void parse(const std::string &rawRequest, Config &config);
+        void checkRawRequest(const std::string &rawRequest, Config &config, std::istringstream &stream, std::string line );
 
         size_t safeStringToUlong(const std::string&	str, bool& success);
 
@@ -37,6 +38,7 @@ class Request {
         bool isValidUrl();
         bool isMethodAllowedForRoute(Config &config);
         
+        std::string getIp() const;
         std::string getMethod() const;
         std::string getUrl() const;
         std::string getHttpVersion() const;
@@ -55,7 +57,7 @@ class Request {
         void setQueryString(const std::string& q) { _queryString = q; }
         void addHeader(const std::string& key, const std::string& value);
 
-        void printRequest() const;
+        std::string printRequest() const;
 };
 
 #endif

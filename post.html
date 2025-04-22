@@ -136,7 +136,6 @@
           return;
         }
 
-        // === Génère un nom de fichier simple ===
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, '-');
         const randomNumber = Math.floor(Math.random() * 9000) + 1000;
@@ -155,7 +154,7 @@
         })
         .then(response => {
           if (response.ok) {
-            window.location.href = '201.html';  // Redirection si succès
+            window.location.href = '201.html';
           } else {
             window.location.href = '500.html';
           }

@@ -31,7 +31,7 @@ std::string Response::sendFileResponse()
 
 bool Response::isCGI()
 {
-    return true;
+    // return true;
     std::string extension = _path.substr(_path.find_last_of("."), std::string::npos);
     std::map<std::string, std::string>::const_iterator it = _location.getCgi().find(extension);
     if (it != _location.getCgi().end())

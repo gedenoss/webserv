@@ -28,34 +28,32 @@ void Request::addHeader(const std::string& key,	const std::string& value) {	_hea
 
 /*--------------------------------------------------------------------------------------------------------------------------*/
 
+std::string Request::getIp() const {
+	std::string ip;
+	// const std::map<std::string,	std::string>& headersRef = getHeaders();	
+	for	(std::map<std::string, std::string>::const_iterator	it = _headers.begin(); it != _headers.end(); ++it)
+	{
+		if(it->first == "Host")
+			ip = it->second;
+	}
+	return ip;
+}
 
-
-void Request::parse(const std::string &rawRequest,	Config &config) {
-	std::istringstream stream(rawRequest);
-	std::string	line;
-	(void)config;
-	bool headersFinished = false;
-
+void Request::checkRawRequest(const std::string &rawRequest, Config &config, std::istringstream &stream, std::string line ){
 	if (rawRequest.size() >	8000) {
 		_errorCode = 431;	
 		return;
 	}
-
-	
 	if (!std::getline(stream, line)	|| line.empty()) {
 		_errorCode = 400;	
 		return;
 	}
-
-	
 	if (!line.empty() && line[line.size() -	1] == '\r')	{
 		line.erase(line.size() - 1);
 	}
-
 	std::istringstream requestLine(line);
 	std::string	method,	url, httpVersion, queryString;
 	requestLine	>> method >> url >> httpVersion;
-
 	if (url.length() > 8000) {
 		_errorCode = 414;	
 		return;
@@ -96,8 +94,17 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		_errorCode = 505;	
 		return;
 	}
-	
+}	
 
+
+void Request::parse(const std::string &rawRequest, Config &config) {
+
+	std::istringstream stream(rawRequest);
+	std::string	line;
+	(void)config;
+	bool headersFinished = false;
+
+	checkRawRequest(rawRequest, config, stream, line );
 	//le petit header bien kawaii bien sexy
 	size_t headersSize = 0;
 	while (std::getline(stream,	line)) {
@@ -172,7 +179,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 				_errorCode = 400;	
 				return ;
 			}
-			if (method == "POST" && contentLength == 0) {
+			if (_method == "POST" && contentLength == 0) {
 				_errorCode = 400; 
 				return;
 			}
@@ -213,13 +220,13 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 					return;
 				}
 			}
-		} else if (method == "POST") {
+		} else if (_method == "POST") {
 			
 			_errorCode = 411;	
 			return;
 		}
 		
-		if ((method	== "POST") && 
+		if ((_method	== "POST") && 
 			getHeaders().find("Content-Type") == getHeaders().end()) {
 			_errorCode = 400;	
 			return ;
@@ -285,7 +292,8 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 
 
 
-void Request::printRequest() const {
+std::string Request::printRequest() const {
+	std::string importantValue;
 	std::cout << "Method: "	<< getMethod() << "\n"
 			  << "URL: " << getUrl() << "\n"
 			  << "HTTP Version:	" << getHttpVersion() << "\n"
@@ -295,8 +303,13 @@ void Request::printRequest() const {
 	const std::map<std::string,	std::string>& headersRef = getHeaders();	
 	for	(std::map<std::string, std::string>::const_iterator	it = headersRef.begin(); it != headersRef.end(); ++it)
 	{
-			std::cout << "  " << it->first << ": " << it->second << "\n";
+		if(it->first == "Host")
+			importantValue = it->second;
+		std::cout << "  " << it->first << ": " << it->second << "\n";
+		
 	}
 
 	std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
+	std::cout << "  " << importantValue <<"\n";
+	return importantValue;
 }

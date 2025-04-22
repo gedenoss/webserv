@@ -17,7 +17,7 @@ int	main(int argc, char* argv[])
 	std::vector<ServerConfig> server = config.getServers();
 	if (server.empty())
 	{
-		std::cerr << "Error: No valid getServers() found	in config file." << std::endl;
+		std::cerr << "Error: No valid getServers() found in config file." << std::endl;
 		return 1;
 	}
 	else
