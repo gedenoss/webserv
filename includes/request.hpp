@@ -39,10 +39,13 @@ class Request {
         void parseMultipartFormData(const std::string& body, const std::string& boundary);
         std::string getMethod() const;
         std::string getUrl() const;
+        int getPortFromHeaders() const;
+        void parseHeaders(std::istringstream &stream, size_t &headersSize, bool &headersFinished);
         std::string getHttpVersion() const;
         std::string getBody() const;
         std::string getQueryString() const { return _queryString; };
         int getErrorCode() const;
+        
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;
         const LocationConfig& getLocation() const {return _location;}

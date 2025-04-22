@@ -13,9 +13,8 @@
 //gerer les ;
 //-----------------------------------------GETTER-------------------------------------------------------//
 
-int ServerConfig::getPort()
-{
-	return port;
+const std::vector<std::string>& ServerConfig::getAllowMethod() const {
+    return _allowMethods;
 }
 
 std::vector<LocationConfig> ServerConfig::getLocations() const

@@ -80,6 +80,9 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		return;
 	}
 
+	size_t headersSize = 0;
+	parseHeaders(stream, headersSize, headersFinished);
+
 
 	if (!isMethodAllowedForRoute(config)) {
 		_errorCode = 405;	
@@ -92,61 +95,8 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		return;
 	}
 	
-
-	//le petit header bien kawaii bien sexy
-	size_t headersSize = 0;
-	while (std::getline(stream,	line)) {
-		
-		if (!line.empty() && line[line.size() -	1] == '\r')	{
-			line.erase(line.size() - 1);
-		}
-		
-		
-		if (line.empty()) {
-			headersFinished	= true;
-			break;
-		}
-		
-		size_t colonPos	= line.find(':');
-		if (colonPos == std::string::npos) {
-			
-			_errorCode =	400;	
-			return;
-		}
-
-		std::string	key	= line.substr(0, colonPos);
-		std::string	value =	line.substr(colonPos + 1);
-		
-		
-		if (!key.empty()) {
-			size_t lastNonSpace	= key.find_last_not_of(" \t\r");
-			if (lastNonSpace != std::string::npos)
-				key.erase(lastNonSpace + 1);
-			else
-				key.clear();	
-		}
-		
-		if (!value.empty())	{
-			size_t firstNonSpace = value.find_first_not_of(" \t");
-			if (firstNonSpace != std::string::npos)
-				value.erase(0, firstNonSpace);
-			else
-				value.clear();	
-		}
-		
-		
-		if (!value.empty() && value[value.size() - 1] == '\r') {
-			value.erase(value.size() - 1);
-		}
-
-		addHeader(key, value);
-		headersSize	+= line.size();
-		
-		if (headersSize	> _maxHeadersSize) {
-			_errorCode = 431;	
-			return;
-		}
-	}
+	//suite du petit header bien kawaii bien sexy
+	parseHeaders(stream, headersSize, headersFinished);
 
 	
 	if (getHttpVersion() == "HTTP/1.1" && getHeaders().find("Host")	== getHeaders().end()) {

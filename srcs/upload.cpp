@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-// Fonction pour extraire le boundary à partir du Content-Type
 std::string extractBoundary(const std::string &contentType) {
     const std::string boundaryPrefix = "boundary=";
     size_t pos = contentType.find(boundaryPrefix);
@@ -18,7 +17,6 @@ std::string extractBoundary(const std::string &contentType) {
     return "";
 }
 
-// Fonction pour gérer l'upload
 std::string Response::handleUpload(Errors &errors)
 {
     try {

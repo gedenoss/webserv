@@ -223,7 +223,6 @@ int launchServer(Config config) {
             }
         }
     }
-    // Fermeture des descripteurs de fichiers
     for (size_t i = 0; i < server_fds.size(); i++) {
         close(server_fds[i]);
     }

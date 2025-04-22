@@ -49,6 +49,7 @@ class ServerConfig {
 		size_t client_max_body_size;       
 		std::map<int, std::string> error_pages; 
 		std::vector<LocationConfig> locations; 
+		std::vector<std::string> _allowMethods;
 
 	public:
 		void parseServer(std::ifstream&	configFile);
@@ -63,10 +64,11 @@ class ServerConfig {
 		void handleLocation(std::istringstream& iss, std::ifstream& configFile, std::string line);
 		//----------plus adem-----------//
 
-		int getPort();
+		int getPort()const { return port; };
 		std::string getIndex() { return index; };
 		std::string getServerName() { return server_name; };
 		std::vector<LocationConfig> getLocations() const;
+		const std::vector<std::string>& getAllowMethod() const;
 };
 
 class Config {
