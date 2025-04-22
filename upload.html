@@ -3,30 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload File with Icon</title>
+    <title>Simple File Upload</title>
     <style>
         body {
             background-image: url('/images/squat.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            background-color: black;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
+            color: white;
         }
 
         .upload-icon {
-            width: 300px;
-            height: 300px;
+            width: 200px;
+            height: 200px;
             cursor: pointer;
-        }
-
-        .upload-icon:hover {
-            opacity: 0.8;
         }
     </style>
 </head>
@@ -38,11 +35,9 @@
         function uploadFile() {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = '*/*';
 
             fileInput.onchange = function() {
                 const file = fileInput.files[0];
-
                 if (!file) {
                     alert('No file selected.');
                     return;
@@ -58,8 +53,10 @@
                 .then(response => {
                     if (response.ok) {
                         alert('File uploaded successfully.');
+                    } else if (response.status === 413) {
+                        alert('File is too large.');
                     } else {
-                        alert('Failed to upload the file.');
+                        alert('Failed to upload the file. Status: ' + response.status);
                     }
                 })
                 .catch(error => {

@@ -39,12 +39,16 @@ class Request {
         bool isMethodAllowedForRoute(Config &config);
         
         std::string getIp() const;
+        void parseMultipartFormData(const std::string& body, const std::string& boundary);
         std::string getMethod() const;
         std::string getUrl() const;
+        int getPortFromHeaders() const;
+        void parseHeaders(std::istringstream &stream, size_t &headersSize, bool &headersFinished);
         std::string getHttpVersion() const;
         std::string getBody() const;
         std::string getQueryString() const { return _queryString; };
         int getErrorCode() const;
+        
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;
         const LocationConfig& getLocation() const {return _location;}
@@ -57,7 +61,7 @@ class Request {
         void setQueryString(const std::string& q) { _queryString = q; }
         void addHeader(const std::string& key, const std::string& value);
 
-        std::string printRequest() const;
+        void printRequest() const;
 };
 
 #endif

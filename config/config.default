@@ -44,7 +44,7 @@ server {
         index index.html;
     }
     location /admin {
-        allow_methods POST GET;
+        allow_methods POST;
     }
 
     location /images {
@@ -75,12 +75,6 @@ server {
     location /images {
         root ./;
         autoindex on;
-        allow_methods POST GET;
-        
-    }
-
-    location /prp {
-        root ./prop;
         allow_methods POST DELETE;
         
     }

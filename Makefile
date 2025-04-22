@@ -6,8 +6,8 @@ SRC_DIR = srcs/
 INC_DIR = includes/
 BUILD = build/
 
-SRC = config.cpp main.cpp request.cpp response.cpp cgi.cpp utils.cpp request_utils.cpp errors.cpp server.cpp path.cpp initResponse.cpp
-HEADERS = request.hpp response.hpp server.hpp utils.hpp  errors.hpp config.hpp server.hpp
+SRC = config.cpp main.cpp request.cpp response.cpp cgi.cpp utils.cpp request_utils.cpp errors.cpp server.cpp path.cpp initResponse.cpp upload.cpp
+HEADERS = request.hpp response.hpp server.hpp utils.hpp  errors.hpp config.hpp server.hpp upload.hpp
 
 SRCS = $(addprefix $(SRC_DIR), $(SRC))
 OBJS = $(addprefix $(BUILD), $(SRC:.cpp=.o))

@@ -2,6 +2,7 @@
 #include "../includes/request.hpp"
 #include "../includes/utils.hpp"
 #include "../includes/errors.hpp"
+#include "../includes/upload.hpp"
 
 std::string Response::generateResponse()
 {
@@ -309,12 +310,6 @@ std::string Response::handleForm(Errors &errors)
     return validResponse(errors);
 }
 
-std::string handleUpload(Errors &errors)
-{
-    // std::cout << "Handle upload" << std::endl;
-    return errors.error500();
-}
-
 
 std::string Response::postResponse(Errors &errors)
 {
@@ -326,13 +321,16 @@ std::string Response::postResponse(Errors &errors)
     }
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
-        if (_request.getHeaders().at("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos)
+        const std::string &contentType = _request.getHeaders().at("Content-Type");
+
+        if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
             return handleForm(errors);
-        else if (_request.getHeaders().at("Content-Type").find("multipart/form-data") != std::string::npos)
+        else if (contentType.find("multipart/form-data") != std::string::npos)
             return handleUpload(errors);
-        return errors.error415();
+        else
+            return errors.error415();
     }
-    return (errors.error415());
+    return errors.error415();
 }
 std::string Response::deleteResponse(Errors &errors)
 {

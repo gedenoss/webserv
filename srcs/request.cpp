@@ -39,8 +39,13 @@ std::string Request::getIp() const {
 	return ip;
 }
 
-void Request::checkRawRequest(const std::string &rawRequest, Config &config, std::istringstream &stream, std::string line ){
-	if (rawRequest.size() >	8000) {
+
+void Request::parse(const std::string &rawRequest,	Config &config) {
+	std::istringstream stream(rawRequest);
+	std::string	line;
+	(void)config;
+	bool headersFinished = false;
+	if (rawRequest.size() >	8000 * 100 * 100) {
 		_errorCode = 431;	
 		return;
 	}
@@ -83,6 +88,9 @@ void Request::checkRawRequest(const std::string &rawRequest, Config &config, std
 		return;
 	}
 
+	size_t headersSize = 0;
+	parseHeaders(stream, headersSize, headersFinished);
+
 
 	if (!isMethodAllowedForRoute(config)) {
 		_errorCode = 405;	
@@ -94,71 +102,9 @@ void Request::checkRawRequest(const std::string &rawRequest, Config &config, std
 		_errorCode = 505;	
 		return;
 	}
-}	
-
-
-void Request::parse(const std::string &rawRequest, Config &config) {
-
-	std::istringstream stream(rawRequest);
-	std::string	line;
-	(void)config;
-	bool headersFinished = false;
-
-	checkRawRequest(rawRequest, config, stream, line );
-	//le petit header bien kawaii bien sexy
-	size_t headersSize = 0;
-	while (std::getline(stream,	line)) {
-		
-		if (!line.empty() && line[line.size() -	1] == '\r')	{
-			line.erase(line.size() - 1);
-		}
-		
-		
-		if (line.empty()) {
-			headersFinished	= true;
-			break;
-		}
-		
-		size_t colonPos	= line.find(':');
-		if (colonPos == std::string::npos) {
-			
-			_errorCode =	400;	
-			return;
-		}
-
-		std::string	key	= line.substr(0, colonPos);
-		std::string	value =	line.substr(colonPos + 1);
-		
-		
-		if (!key.empty()) {
-			size_t lastNonSpace	= key.find_last_not_of(" \t\r");
-			if (lastNonSpace != std::string::npos)
-				key.erase(lastNonSpace + 1);
-			else
-				key.clear();	
-		}
-		
-		if (!value.empty())	{
-			size_t firstNonSpace = value.find_first_not_of(" \t");
-			if (firstNonSpace != std::string::npos)
-				value.erase(0, firstNonSpace);
-			else
-				value.clear();	
-		}
-		
-		
-		if (!value.empty() && value[value.size() - 1] == '\r') {
-			value.erase(value.size() - 1);
-		}
-
-		addHeader(key, value);
-		headersSize	+= line.size();
-		
-		if (headersSize	> _maxHeadersSize) {
-			_errorCode = 431;	
-			return;
-		}
-	}
+	
+	//suite du petit header bien kawaii bien sexy
+	parseHeaders(stream, headersSize, headersFinished);
 
 	
 	if (getHttpVersion() == "HTTP/1.1" && getHeaders().find("Host")	== getHeaders().end()) {
@@ -166,10 +112,8 @@ void Request::parse(const std::string &rawRequest, Config &config) {
 		return ;
 	}
 
-	
 	if (headersFinished) {
-		std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");
-		
+		std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");	
 		if (contentLengthIt	!= getHeaders().end()) {
 			
 			bool conversionSuccess = false;
@@ -211,8 +155,6 @@ void Request::parse(const std::string &rawRequest, Config &config) {
 				
 				delete[] buffer;
 				setBody(bodyContent);
-				
-				
 				if (bodyContent.length() != contentLength) {
 					std::cout << "Warning: Body	length (" << bodyContent.length() 
 							  << ") does not match Content-Length (" << contentLength << ")" << std::endl;
@@ -282,6 +224,17 @@ void Request::parse(const std::string &rawRequest, Config &config) {
 		_errorCode = 400;	
 		return ;
 	}
+	std::map<std::string, std::string>::const_iterator multipartIt = getHeaders().find("Content-Type");
+	if (multipartIt != getHeaders().end()) {
+    std::string contentType = multipartIt->second;
+    if (contentType.find("multipart/form-data") != std::string::npos) {
+        size_t boundaryPos = contentType.find("boundary=");
+        if (boundaryPos != std::string::npos) {
+            std::string boundary = contentType.substr(boundaryPos + 9);
+            parseMultipartFormData(getBody(), boundary);
+        	}
+    	}
+	}
 
 	_errorCode = 200;	
 	return;
@@ -292,8 +245,7 @@ void Request::parse(const std::string &rawRequest, Config &config) {
 
 
 
-std::string Request::printRequest() const {
-	std::string importantValue;
+void Request::printRequest() const {
 	std::cout << "Method: "	<< getMethod() << "\n"
 			  << "URL: " << getUrl() << "\n"
 			  << "HTTP Version:	" << getHttpVersion() << "\n"
@@ -303,13 +255,13 @@ std::string Request::printRequest() const {
 	const std::map<std::string,	std::string>& headersRef = getHeaders();	
 	for	(std::map<std::string, std::string>::const_iterator	it = headersRef.begin(); it != headersRef.end(); ++it)
 	{
-		if(it->first == "Host")
-			importantValue = it->second;
+		// if(it->first == "Host")
+		// 	importantValue = it->second;
 		std::cout << "  " << it->first << ": " << it->second << "\n";
 		
 	}
 
-	std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
-	std::cout << "  " << importantValue <<"\n";
-	return importantValue;
+	// std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
+	// std::cout << "  " << importantValue <<"\n";
+	// return importantValue;
 }

@@ -2,6 +2,7 @@
 #include "../includes/request.hpp"
 #include "../includes/response.hpp"
 #include "../includes/utils.hpp"
+#include "../includes/upload.hpp"
 
 int launchServer(Config config) {
     Server server(config);
@@ -127,7 +128,7 @@ void Server::handleClient(int client_fd) {
     char buffer[4096];
     int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
     
-    if (bytes_read > 4096) {
+    if (bytes_read > 1024 * 1024) {
         std::cerr << "ERROR: Request too large." << std::endl;
         send(client_fd, "HTTP/1.1 413 Payload Too Large\r\n\r\n", 35, 0);
         close(client_fd);
@@ -137,10 +138,11 @@ void Server::handleClient(int client_fd) {
     std::string need;
     if (bytes_read > 0) {
         buffer[bytes_read] = '\0';
-        Request request(1024, 1024);
+        Request request(1024*1024, 1024*1024);
         std::string rawRequest(buffer);
+        std::cout << "Raw request: " << rawRequest << std::endl;
         request.parse(rawRequest, config);
-        request.printRequest();
+        // request.printRequest();
         Response response(request, servers[0]);
         std::string resp = response.sendResponse();
         send(client_fd, resp.c_str(), resp.size(), 0);
