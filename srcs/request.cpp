@@ -89,7 +89,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	}
 
 	size_t headersSize = 0;
-	parseHeaders(stream, headersSize, headersFinished);
+	//parseHeaders(stream, headersSize, headersFinished);
 
 
 	if (!isMethodAllowedForRoute(config)) {
@@ -132,28 +132,28 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 				_errorCode = 413;	
 				return ;
 			}
-
 			if (contentLength >	0) {
 				std::string	bodyContent;
 				bodyContent.reserve(contentLength);
 				
-				
 				char* buffer = new char[1024];
 				size_t totalRead = 0;
 				size_t bytesToRead;
-				
 				while (totalRead < contentLength) {
 					bytesToRead	= (contentLength - totalRead < 1024) ? (contentLength -	totalRead) : 1024;
 					stream.read(buffer,	bytesToRead);
 					size_t bytesRead = stream.gcount();
-					
+					//std::cout << "Bytes read : " << bytesRead << std::endl;
 					if (bytesRead == 0) break;	
 					
 					bodyContent.append(buffer, bytesRead);
+					//std::cout << "Body content" << bodyContent << std::endl;
 					totalRead += bytesRead;
 				}
 				
 				delete[] buffer;
+				//std::cout << "Body length : " << bodyContent.length() << std::endl;
+				//std::cout << "Content length : " << contentLength << std::endl;
 				setBody(bodyContent);
 				if (bodyContent.length() != contentLength) {
 					std::cout << "Warning: Body	length (" << bodyContent.length() 
@@ -261,7 +261,7 @@ void Request::printRequest() const {
 		
 	}
 
-	// std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
+	std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
 	// std::cout << "  " << importantValue <<"\n";
 	// return importantValue;
 }

@@ -310,7 +310,9 @@ std::string Response::handleForm(Errors &errors)
     return validResponse(errors);
 }
 
-
+  // Fin des headers trouvée, vous pouvez potentiellement sortir
+            // si vous n'attendez pas un body spécifique.
+            // Pour une gestion complète du body, il faudrait vérifier Content-Length.
 std::string Response::postResponse(Errors &errors)
 {
     if (isCGI())

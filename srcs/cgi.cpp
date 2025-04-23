@@ -134,9 +134,6 @@ void Response::childRoutine()
         _arg.push_back("/usr/bin/php");
         _arg.push_back(_cgiPath + _cgiScriptName);
         vectorToCStringTab(_arg, args);
-        for (size_t i = 0; i < envp.size(); ++i) {
-            std::cout << "Env[" << i << "]: " << envp[i] << std::endl;
-        }
         
         // On execute le script CGI
         execve(args[0], &args[0], &envp[0]);

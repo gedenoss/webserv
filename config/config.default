@@ -53,6 +53,12 @@ server {
         allow_methods POST;
         
     }
+    
+    location /uploads {
+    root ./;
+    allow_methods POST;
+    autoindex off;
+}
 }
 
 server {

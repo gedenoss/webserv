@@ -41,8 +41,13 @@ std::string Response::handleUpload(Errors &errors)
                 size_t fileContentStart = part.find("\r\n\r\n", fileNameEnd) + 4;
                 size_t fileContentEnd = part.rfind("\r\n", endPos);
                 std::string fileContent = part.substr(fileContentStart, fileContentEnd - fileContentStart);
-
-                std::ofstream outFile(("/home/ocussy/42/webserv/upload/" + fileName).c_str(), std::ios::binary);
+                char buffer [PATH_MAX];
+                std::string cwd = getcwd(buffer, sizeof(buffer)) ? std::string(buffer) : "";
+                if (cwd.empty())
+                    throw std::runtime_error("Failed to get current working directory");
+                std::string fullPath = cwd + "/upload/" + fileName;
+                std::cout << "FUll PATH: " << fullPath << std::endl;
+                std::ofstream outFile((fullPath).c_str(), std::ios::binary);
                 if (!outFile.is_open())
                     throw std::runtime_error("Failed to open file for writing");
                 outFile.write(fileContent.c_str(), fileContent.size());

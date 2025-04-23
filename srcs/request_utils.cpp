@@ -6,24 +6,24 @@
 #include <iostream>	
 
 int Request::getPortFromHeaders() const {
-    std::cout << " Extracting port from Host header...\n";
+   // std::cout << " Extracting port from Host header...\n";
     std::map<std::string, std::string>::const_iterator it = _headers.find("Host");
     if (it == _headers.end()) {
-        std::cout << " Host header not found. Using default port 8000.\n";
+        //std::cout << " Host header not found. Using default port 8000.\n";
         return 8000;
     }
     std::string host = it->second;
-    std::cout << " Host header found: " << host << "\n";
+  //  std::cout << " Host header found: " << host << "\n";
     size_t colonPos = host.find(':');
     if (colonPos == std::string::npos) {
-        std::cout << " No port specified in Host header. Using default port 8000.\n";
+    //    std::cout << " No port specified in Host header. Using default port 8000.\n";
         return 8000;
     }
     std::string portStr = host.substr(colonPos + 1);
-    std::cout << " Extracted port string: " << portStr << "\n";
+   // std::cout << " Extracted port string: " << portStr << "\n";
     int port = std::atoi(portStr.c_str());
     if (port <= 0) {
-        std::cout << " Invalid port extracted (" << portStr << "). Using default port 8000.\n";
+    //    std::cout << " Invalid port extracted (" << portStr << "). Using default port 8000.\n";
         return 8000;
     }
     std::cout << " Port successfully extracted: " << port << "\n";
@@ -43,7 +43,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
     }
 
     int requestPort = getPortFromHeaders();
-    std::cout << "Request port: " << requestPort << "\n";
+    //std::cout << "Request port: " << requestPort << "\n";
 
     const std::vector<ServerConfig> &servers = config.getServers();
 
@@ -55,7 +55,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
         }
 
         serverMatched = true;
-        std::cout << "Matched server on port: " << server.getPort() << "\n";
+     //   std::cout << "Matched server on port: " << server.getPort() << "\n";
 
         const std::vector<LocationConfig>& locations = server.getLocations();
 
@@ -66,32 +66,32 @@ bool Request::isMethodAllowedForRoute(Config &config) {
                  url[location.getPath().size()] == '/' || 
                  url[location.getPath().size()] == '?')) {
                 _location = location;
-                std::cout << "Matched location: " << location.getPath() << "\n";
+               // std::cout << "Matched location: " << location.getPath() << "\n";
 
                 for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
                     if (_method == location.getAllowMethod()[k]) {
-                        std::cout << "Method [" << _method << "] is allowed for this location.\n";
+                       // std::cout << "Method [" << _method << "] is allowed for this location.\n";
                         return true;
                     }
                 }
-                std::cout << "Method [" << _method << "] is not allowed for this location.\n";
+              //  std::cout << "Method [" << _method << "] is not allowed for this location.\n";
                 return false;
             }
         }
         const std::vector<std::string>& serverAllowedMethods = server.getAllowMethod();
         for (size_t k = 0; k < serverAllowedMethods.size(); ++k) {
             if (_method == serverAllowedMethods[k]) {
-                std::cout << "Method [" << _method << "] is allowed at the server level.\n";
+              //  std::cout << "Method [" << _method << "] is allowed at the server level.\n";
                 return true;
             }
         }
     }
 
-    if (!serverMatched) {
-        std::cout << " No server matched the port [" << requestPort << "]\n";
-    } else {
-        std::cout << " No matching location or allowed method for URL [" << url << "] on port [" << requestPort << "]\n";
-    }
+    // if (!serverMatched) {
+    //     std::cout << " No server matched the port [" << requestPort << "]\n";
+    // } else {
+    //     std::cout << " No matching location or allowed method for URL [" << url << "] on port [" << requestPort << "]\n";
+    // }
     return false;
 }
 bool Request::isValidHttpVersion() {
