@@ -92,7 +92,7 @@ class Response {
         std::string deleteResponse(Errors &errors);
 
         std::string validResponse(Errors &errors);
-        std::string response204();
+        std::string jsonListFiles(Errors &errors);
 
         void cleanUpCgiFiles();
 

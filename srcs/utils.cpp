@@ -244,3 +244,15 @@ int countWords(const std::string& str) {
 
     return wordCount;
 }
+
+std::string joinPaths(const std::string& a, const std::string& b)
+{
+    if (a.empty()) return b;
+    if (b.empty()) return a;
+
+    if (a[a.size() - 1] == '/' && b[0] == '/')
+        return a + b.substr(1); // évite double slash
+    if (a[a.size() - 1] != '/' && b[0] != '/')
+        return a + "/" + b;     // ajoute slash manquant
+    return a + b;
+}

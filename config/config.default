@@ -11,6 +11,8 @@ server {
         autoindex on;
         index index.html;
         cgi .rb /usr/bin/ruby;
+        cgi .php /usr/bin/php;
+        cgi .py /usr/bin/python3;
     }
     location /admin {
         allow_methods DELETE POST GET;
@@ -24,8 +26,16 @@ server {
     }
 
     location /prop {
-        root ./prop;
+        root ./;
         allow_methods DELETE GET POST;
+    }
+
+    location /scripts {
+        allow_methods  DELETE POST GET;
+        autoindex on;
+        cgi .rb /usr/bin/ruby;
+        cgi .php /usr/bin/php;
+        cgi .py /usr/bin/python3;
     }
 
 }

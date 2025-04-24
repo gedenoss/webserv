@@ -327,8 +327,11 @@ void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& lo
 		if (key	== "}")	break;
 		if (usedKeys.find(key) != usedKeys.end())
 		{
-			std::cerr << "Error: Duplicate directive in location block:	" << key << std::endl;
-			exit(1);
+			if (key != "cgi")
+			{
+				std::cerr << "Error: Duplicate directive in location block:	" << key << std::endl;
+				exit(1);
+			}
 		}
 		usedKeys.insert(key);
 		if (key	== "root")
@@ -367,8 +370,8 @@ void ServerConfig::parseServer(std::ifstream& configFile)
 
 		if (key != "location" && usedKeys.find(key) != usedKeys.end())
 		{
-			std::cerr << "Error: Duplicate directive in server block: " << key << std::endl;
-			exit(1);
+				std::cerr << "Error: rective in server block: " << key << std::endl;
+				exit(1);
 		}
 		usedKeys.insert(key);
 		if (key == "listen")

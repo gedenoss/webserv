@@ -30,7 +30,7 @@ void Response::handleCGI(Errors &errors)
     }
     std::string fullpath = cwd + "/";
     // _cgiPath = _path.substr(0, _path.find_last_of('/') + 1);
-    _cgiScriptName = _path.substr(_path.find_last_of('/') + 1, _path.npos);
+    _cgiScriptName = _path.substr(_path.find_first_of('.') + 1, _path.npos);
     _cgiPath = fullpath;
     if (_request.getMethod() == "POST")
     {
@@ -39,6 +39,7 @@ void Response::handleCGI(Errors &errors)
     }
     std::string outfileName = generateFileName(_cgiScriptName, "outfile");
     _cgiOutfilePath = _cgiPath + outfileName;
+    std::cout << "CGI script path: " << joinPaths(_cgiPath, _cgiScriptName) << std::endl;
     if ((_cgiPid = fork()) == -1)
         errors.error500();
     else if (_cgiPid == 0)
@@ -131,8 +132,8 @@ void Response::childRoutine()
     
         setEnv();
         vectorToCStringTab(_env, envp);
-        _arg.push_back("/usr/bin/php");
-        _arg.push_back(_cgiPath + _cgiScriptName);
+        _arg.push_back(_cgiBinPath);
+        _arg.push_back(joinPaths(_cgiPath, _cgiScriptName));
         vectorToCStringTab(_arg, args);
         
         // On execute le script CGI

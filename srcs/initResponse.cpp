@@ -118,7 +118,12 @@ std::string Response::getBody() const
 std::string Response::getContentType()
 {
     std::map<std::string, std::string> mime_types;
-    
+    if (_listingDirectory == true)
+    {
+        std::cout << "here" << std::endl;
+        _listingDirectory = false;
+        return "text/html";
+    }
     mime_types[".html"] = "text/html";
     mime_types[".css"] = "text/css";
     mime_types[".js"] = "application/javascript";
