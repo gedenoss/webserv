@@ -24,13 +24,8 @@ server {
     }
 
     location /prop {
-        root ./;
-        allow_methods POST DELETE;
-    }
-    
-    location /upload {
-    root ./;
-    allow_methods POST DELETE;
+        root ./prop;
+        allow_methods GET;
     }
 
 }
@@ -61,9 +56,9 @@ server {
     
     location /uploads {
     root ./;
-    allow_methods POST DELETE GET;
+    allow_methods POST;
     autoindex off;
-    }
+}
 }
 
 server {

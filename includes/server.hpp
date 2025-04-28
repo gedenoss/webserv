@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
+#include <set>   
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -29,27 +30,33 @@
 
 #include "config.hpp"
 
-int launchServer(Config config);
-
-
 class Server {
     public:
+
+        void launchServer();
+        void clean();
+        void handleNewConnection();
+        void handleClientData();
+
         Server(const Config &config);
         ~Server();
     
-        void run();
     
     private:
-        int epoll_fd;
+
+        int _fd;
+        int _epoll_fd;
         Config config;
-        std::vector<ServerConfig> servers;
-        std::vector<int> server_fds;
-    
-        void initSockets();
-        void addToEpoll(int fd);
-        void handleNewConnection(int server_fd);
-        void handleClient(int client_fd);
-        void cleanup();
+        std::vector<ServerConfig> _servers;
+        std::vector<int> _server_fds;
+        struct sockaddr_in _addr;
+        std::map<int, std::string>        _buffers;
+        std::map<int, int>                _contentLengths;
+        std::set<int>                     _headersDone;
+        
+        void setUp();
+        
+        struct sockaddr_in _client_addr;
     };
 
 #endif

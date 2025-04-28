@@ -32,7 +32,7 @@ int Request::getPortFromHeaders() const {
 
 
 bool Request::isMethodAllowedForRoute(Config &config) {
-    // std::cout << "Checking method [" << _method << "] for URL [" << _url << "]\n";
+     std::cout << "Checking method [" << _method << "] for URL [" << _url << "]\n";
 
     std::string url = getUrl();
     size_t lastSlash = url.find_last_of('/');
@@ -43,7 +43,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
     }
 
     int requestPort = getPortFromHeaders();
-    //std::cout << "Request port: " << requestPort << "\n";
+   // std::cout << "Request port: " << requestPort << "\n";
 
     const std::vector<ServerConfig> &servers = config.getServers();
 
@@ -55,7 +55,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
         }
 
         serverMatched = true;
-     //   std::cout << "Matched server on port: " << server.getPort() << "\n";
+      //  std::cout << "Matched server on port: " << server.getPort() << "\n";
 
         const std::vector<LocationConfig>& locations = server.getLocations();
 
@@ -66,32 +66,32 @@ bool Request::isMethodAllowedForRoute(Config &config) {
                  url[location.getPath().size()] == '/' || 
                  url[location.getPath().size()] == '?')) {
                 _location = location;
-               // std::cout << "Matched location: " << location.getPath() << "\n";
+                std::cout << "Matched location: " << location.getPath() << "\n";
 
                 for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
                     if (_method == location.getAllowMethod()[k]) {
-                       // std::cout << "Method [" << _method << "] is allowed for this location.\n";
+                        std::cout << "Method [" << _method << "] is allowed for this location.\n";
                         return true;
                     }
                 }
-              //  std::cout << "Method [" << _method << "] is not allowed for this location.\n";
+                std::cout << "Method [" << _method << "] is not allowed for this location.\n";
                 return false;
             }
         }
         const std::vector<std::string>& serverAllowedMethods = server.getAllowMethod();
         for (size_t k = 0; k < serverAllowedMethods.size(); ++k) {
             if (_method == serverAllowedMethods[k]) {
-              //  std::cout << "Method [" << _method << "] is allowed at the server level.\n";
+                std::cout << "Method [" << _method << "] is allowed at the server level.\n";
                 return true;
             }
         }
     }
 
-    // if (!serverMatched) {
-    //     std::cout << " No server matched the port [" << requestPort << "]\n";
-    // } else {
-    //     std::cout << " No matching location or allowed method for URL [" << url << "] on port [" << requestPort << "]\n";
-    // }
+    if (!serverMatched) {
+        std::cout << " No server matched the port [" << requestPort << "]\n";
+    } else {
+        std::cout << " No matching location or allowed method for URL [" << url << "] on port [" << requestPort << "]\n";
+    }
     return false;
 }
 bool Request::isValidHttpVersion() {
@@ -205,6 +205,22 @@ void Request::parseHeaders(std::istringstream &stream, size_t &headersSize, bool
         if (headersSize > _maxHeadersSize) {
             _errorCode = 431;
             return;
+        }
+    }
+}
+
+void Request::parseHostHeader(std::istringstream &stream){
+    std::string line;
+    while (std::getline(stream, line)) {
+        if (!line.empty() && line[line.size() - 1] == '\r') {
+            line.erase(line.size() - 1);
+        }
+        if (line.find("Host:") == 0) {
+            std::string host = line.substr(6);
+            host.erase(0, host.find_first_not_of(" \t"));
+            host.erase(host.find_last_not_of(" \t") + 1);
+            _headers["Host"] = host;
+            break;
         }
     }
 }

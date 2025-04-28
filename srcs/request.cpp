@@ -89,7 +89,8 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	}
 
 	size_t headersSize = 0;
-	//parseHeaders(stream, headersSize, headersFinished);
+	
+	parseHostHeader(stream);
 
 
 	if (!isMethodAllowedForRoute(config)) {

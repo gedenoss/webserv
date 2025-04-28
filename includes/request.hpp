@@ -43,6 +43,7 @@ class Request {
         std::string getMethod() const;
         std::string getUrl() const;
         int getPortFromHeaders() const;
+        void parseHostHeader(std::istringstream &stream);
         void parseHeaders(std::istringstream &stream, size_t &headersSize, bool &headersFinished);
         std::string getHttpVersion() const;
         std::string getBody() const;
