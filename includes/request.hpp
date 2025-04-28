@@ -38,12 +38,15 @@ class Request {
         bool isValidUrl();
         bool isMethodAllowedForRoute(Config &config);
         
-        std::string getIp() const;
         void parseMultipartFormData(const std::string& body, const std::string& boundary);
         std::string getMethod() const;
         std::string getUrl() const;
         int getPortFromHeaders() const;
         void parseHeaders(std::istringstream &stream, size_t &headersSize, bool &headersFinished);
+        void parseHostHeader(std::istringstream &stream);
+        bool validateMethodAndVersion(Config &config);
+        void processHeaders(std::istringstream &stream, bool headersFinished);
+        void initializeRequest(Request& request, const std::string& method, const std::string& url, const std::string& httpVersion, const std::string& queryString);
         std::string getHttpVersion() const;
         std::string getBody() const;
         std::string getQueryString() const { return _queryString; };
