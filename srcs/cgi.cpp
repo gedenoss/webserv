@@ -54,26 +54,41 @@ void Response::handleCGI(Errors &errors)
 void Response::checkCgiStatus() 
 {
     int status;
-    if (waitpid(_cgiPid, &status, 0) == -1)
+    const int TIMEOUT = 5; // Timeout en secondes
+    const int INTERVAL_USEC = 100000; // Intervalle de vérification en microsecondes
+    time_t start = time(NULL);
+
+    while (true)
     {
-        perror("waitpid");
-        setStatusCode(500);
-        return;
-    }
-
-    if (WIFEXITED(status)) {
-        if (WEXITSTATUS(status) != 0) {
-            std::cerr << "CGI script exited with non-zero status: " << WEXITSTATUS(status) << std::endl;
+        pid_t result = waitpid(_cgiPid, &status, WNOHANG);
+        if (result == -1)
+        {
+            perror("waitpid");
             setStatusCode(500);
-        } else {
-            // Script CGI s'est exécuté avec succès
-            readOutfile();
+            break;
         }
-    } else {
-        std::cerr << "CGI script did not exit normally." << std::endl;
-        setStatusCode(500);
-    }
-
+        else if (result > 0)
+        {
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) != 0) {
+                    std::cerr << "CGI exited with status: " << WEXITSTATUS(status) << std::endl;
+                    setStatusCode(500);
+                } else {
+                    readOutfile();
+                }
+            } else {
+                std::cerr << "CGI script did not exit normally." << std::endl;
+                setStatusCode(500);
+            }
+            break;
+        }
+        if (time(NULL) - start >= TIMEOUT) {
+            std::cerr << "CGI script timeout. Killing..." << std::endl;
+            killCgi();
+            break;
+        }
+        usleep(INTERVAL_USEC);
+    }   
     _cgiIsRunning = false;
     _responseIsReady = true;
 }
@@ -108,12 +123,19 @@ void Response::killCgi()
     if (_cgiIsRunning)
     {
         kill(_cgiPid, SIGKILL);
+        if (waitpid(_cgiPid, NULL, 0) < 0)
+        {
+            perror("waitpid");
+            setStatusCode(500);  // erreur interne si le waitpid échoue
+        }
+        else
+        {
+            cleanUpCgiFiles();
+            setStatusCode(504); // timeout : Gateway Timeout
+        }
     }
-    if (waitpid(_cgiPid, NULL, 0) < 0)
-        setStatusCode(500);
-    _cgiIsRunning = false;
-    _responseIsReady = true;
 }
+
 
 void Response::childRoutine()
 {

@@ -18,7 +18,31 @@
 #include "../includes/response.hpp"
 #include "../includes/utils.hpp"
 
-int launchServer(Config config) {
+bool Server::_serverIsRunning = true;
+
+int whichServerToChoose(std::vector<ServerConfig>& servers, const std::string& host) {
+    
+    size_t pos = host.find(':');
+    if (pos == std::string::npos) {
+        std::cerr << "ERROR: Invalid host format (missing ':')" << std::endl;
+        return 0;
+    }
+    std::string port = host.substr(pos + 1);
+    for (size_t i = 0; i < servers.size(); ++i) {
+        if (toString(servers[i].getPort()) == port)
+            return i;
+    }
+
+    return 0;
+}
+
+
+void Server::_sigIntCatcher(int signal) {
+    _serverIsRunning = false;
+    (void)signal;
+}
+
+int Server::launchServer(Config config) {
     std::vector<ServerConfig> servers = config.getServers();
     std::vector<int> server_fds;
 
@@ -89,11 +113,13 @@ int launchServer(Config config) {
 
     const int MAX_EVENTS = 100;
     struct epoll_event events[MAX_EVENTS];
+    signal(SIGPIPE, SIG_IGN); // ignorer les signaux de fermeture de socket
+    signal(SIGINT, _sigIntCatcher);
 
     // ——————————————————————————
     // 3) Boucle principale epoll
     // ——————————————————————————
-    while (1) {
+    while (_serverIsRunning) {
         int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (n < 0) {
             perror("ERROR: epoll_wait failed");
@@ -176,14 +202,16 @@ int launchServer(Config config) {
                     // tant que non complet, on attend la prochaine EPOLLIN
                     if ((int)have_body < expected)
                         continue;
-
                     // body complet ou pas attendu → on traite
                     {
                         std::cout << "Full request received "
                                   << rq << " \n";
                         Request  request(1024 * 1024, 1024);
                         request.parse(rq, config);
-                        Response response(request, servers[0]);
+                        std::string need = request.getIp();
+                        std::cout << "Request IP: " << need << std::endl;
+                        size_t i = whichServerToChoose(servers, need);
+                        Response response(request, servers[i]);
                         std::string reply = response.sendResponse();
                         send(fd, reply.c_str(), reply.size(), 0);
                     }

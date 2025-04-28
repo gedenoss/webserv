@@ -73,6 +73,8 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	setHttpVersion(httpVersion);
 	setQueryString(queryString);
 
+	parseHostHeader(stream);
+	
 	if (!isValidMethod())
 	{
 		_errorCode = 400;	
@@ -89,7 +91,6 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	}
 
 	size_t headersSize = 0;
-	//parseHeaders(stream, headersSize, headersFinished);
 
 
 	if (!isMethodAllowedForRoute(config)) {

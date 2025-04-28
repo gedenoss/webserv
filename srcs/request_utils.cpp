@@ -208,3 +208,20 @@ void Request::parseHeaders(std::istringstream &stream, size_t &headersSize, bool
         }
     }
 }
+
+void Request::parseHostHeader(std::istringstream &stream)
+{
+    std::string line;
+    while (std::getline(stream, line)) {
+        if (!line.empty() && line[line.size() - 1] == '\r') {
+            line.erase(line.size() - 1);
+        }
+        if (line.find("Host:") == 0) {
+            std::string host = line.substr(6);
+            host.erase(0, host.find_first_not_of(" \t"));
+            host.erase(host.find_last_not_of(" \t") + 1);
+            _headers["Host"] = host;
+            break;
+        }
+    }
+}

@@ -22,7 +22,8 @@ int	main(int argc, char* argv[])
 	}
 	else
 	{
-		launchServer(config);
+		Server Event(config);
+		Event.launchServer(config);
 	}
 		return 0;
 	}

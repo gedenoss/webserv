@@ -62,6 +62,8 @@ time_t parseHttpDate(const std::string &httpDate)
 
 std::string formatHttpDate(time_t timestamp)
 {
+    if (timestamp == 0)
+        return "";
     char buffer[50];
     struct tm *timeinfo = gmtime(&timestamp);
     strftime(buffer, 50, "%a, %d %b %Y %H:%M:%S GMT", timeinfo);

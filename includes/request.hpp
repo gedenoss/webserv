@@ -48,6 +48,8 @@ class Request {
         std::string getBody() const;
         std::string getQueryString() const { return _queryString; };
         int getErrorCode() const;
+
+        void parseHostHeader(std::istringstream &stream);
         
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;

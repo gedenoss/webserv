@@ -62,6 +62,8 @@ std::string Errors::generateError(int code)
             return error500();
         case 501:
             return error501();
+        case 504:
+            return error504();
         case 505:
             return error505();
         case 507:
@@ -86,6 +88,7 @@ std::string Errors::error417() { return getError(417, "Expectation Failed"); }
 std::string Errors::error431() { return getError(431, "Request Header Fields Too Large"); }
 std::string Errors::error500() { return getError(500, "Internal Server Error"); }
 std::string Errors::error501() { return getError(501, "Not Implemented"); }
+std::string Errors::error504() { return getError(504, "Gateway Timeout"); }
 std::string Errors::error505() { return getError(505, "HTTP Version Not Supported"); }
 std::string Errors::error507() { return getError(507, "Insufficient Storage"); }
 

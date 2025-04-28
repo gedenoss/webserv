@@ -1,185 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delete File with Trash Can</title>
-    <style>
-        body {
-            background-color: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        .trash-can {
-            width: 600px;
-            height: 300px;
-            cursor: pointer;
-        }
-
-        .trash-can:hover {
-            opacity: 0.8;
-        }
-    </style>
-</head>
-<body>
-
-    <img src="/images/trash.png" alt="Delete" class="trash-can" onclick="deleteFile()">
-
-    <script>
-        function deleteFile() {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '*/*';
-            fileInput.onchange = function() {
-                const file = fileInput.files[0];
-
-                if (!file) {
-                    alert('No file selected.');
-                    return;
-                }
-
-                const filename = file.name;
-
-                fetch('/prop/' + encodeURIComponent(filename), {
-                    method: 'DELETE',
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert('File deleted successfully.');
-                    } else {
-                        alert('Failed to delete the file.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error occurred while deleting the file.');
-                });
-            };
-            fileInput.click();
-        }
-    </script>
-
-
-</body>
-</html> -->
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Delete File from /prop</title>
-    <style>
-        body {
-            background-color: black;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-
-        select, button {
-            padding: 10px;
-            margin-top: 20px;
-            font-size: 16px;
-        }
-
-        button {
-            background-color: red;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover {
-            opacity: 0.8;
-        }
-    </style>
-</head>
-<body>
-
-    <h1>🗑️ Supprimer un fichier du dossier <code>/prop</code></h1>
-
-    <select id="fileSelect">
-        <option disabled selected>Chargement des fichiers...</option>
-    </select>
-
-    <button onclick="deleteSelectedFile()">Supprimer le fichier</button>
-
-    <script>
-        async function fetchFileList() {
-            try {
-                // Ajout d'un paramètre aléatoire pour éviter le cache
-                const response = await fetch('/prop/listing?' + new Date().getTime());
-                if (!response.ok) throw new Error("Erreur serveur");
-
-                const files = await response.json();
-                const select = document.getElementById('fileSelect');
-                select.innerHTML = '';
-
-                if (files.length === 0) {
-                    const option = document.createElement('option');
-                    option.text = "Aucun fichier à supprimer.";
-                    option.disabled = true;
-                    select.add(option);
-                    return;
-                }
-
-                files.forEach(file => {
-                    const option = document.createElement('option');
-                    option.value = file;
-                    option.text = file;
-                    select.add(option);
-                });
-
-            } catch (error) {
-                alert("Erreur lors de la récupération de la liste des fichiers.");
-                console.error(error);
-            }
-        }
-
-        async function deleteSelectedFile() {
-            const select = document.getElementById('fileSelect');
-            const filename = select.value;
-
-            if (!filename) {
-                alert("Aucun fichier sélectionné.");
-                return;
-            }
-
-            const confirmDelete = confirm(`Supprimer le fichier "${filename}" ?`);
-            if (!confirmDelete) return;
-
-            try {
-                const response = await fetch('/prop/' + encodeURIComponent(filename), {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    alert('Fichier supprimé avec succès.');
-                    await fetchFileList(); // refresh list
-                } else {
-                    alert('Échec de la suppression.');
-                }
-            } catch (error) {
-                alert("Erreur réseau.");
-                console.error(error);
-            }
-        }
-
-        // Charger la liste des fichiers à chaque actualisation de la page
-        window.onload = fetchFileList;
-    </script>
-
-</body>
-</html> -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -249,9 +67,108 @@
     <script>
         async function fetchFileList() {
             try {
-                // Ajout d'un paramètre aléatoire pour éviter le cache
                 const response = await fetch('/prop/listing?' + new Date().getTime());
-                if (!response.ok) throw new Error("Erreur serveur");
+                if (!response.ok) {
+                    const errorHTML = await response.text();
+                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
+                    return;
+                }
+
+                const files = await response.json();
+                const select = document.getElementById('fileSelect');
+                select.innerHTML = '';
+
+                if (files.length === 0) {
+                    const option = document.createElement('option');
+                    option.text = "Aucun fichier à supprimer.";
+                    option.disabled = true;
+                    select.add(option);
+                    return;
+                }
+
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.text = file;
+                    select.add(option);
+                });
+
+            } 
+            catch (error) {
+                const errorHTML = await response.text();
+                replaceBodyContent(errorHTML); // Remplacer uniquement le body avec l'HTML du serveur
+                return;
+            }
+        }
+
+        async function deleteSelectedFile() {
+            const select = document.getElementById('fileSelect');
+            const filename = select.value;
+
+            if (!filename) {
+                alert("Aucun fichier sélectionné.");
+                return;
+            }
+
+            const confirmDelete = confirm(`Supprimer le fichier "${filename}" ?`);
+            if (!confirmDelete) return;
+
+            try {
+                const response = await fetch('/prop/' + encodeURIComponent(filename), {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Fichier supprimé avec succès.');
+                    await fetchFileList(); // refresh list
+                } else {
+                    if (!response.ok) {
+                    const errorHTML = await response.text();
+                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
+                    return;
+                    }
+                }
+            } 
+            catch (error) {
+                alert("Erreur réseau.");
+                console.error(error);
+            }
+        }
+
+        // Charger la liste des fichiers à chaque actualisation de la page
+        window.onload = fetchFileList;
+
+        function replaceBodyContent(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newBodyContent = doc.body.innerHTML;  // Récupérer uniquement le contenu du body
+
+            // Remplacer le body actuel par du contenu minimal
+            document.body.innerHTML = newBodyContent;
+        } 
+    </script>
+
+</body>
+</html>
+
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Erreur</title>
+</head>
+<body>
+
+    <script>
+        async function fetchFileList() {
+            try {
+                const response = await fetch('/prop/listing?' + new Date().getTime());
+                if (!response.ok) {
+                    const errorHTML = await response.text();
+                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
+                    return;
+                }
 
                 const files = await response.json();
                 const select = document.getElementById('fileSelect');
@@ -273,7 +190,7 @@
                 });
 
             } catch (error) {
-                alert("Erreur lors de la récupération de la liste des fichiers.");
+                alert("Erreur lors de la récupération des fichiers.");
                 console.error(error);
             }
         }
@@ -299,7 +216,8 @@
                     alert('Fichier supprimé avec succès.');
                     await fetchFileList(); // refresh list
                 } else {
-                    alert('Échec de la suppression.');
+                    const errorHTML = await response.text();
+                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
                 }
             } catch (error) {
                 alert("Erreur réseau.");
@@ -307,9 +225,11 @@
             }
         }
 
+        // Fonction pour remplacer le contenu du body avec l'HTML de la réponse du serveur
+
         // Charger la liste des fichiers à chaque actualisation de la page
         window.onload = fetchFileList;
     </script>
 
 </body>
-</html>
+</html> -->

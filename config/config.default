@@ -7,7 +7,7 @@ server {
 	index index.html;
 
     location / {
-        allow_methods  DELETE POST GET;
+        allow_methods GET POST;
         autoindex on;
         index index.html;
         cgi .rb /usr/bin/ruby;
@@ -15,27 +15,33 @@ server {
         cgi .py /usr/bin/python3;
     }
     location /admin {
-        allow_methods DELETE POST GET;
+        allow_methods GET;
     }
 
     location /images {
         root ./;
         autoindex on;
-        allow_methods DELETE POST GET;
+        allow_methods GET;
         
     }
 
     location /prop {
-        root ./;
+        root ./prop;
         allow_methods DELETE GET POST;
     }
 
     location /scripts {
-        allow_methods  DELETE POST GET;
+        allow_methods GET;
         autoindex on;
         cgi .rb /usr/bin/ruby;
         cgi .php /usr/bin/php;
         cgi .py /usr/bin/python3;
+    }
+
+    location /upload {
+        root ./;
+        allow_methods POST;
+        autoindex off;
     }
 
 }
@@ -52,6 +58,7 @@ server {
         allow_methods  DELETE POST;
         autoindex on;
         index index.html;
+
     }
     location /admin {
         allow_methods POST;
@@ -80,7 +87,7 @@ server {
 	index index.html;
 
     location / {
-        allow_methods  DELETE POST GET;
+        allow_methods GET;
         autoindex on;
         index index.html;
     }
