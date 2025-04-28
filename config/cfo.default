@@ -24,21 +24,8 @@ server {
     }
 
     location /prop {
-        root ./;
-        allow_methods DELETE POST GET;
-    }
-
-    location /upload {
-    root ./;
-    allow_methods GET POST;
-    }
-
-    location /scripts {
-        allow_methods GET POST;
-        autoindex on;
-        cgi .rb /usr/bin/ruby;
-        cgi .php /usr/bin/php;
-        cgi .py /usr/bin/python3;
+        root ./prop;
+        allow_methods GET;
     }
 
 }
@@ -71,7 +58,7 @@ server {
     root ./;
     allow_methods POST;
     autoindex off;
-    }
+}
 }
 
 server {
@@ -96,15 +83,5 @@ server {
         autoindex on;
         allow_methods POST DELETE;
         
-    }
-
-    location /prop {
-        root ./;
-        allow_methods GET;
-    }
-
-    location /upload {
-    root ./;
-    allow_methods POST GET;
     }
 }

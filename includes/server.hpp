@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
+#include <set>   
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -42,25 +43,36 @@
 #define ITALIC     "\033[3m"
 #define RESET      "\033[0m"
 
+
 class Server {
-    private:
-        Config config;
-        std::vector<ServerConfig> servers;
-        std::vector<int> server_fds;
-        static bool _serverIsRunning;
-    
     public:
-        Server(const Config &config) {
-            this->config = config;
-            this->servers = config.getServers();
-            this->server_fds = std::vector<int>(servers.size());
-            // _serverIsRunning = true; // <-- enlever le `this->`
-        };
-    
-        ~Server() {}
-    
+
+        void launchServer();
+        void clean();
+        void handleNewConnection();
+        void handleClientData();
         static void _sigIntCatcher(int signal);
-        int launchServer(Config config);
+
+        Server(const Config &config);
+        ~Server();
+    
+    
+    private:
+
+        int _fd;
+        int _epoll_fd;
+        Config config;
+        std::vector<ServerConfig> _servers;
+        std::vector<int> _server_fds;
+        struct sockaddr_in _addr;
+        static bool _serverIsRunning;
+        std::map<int, std::string>        _buffers;
+        std::map<int, int>                _contentLengths;
+        std::set<int>                     _headersDone;
+        
+        void setUp();
+        
+        struct sockaddr_in _client_addr;
     };
     
 

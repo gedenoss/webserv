@@ -316,9 +316,11 @@ std::string Response::postResponse(Errors &errors)
 {
     if (isCGI())
     {
+        std::cout << "CGI POST" << std::endl;
         handleCGI(errors);
-        if (_status_code != 200)
-        return (errors.generateError(_status_code));
+        if (_status_code != 0)
+            return (errors.generateError(_status_code));
+        return (generateResponseCgi());
     }
     else if (_request.getHeaders().count("Content-Type") > 0)
     {

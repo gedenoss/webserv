@@ -43,7 +43,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
     }
 
     int requestPort = getPortFromHeaders();
-    std::cout << "Request port: " << requestPort << "\n";
+   // std::cout << "Request port: " << requestPort << "\n";
 
     const std::vector<ServerConfig> &servers = config.getServers();
 
@@ -81,7 +81,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
         const std::vector<std::string>& serverAllowedMethods = server.getAllowMethod();
         for (size_t k = 0; k < serverAllowedMethods.size(); ++k) {
             if (_method == serverAllowedMethods[k]) {
-            std::cout << "Method [" << _method << "] is allowed at the server level.\n";
+                std::cout << "Method [" << _method << "] is allowed at the server level.\n";
                 return true;
             }
         }
@@ -164,8 +164,9 @@ void Request::parseHeaders(std::istringstream &stream, size_t &headersSize, bool
         if (!line.empty() && line[line.size() - 1] == '\r') {
             line.erase(line.size() - 1);
         }
-
+        std::cout << "line" << line << std::endl;
         if (line.empty()) {
+            std::cout << "Headers finished\n";
             headersFinished = true;
             break;
         }
@@ -207,6 +208,7 @@ void Request::parseHeaders(std::istringstream &stream, size_t &headersSize, bool
             return;
         }
     }
+    
 }
 
 void Request::parseHostHeader(std::istringstream &stream){
@@ -251,7 +253,6 @@ void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
         _errorCode = 400;
         return;
     }
-
     std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");
     if (contentLengthIt != getHeaders().end()) {
         bool conversionSuccess = false;
@@ -266,11 +267,14 @@ void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
             _errorCode = 400;
             return;
         }
+        std::cout << "Content length: " << contentLength << std::endl;
+        std::cout << "Max body size: " << _maxBodySize << std::endl;
         if (contentLength > _maxBodySize) {
             _errorCode = 413;
+            std::cout << "Error: Request entity too large" << std::endl;
             return;
         }
-        std::cout << "TEST" << contentLength << std::endl;
+
         if (contentLength > 0) {
             std::string bodyContent;
             bodyContent.reserve(contentLength);

@@ -1,7 +1,6 @@
 #include "../includes/config.hpp"
 #include "../includes/server.hpp"
 #include "../includes/request.hpp"
-#include "../includes/server.hpp"
 #include <fstream>
 #include <sstream>
 
@@ -20,12 +19,9 @@ int	main(int argc, char* argv[])
 		std::cerr << "Error: No valid getServers() found in config file." << std::endl;
 		return 1;
 	}
-	else
-	{
-		Server Event(config);
-		Event.launchServer(config);
-	}
-		return 0;
+	Server launch(config);
+	launch.launchServer();
+	return 0;
 	}
 
 

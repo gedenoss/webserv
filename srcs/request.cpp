@@ -27,7 +27,16 @@ void Request::addHeader(const std::string& key,	const std::string& value) {	_hea
 
 
 /*--------------------------------------------------------------------------------------------------------------------------*/
-
+std::string Request::getIp() const {
+	std::string ip;
+	// const std::map<std::string,	std::string>& headersRef = getHeaders();	
+	for	(std::map<std::string, std::string>::const_iterator	it = _headers.begin(); it != _headers.end(); ++it)
+	{
+		if(it->first == "Host")
+			ip = it->second;
+	}
+	return ip;
+}
 
 void Request::parse(const std::string &rawRequest,	Config &config) {
 	std::istringstream stream(rawRequest);
@@ -62,8 +71,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 	}
 
 	this->initializeRequest(*this, method, url, httpVersion, queryString);
-	parseHostHeader(stream); //pars que le host 
-
+	
 	parseHostHeader(stream);
 	
 	if (!isValidMethod())
@@ -91,6 +99,8 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
         return;
     }
 
+	std::cout << "HeadersFinished? : " << headersFinished << std::endl;
+
 	
 	if (getHttpVersion() == "HTTP/1.1" && getHeaders().find("Host")	== getHeaders().end()) {
 		_errorCode = 400;	
@@ -99,6 +109,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 
 	processHeaders(stream, headersFinished);
     if (_errorCode != 0) {
+		std::cout << "Error code: " << _errorCode << std::endl;
         return;
     }
 

@@ -111,7 +111,7 @@ void Response::readOutfile()
 
     if (pos != std::string::npos) {
         _headerCgi = full.substr(0, pos);
-        _body = full.substr(pos + 4);
+        _body = full.substr(pos);
         } else {
         _body = full;  // fallback si pas de headers
         }
