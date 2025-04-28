@@ -32,7 +32,7 @@ int Request::getPortFromHeaders() const {
 
 
 bool Request::isMethodAllowedForRoute(Config &config) {
-    // std::cout << "Checking method [" << _method << "] for URL [" << _url << "]\n";
+    std::cout << "Checking method [" << _method << "] for URL [" << _url << "]\n";
 
     std::string url = getUrl();
     size_t lastSlash = url.find_last_of('/');
@@ -43,7 +43,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
     }
 
     int requestPort = getPortFromHeaders();
-    //std::cout << "Request port: " << requestPort << "\n";
+    std::cout << "Request port: " << requestPort << "\n";
 
     const std::vector<ServerConfig> &servers = config.getServers();
 
@@ -55,7 +55,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
         }
 
         serverMatched = true;
-     //   std::cout << "Matched server on port: " << server.getPort() << "\n";
+        std::cout << "Matched server on port: " << server.getPort() << "\n";
 
         const std::vector<LocationConfig>& locations = server.getLocations();
 
@@ -66,32 +66,32 @@ bool Request::isMethodAllowedForRoute(Config &config) {
                  url[location.getPath().size()] == '/' || 
                  url[location.getPath().size()] == '?')) {
                 _location = location;
-               // std::cout << "Matched location: " << location.getPath() << "\n";
+               std::cout << "Matched location: " << location.getPath() << "\n";
 
                 for (size_t k = 0; k < location.getAllowMethod().size(); ++k) {
                     if (_method == location.getAllowMethod()[k]) {
-                       // std::cout << "Method [" << _method << "] is allowed for this location.\n";
+                       std::cout << "Method [" << _method << "] is allowed for this location.\n";
                         return true;
                     }
                 }
-              //  std::cout << "Method [" << _method << "] is not allowed for this location.\n";
+                std::cout << "Method [" << _method << "] is not allowed for this location.\n";
                 return false;
             }
         }
         const std::vector<std::string>& serverAllowedMethods = server.getAllowMethod();
         for (size_t k = 0; k < serverAllowedMethods.size(); ++k) {
             if (_method == serverAllowedMethods[k]) {
-              //  std::cout << "Method [" << _method << "] is allowed at the server level.\n";
+            std::cout << "Method [" << _method << "] is allowed at the server level.\n";
                 return true;
             }
         }
     }
 
-    // if (!serverMatched) {
-    //     std::cout << " No server matched the port [" << requestPort << "]\n";
-    // } else {
-    //     std::cout << " No matching location or allowed method for URL [" << url << "] on port [" << requestPort << "]\n";
-    // }
+    if (!serverMatched) {
+        std::cout << " No server matched the port [" << requestPort << "]\n";
+    } else {
+        std::cout << " No matching location or allowed method for URL [" << url << "] on port [" << requestPort << "]\n";
+    }
     return false;
 }
 bool Request::isValidHttpVersion() {
@@ -209,8 +209,7 @@ void Request::parseHeaders(std::istringstream &stream, size_t &headersSize, bool
     }
 }
 
-void Request::parseHostHeader(std::istringstream &stream)
-{
+void Request::parseHostHeader(std::istringstream &stream){
     std::string line;
     while (std::getline(stream, line)) {
         if (!line.empty() && line[line.size() - 1] == '\r') {
@@ -225,3 +224,240 @@ void Request::parseHostHeader(std::istringstream &stream)
         }
     }
 }
+
+bool Request::validateMethodAndVersion(Config &config) {
+    if (!isMethodAllowedForRoute(config)) {
+        _errorCode = 405;
+        return false;
+    }
+
+    if (!isValidHttpVersion()) {
+        _errorCode = 505;
+        return false;
+    }
+
+    return true;
+}
+
+void Request::initializeRequest(Request& request, const std::string& method, const std::string& url, const std::string& httpVersion, const std::string& queryString) {
+    request.setMethod(method);
+    request.setUrl(url);
+    request.setHttpVersion(httpVersion);
+    request.setQueryString(queryString);
+}
+
+void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
+    if (!headersFinished) {
+        _errorCode = 400;
+        return;
+    }
+
+    std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");
+    if (contentLengthIt != getHeaders().end()) {
+        bool conversionSuccess = false;
+        size_t contentLength = safeStringToUlong(contentLengthIt->second, conversionSuccess);
+
+        if (!conversionSuccess) {
+            _errorCode = 400;
+            return;
+        }
+
+        if (_method == "POST" && contentLength == 0) {
+            _errorCode = 400;
+            return;
+        }
+        if (contentLength > _maxBodySize) {
+            _errorCode = 413;
+            return;
+        }
+        std::cout << "TEST" << contentLength << std::endl;
+        if (contentLength > 0) {
+            std::string bodyContent;
+            bodyContent.reserve(contentLength);
+
+            char *buffer = new char[1024];
+            size_t totalRead = 0;
+            size_t bytesToRead;
+            while (totalRead < contentLength) {
+                bytesToRead = (contentLength - totalRead < 1024) ? (contentLength - totalRead) : 1024;
+                stream.read(buffer, bytesToRead);
+                size_t bytesRead = stream.gcount();
+                if (bytesRead == 0) break;
+
+                bodyContent.append(buffer, bytesRead);
+                totalRead += bytesRead;
+            }
+
+            delete[] buffer;
+            setBody(bodyContent);
+            if (bodyContent.length() != contentLength) {
+                std::cout << "Warning: Body length (" << bodyContent.length()
+                          << ") does not match Content-Length (" << contentLength << ")" << std::endl;
+                _errorCode = 400;
+                return;
+            }
+        }
+    } else if (_method == "POST") {
+        _errorCode = 411;
+        return;
+    }
+
+    if ((_method == "POST") && getHeaders().find("Content-Type") == getHeaders().end()) {
+        _errorCode = 400;
+        return;
+    }
+
+    std::map<std::string, std::string>::const_iterator contentTypeIt = getHeaders().find("Content-Type");
+    if (contentTypeIt != getHeaders().end()) {
+        std::string contentType = contentTypeIt->second;
+
+        size_t paramPos = contentType.find(';');
+        if (paramPos != std::string::npos) {
+            contentType = contentType.substr(0, paramPos);
+        }
+
+        size_t lastNonSpace = contentType.find_last_not_of(" \t\r");
+        if (lastNonSpace != std::string::npos)
+            contentType = contentType.substr(0, lastNonSpace + 1);
+
+        static const std::string allowedTypes[] = {
+            "text/html", "image/png", "image/jpeg", "text/css",
+            "application/javascript", "application/json", "application/xml",
+            "application/pdf", "text/plain", "text/csv", "application/x-www-form-urlencoded", "multipart/form-data"
+        };
+
+        bool isAllowed = false;
+        for (size_t i = 0; i < sizeof(allowedTypes) / sizeof(allowedTypes[0]); ++i) {
+            if (contentType == allowedTypes[i]) {
+                isAllowed = true;
+                break;
+            }
+        }
+
+        if (!isAllowed) {
+            _errorCode = 415;
+            return;
+        }
+    }
+
+    std::map<std::string, std::string>::const_iterator expectIt = getHeaders().find("Expect");
+    if (expectIt != getHeaders().end()) {
+        std::string expect = expectIt->second;
+        if (expect.find("100-continue") != std::string::npos) {
+            _errorCode = 417;
+            return;
+        }
+    }
+}
+
+
+
+
+/*  bool conversionSuccess = false;
+size_t contentLength = safeStringToUlong(contentLengthIt->second, conversionSuccess);
+        
+if (!conversionSuccess)	{
+    _errorCode = 400;	
+    return ;
+}
+if (_method == "POST" && contentLength == 0) {
+    _errorCode = 400; 
+    return;
+}
+
+if (contentLength >	_maxBodySize) {
+    _errorCode = 413;	
+    return ;
+}
+if (contentLength >	0) {
+    std::string	bodyContent;
+    bodyContent.reserve(contentLength);
+    
+    char* buffer = new char[1024];
+    size_t totalRead = 0;
+    size_t bytesToRead;
+    while (totalRead < contentLength) {
+        bytesToRead	= (contentLength - totalRead < 1024) ? (contentLength -	totalRead) : 1024;
+        stream.read(buffer,	bytesToRead);
+        size_t bytesRead = stream.gcount();
+        //std::cout << "Bytes read : " << bytesRead << std::endl;
+        if (bytesRead == 0) break;	
+        
+        bodyContent.append(buffer, bytesRead);
+        //std::cout << "Body content" << bodyContent << std::endl;
+        totalRead += bytesRead;
+    }
+    
+    delete[] buffer;
+    //std::cout << "Body length : " << bodyContent.length() << std::endl;
+    //std::cout << "Content length : " << contentLength << std::endl;
+    setBody(bodyContent);
+    if (bodyContent.length() != contentLength) {
+        std::cout << "Warning: Body	length (" << bodyContent.length() 
+                  << ") does not match Content-Length (" << contentLength << ")" << std::endl;
+        _errorCode = 400;	
+        return;
+    }
+}
+} else if (_method == "POST") {
+
+_errorCode = 411;	
+return;
+}
+
+if ((_method	== "POST") && 
+getHeaders().find("Content-Type") == getHeaders().end()) {
+_errorCode = 400;	
+return ;
+}
+
+
+
+std::map<std::string, std::string>::const_iterator contentTypeIt = getHeaders().find("Content-Type");
+if (contentTypeIt != getHeaders().end()) {
+std::string contentType = contentTypeIt->second;
+
+size_t paramPos = contentType.find(';');
+if (paramPos != std::string::npos) {
+    contentType = contentType.substr(0, paramPos);
+}
+
+size_t lastNonSpace = contentType.find_last_not_of(" \t\r");
+if (lastNonSpace != std::string::npos)
+    contentType = contentType.substr(0, lastNonSpace + 1);
+            
+static const std::string allowedTypes[] = {
+    "text/html", "image/png", "image/jpeg", "text/css",
+    "application/javascript", "application/json", "application/xml",
+    "application/pdf", "text/plain", "text/csv", "application/x-www-form-urlencoded", "multipart/form-data"
+};
+
+bool isAllowed = false;
+for (size_t i = 0; i < sizeof(allowedTypes)/sizeof(allowedTypes[0]); ++i) {
+    if (contentType == allowedTypes[i]) {
+        isAllowed = true;
+        break;
+    }
+}
+
+if (!isAllowed) {
+    _errorCode = 415;
+    return;
+}
+}
+
+
+
+std::map<std::string, std::string>::const_iterator expectIt	= getHeaders().find("Expect");
+if (expectIt != getHeaders().end())	{
+std::string	expect = expectIt->second;
+if (expect.find("100-continue")	!= std::string::npos) {
+    _errorCode = 417;	
+    return ;
+}
+}
+} else {
+
+_errorCode = 400;	
+return ;
+}*/

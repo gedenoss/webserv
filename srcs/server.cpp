@@ -166,7 +166,7 @@ int Server::launchServer(Config config) {
                     if (buffers[fd].size() > 4069 * 1000 * 100) {
                         std::cerr << "ERROR: Request too large\n";
                         send(fd,
-                             "HTTP/1.1 413 Payload To Large\r\n\r\n",
+                             "HTTP/1.1 413 Payloaddd To Large\r\n\r\n",
                              35, 0);
                         goto cleanup_fd;
                     }
@@ -204,9 +204,10 @@ int Server::launchServer(Config config) {
                         continue;
                     // body complet ou pas attendu → on traite
                     {
-                        std::cout << "Full request received "
-                                  << rq << " \n";
-                        Request  request(1024 * 1024, 1024);
+                        // std::cout << "Full request received "
+                        //           << rq << " \n";
+                        size_t maxBodySize = servers[0].getClientMaxBodySize();          
+                        Request  request(maxBodySize,1024);    //define by the client_max_body_size in the .conf
                         request.parse(rq, config);
                         std::string need = request.getIp();
                         std::cout << "Request IP: " << need << std::endl;
