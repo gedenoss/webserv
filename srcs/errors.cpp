@@ -26,7 +26,7 @@ std::string Errors::getError(int code, const std::string &message)
     if (code == 304)
         _response.setLastModified(_response.getPath());
 
-    return _response.generateResponse();
+    return _response.generateResponse(true);
 }
 
 std::string Errors::generateError(int code)

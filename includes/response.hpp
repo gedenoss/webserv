@@ -34,7 +34,7 @@ class Response {
 
 
         std::string sendResponse();
-        std::string generateResponse();
+        std::string generateResponse(bool isError);
         std::string generateResponseCgi();
         void findLocation(Errors &errors);
 

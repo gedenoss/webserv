@@ -1,3 +1,4 @@
+
 server {
     listen 8000;
 	server_name localhost;
@@ -7,41 +8,38 @@ server {
 	index index.html;
 
     location / {
-        allow_methods GET POST;
+        allow_methods  DELETE POST GET;
         autoindex on;
         index index.html;
         cgi .rb /usr/bin/ruby;
-        cgi .php /usr/bin/php;
-        cgi .py /usr/bin/python3;
     }
     location /admin {
-        allow_methods GET;
+        allow_methods DELETE POST GET;
     }
 
     location /images {
         root ./;
         autoindex on;
-        allow_methods GET;
+        allow_methods DELETE POST GET;
         
     }
 
     location /prop {
-        root ./prop;
-        allow_methods DELETE GET POST;
+        root ./;
+        allow_methods DELETE POST GET;
+    }
+
+    location /upload {
+    root ./;
+    allow_methods GET POST;
     }
 
     location /scripts {
-        allow_methods GET;
+        allow_methods GET POST;
         autoindex on;
         cgi .rb /usr/bin/ruby;
         cgi .php /usr/bin/php;
         cgi .py /usr/bin/python3;
-    }
-
-    location /upload {
-        root ./;
-        allow_methods POST;
-        autoindex off;
     }
 
 }
@@ -58,7 +56,6 @@ server {
         allow_methods  DELETE POST;
         autoindex on;
         index index.html;
-
     }
     location /admin {
         allow_methods POST;
@@ -75,7 +72,7 @@ server {
     root ./;
     allow_methods POST;
     autoindex off;
-}
+    }
 }
 
 server {
@@ -87,7 +84,7 @@ server {
 	index index.html;
 
     location / {
-        allow_methods GET;
+        allow_methods  DELETE POST GET;
         autoindex on;
         index index.html;
     }
@@ -100,5 +97,15 @@ server {
         autoindex on;
         allow_methods POST DELETE;
         
+    }
+
+    location /prop {
+        root ./;
+        allow_methods GET;
+    }
+
+    location /upload {
+    root ./;
+    allow_methods POST GET;
     }
 }

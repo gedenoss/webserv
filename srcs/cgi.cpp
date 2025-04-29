@@ -39,7 +39,6 @@ void Response::handleCGI(Errors &errors)
     }
     std::string outfileName = generateFileName(_cgiScriptName, "outfile");
     _cgiOutfilePath = _cgiPath + outfileName;
-    std::cout << "CGI script path: " << joinPaths(_cgiPath, _cgiScriptName) << std::endl;
     if ((_cgiPid = fork()) == -1)
         errors.error500();
     else if (_cgiPid == 0)
@@ -111,7 +110,7 @@ void Response::readOutfile()
 
     if (pos != std::string::npos) {
         _headerCgi = full.substr(0, pos);
-        _body = full.substr(pos + 4);
+        _body = full.substr(pos);
         } else {
         _body = full;  // fallback si pas de headers
         }

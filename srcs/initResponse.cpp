@@ -5,7 +5,6 @@
 
 Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(serv)
 {
-    std::cout << MAGENTA << "Port : " << _server.getPort() << RESET << std::endl;
     _range.start = 0;
     _range.end = 0;
     _range.isValid = true;
@@ -127,7 +126,6 @@ std::string Response::getContentType()
     std::map<std::string, std::string> mime_types;
     if (_listingDirectory == true)
     {
-        std::cout << "here" << std::endl;
         _listingDirectory = false;
         return "text/html";
     }

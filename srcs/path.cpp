@@ -99,7 +99,6 @@ std::string trimLocationPath(const std::string& url, const std::string& location
 
 void Response::listDirectory()
 {
-    std::cout << "Listing directory: " << _path << std::endl;
     _listingDirectory = true;
     DIR *dir = opendir(_path.c_str());
     if (dir == NULL)

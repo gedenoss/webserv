@@ -4,21 +4,30 @@
 #include "../includes/errors.hpp"
 #include "../includes/upload.hpp"
 
-std::string Response::generateResponse()
+std::string Response::generateResponse(bool isError)
 {
     std::stringstream response;
-    std::cout << std::endl;
+    if (isError == true)
+        std::cout << RED << BOLD << "HTTP/1.1" << _status_code << " " << _status_message << RESET << std::endl;
+    else
+    std::cout << GREEN << BOLD << "HTTP/1.1" << _status_code << " " << _status_message << RESET << std::endl;
     response << "HTTP/1.1 " << _status_code << " " << _status_message << "\r\n";
     for(std::vector<std::string>::iterator it = _order.begin(); it != _order.end(); ++it)
     {
         if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
             response << *it << ": " << _headers[*it] << "\r\n";
+        if (isError == true)
+            std::cout << RED << *it << ": " << _headers[*it] << RESET << "\r\n";
+        else
+            std::cout << GREEN << *it << ": " << _headers[*it] << RESET << "\r\n";
     }
-    std::cout << response.str() << std::endl;
+    std::cout << std::endl;
     response << "\r\n";
     response << _body;
     return response.str();
 }
+
+
 
 std::string Response::sendFileResponse()
 {
@@ -50,7 +59,7 @@ std::string Response::validResponse(Errors &errors)
         return errors.error400();
     }
     cleanUpCgiFiles();
-    return generateResponse();
+    return generateResponse(false);
 }
 
 void Response::setStatusCodeAndMessage()
@@ -204,7 +213,9 @@ std::string Response::generateResponseCgi()
     else
         _status_code = 200; // HTTP 200 OK
     response << "HTTP/1.1 " << _status_code << " " << (_status_code == 206 ? "Partial Content" : "OK") << "\r\n";
+    std::cout << GREEN << BOLD <<response.str() << RESET;
     response << _headerCgi << "\r\n";
+    std::cout << GREEN << _headerCgi << RESET << std::endl;
     if (_range.isPartial)
     {
         size_t realEnd = std::min(static_cast<size_t> (_range.end), _body.size() > 0 ? _body.size() - 1 : 0);
@@ -220,6 +231,7 @@ std::string Response::generateResponseCgi()
     }
     else
         response << _body;
+    // std::cout << response.str() << std::endl;
     cleanUpCgiFiles();
     return response.str();
 }
@@ -317,8 +329,9 @@ std::string Response::postResponse(Errors &errors)
     if (isCGI())
     {
         handleCGI(errors);
-        if (_status_code != 200)
-        return (errors.generateError(_status_code));
+        if (_status_code != 0)
+            return (errors.generateError(_status_code));
+        return (generateResponseCgi());
     }
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
@@ -390,7 +403,6 @@ std::string Response::sendResponse()
     if (_request.getErrorCode() != 200)
         return (errors.generateError(_request.getErrorCode()));
     setInfoRequest();
-    std::cout << "Request URL: " << _request.getUrl() << std::endl;
     if (_request.getUrl() == "/prop/listing")
     {
         _body = jsonListFiles(errors);

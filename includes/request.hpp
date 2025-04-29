@@ -38,18 +38,19 @@ class Request {
         bool isValidUrl();
         bool isMethodAllowedForRoute(Config &config);
         
-        std::string getIp() const;
         void parseMultipartFormData(const std::string& body, const std::string& boundary);
         std::string getMethod() const;
         std::string getUrl() const;
         int getPortFromHeaders() const;
+        void parseHostHeader(std::istringstream &stream);
         void parseHeaders(std::istringstream &stream, size_t &headersSize, bool &headersFinished);
+        bool validateMethodAndVersion(Config &config);
+        void processHeaders(std::istringstream &stream, bool headersFinished);
+        void initializeRequest(Request& request, const std::string& method, const std::string& url, const std::string& httpVersion, const std::string& queryString);
         std::string getHttpVersion() const;
         std::string getBody() const;
         std::string getQueryString() const { return _queryString; };
         int getErrorCode() const;
-
-        void parseHostHeader(std::istringstream &stream);
         
         std::map<std::string, std::string>& getHeaders();
         const std::map<std::string, std::string>& getHeaders() const;
@@ -64,6 +65,8 @@ class Request {
         void addHeader(const std::string& key, const std::string& value);
 
         void printRequest() const;
+        std::string getIp() const;
+
 };
 
 #endif

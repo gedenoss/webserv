@@ -27,7 +27,6 @@ void Request::addHeader(const std::string& key,	const std::string& value) {	_hea
 
 
 /*--------------------------------------------------------------------------------------------------------------------------*/
-
 std::string Request::getIp() const {
 	std::string ip;
 	// const std::map<std::string,	std::string>& headersRef = getHeaders();	
@@ -39,12 +38,14 @@ std::string Request::getIp() const {
 	return ip;
 }
 
-
 void Request::parse(const std::string &rawRequest,	Config &config) {
 	std::istringstream stream(rawRequest);
 	std::string	line;
 	(void)config;
+	_errorCode = 0;
+	size_t headersSize = 0;
 	bool headersFinished = false;
+	
 	if (rawRequest.size() >	8000 * 100 * 100) {
 		_errorCode = 431;	
 		return;
@@ -68,11 +69,9 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		queryString = url.substr(url.find("?") + 1, std::string::npos);
 		url = url.substr(0, url.find("?"));
 	}
-	setMethod(method);
-	setUrl(url);
-	setHttpVersion(httpVersion);
-	setQueryString(queryString);
 
+	this->initializeRequest(*this, method, url, httpVersion, queryString);
+	
 	parseHostHeader(stream);
 	
 	if (!isValidMethod())
@@ -90,22 +89,16 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		return;
 	}
 
-	size_t headersSize = 0;
-
-
-	if (!isMethodAllowedForRoute(config)) {
-		_errorCode = 405;	
-		return;
-	}
-
-	
-	if (!isValidHttpVersion()) {
-		_errorCode = 505;	
-		return;
-	}
+    if (!validateMethodAndVersion(config)) {
+        return;
+    }
 	
 	//suite du petit header bien kawaii bien sexy
 	parseHeaders(stream, headersSize, headersFinished);
+	if (_errorCode != 0) {
+        return;
+    }
+
 
 	
 	if (getHttpVersion() == "HTTP/1.1" && getHeaders().find("Host")	== getHeaders().end()) {
@@ -113,118 +106,11 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		return ;
 	}
 
-	if (headersFinished) {
-		std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");	
-		if (contentLengthIt	!= getHeaders().end()) {
-			
-			bool conversionSuccess = false;
-			size_t contentLength = safeStringToUlong(contentLengthIt->second, conversionSuccess);
-			
-			if (!conversionSuccess)	{
-				_errorCode = 400;	
-				return ;
-			}
-			if (_method == "POST" && contentLength == 0) {
-				_errorCode = 400; 
-				return;
-			}
-			
-			if (contentLength >	_maxBodySize) {
-				_errorCode = 413;	
-				return ;
-			}
-			if (contentLength >	0) {
-				std::string	bodyContent;
-				bodyContent.reserve(contentLength);
-				
-				char* buffer = new char[1024];
-				size_t totalRead = 0;
-				size_t bytesToRead;
-				while (totalRead < contentLength) {
-					bytesToRead	= (contentLength - totalRead < 1024) ? (contentLength -	totalRead) : 1024;
-					stream.read(buffer,	bytesToRead);
-					size_t bytesRead = stream.gcount();
-					//std::cout << "Bytes read : " << bytesRead << std::endl;
-					if (bytesRead == 0) break;	
-					
-					bodyContent.append(buffer, bytesRead);
-					//std::cout << "Body content" << bodyContent << std::endl;
-					totalRead += bytesRead;
-				}
-				
-				delete[] buffer;
-				//std::cout << "Body length : " << bodyContent.length() << std::endl;
-				//std::cout << "Content length : " << contentLength << std::endl;
-				setBody(bodyContent);
-				if (bodyContent.length() != contentLength) {
-					std::cout << "Warning: Body	length (" << bodyContent.length() 
-							  << ") does not match Content-Length (" << contentLength << ")" << std::endl;
-					_errorCode = 400;	
-					return;
-				}
-			}
-		} else if (_method == "POST") {
-			
-			_errorCode = 411;	
-			return;
-		}
-		
-		if ((_method	== "POST") && 
-			getHeaders().find("Content-Type") == getHeaders().end()) {
-			_errorCode = 400;	
-			return ;
-		}
+	processHeaders(stream, headersFinished);
+    if (_errorCode != 0) {
+        return;
+    }
 
-
-		
-		std::map<std::string, std::string>::const_iterator contentTypeIt = getHeaders().find("Content-Type");
-		if (contentTypeIt != getHeaders().end()) {
-			std::string contentType = contentTypeIt->second;
-			
-			size_t paramPos = contentType.find(';');
-			if (paramPos != std::string::npos) {
-				contentType = contentType.substr(0, paramPos);
-			}
-		
-			size_t lastNonSpace = contentType.find_last_not_of(" \t\r");
-			if (lastNonSpace != std::string::npos)
-				contentType = contentType.substr(0, lastNonSpace + 1);
-						
-			static const std::string allowedTypes[] = {
-				"text/html", "image/png", "image/jpeg", "text/css",
-				"application/javascript", "application/json", "application/xml",
-				"application/pdf", "text/plain", "text/csv", "application/x-www-form-urlencoded", "multipart/form-data"
-			};
-			
-			bool isAllowed = false;
-			for (size_t i = 0; i < sizeof(allowedTypes)/sizeof(allowedTypes[0]); ++i) {
-				if (contentType == allowedTypes[i]) {
-					isAllowed = true;
-					break;
-				}
-			}
-			
-			if (!isAllowed) {
-				_errorCode = 415;
-				return;
-			}
-		}
-		
-
-		
-		std::map<std::string, std::string>::const_iterator expectIt	= getHeaders().find("Expect");
-		if (expectIt != getHeaders().end())	{
-			std::string	expect = expectIt->second;
-			if (expect.find("100-continue")	!= std::string::npos) {
-				_errorCode = 417;	
-				return ;
-			}
-		}
-	} else {
-		
-		_errorCode = 400;	
-		return ;
-	}
 	std::map<std::string, std::string>::const_iterator multipartIt = getHeaders().find("Content-Type");
 	if (multipartIt != getHeaders().end()) {
     std::string contentType = multipartIt->second;
@@ -247,10 +133,10 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 
 
 void Request::printRequest() const {
-	std::cout << "Method: "	<< getMethod() << "\n"
-			  << "URL: " << getUrl() << "\n"
-			  << "HTTP Version:	" << getHttpVersion() << "\n"
-			  << "Headers:\n";
+	std::cout << "\r\n" << BOLD << getMethod() << " "
+			  << getUrl() << " "
+			  << getHttpVersion() << "\r\n" << RESET;
+			//   << "Headers:\n";
 	
 	
 	const std::map<std::string,	std::string>& headersRef = getHeaders();	
@@ -258,11 +144,11 @@ void Request::printRequest() const {
 	{
 		// if(it->first == "Host")
 		// 	importantValue = it->second;
-		std::cout << "  " << it->first << ": " << it->second << "\n";
+		// std::cout << it->first << ": " << it->second << "\n";
 		
 	}
-
-	std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
+	std::cout << std::endl;
+	// std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
 	// std::cout << "  " << importantValue <<"\n";
 	// return importantValue;
 }

@@ -7,424 +7,347 @@
 #include <sys/stat.h>
 #include <map>
 #include <set>
-// a faire
-// parametre tout le bloc server
-// mettre ip de base si pas d ip
-//gerer les ;
-//-----------------------------------------GETTER-------------------------------------------------------//
+
+void printError(const std::string& context, const std::string& msg) {
+    std::cerr << "\033[1;31m[ERROR] " << context << ": " << msg << "\033[0m" << std::endl;
+}
+
+//-----------------------------------------------------GETTERS-------------------------------------------------------------//
 
 const std::vector<std::string>& ServerConfig::getAllowMethod() const {
     return _allowMethods;
 }
 
-std::vector<LocationConfig> ServerConfig::getLocations() const
-{
-	return locations;
+std::vector<LocationConfig> ServerConfig::getLocations() const {
+    return locations;
 }
 
-std::vector<ServerConfig> Config::getServers() const
-{
-	return servers;
+std::vector<ServerConfig> Config::getServers() const {
+    return servers;
 }
 
-//-----------------------------------------CLEAN FUNCTIONS-------------------------------------------------------//
+//-------------------------------------------------CLEAN FUNCTIONS----------------------------------------------------------//
 
-std::string	cleanValue(std::string value)
-{
-	while (!value.empty() && (value[value.size() - 1] == ';' || isspace(value[value.size() - 1]))) 
-		value.erase(value.size() - 1);
-	return value;
+std::string cleanValue(std::string value) {
+    while (!value.empty() && (value[value.size() - 1] == ';' || isspace(value[value.size() - 1]))) 
+        value.erase(value.size() - 1);
+    return value;
 }
 
-std::string cleanForLoc(std::string line){
-	if(line[line.size() - 1] == '{'){
-		line.erase(line.size() - 1);
-		return line;
-	}
-	return NULL;
+std::string cleanForLoc(std::string line) {
+    if (!line.empty() && line[line.size() - 1] == '{') {
+        line.erase(line.size() - 1);
+        return line;
+    }
+    return "";
 }
 
-//-----------------------------------------------------SERVER HANDLER-----------------------------------------------------------------//
+//-----------------------------------------------------SERVER HANDLERS------------------------------------------------------//
 
-void ServerConfig::handleListen(std::istringstream& iss, std::string line)
-{
-	std::string listenValue;
-	iss >> listenValue;
-	if (countWords(line) != 2){
-		exit(1);
-	}
-	(void)line;	
-	listenValue = cleanValue(listenValue);
-	if (listenValue.empty())
-	{
-		std::cerr << "Error: Missing value for 'listen' directive." << std::endl;
-		exit(1);
-	}
-	size_t colonPos = listenValue.find(':');
-	if (colonPos != std::string::npos)
-	{
-		host = listenValue.substr(0, colonPos);
-		std::string portStr = listenValue.substr(colonPos + 1);
-		if (!isNumber(portStr))
-		{
-			std::cerr << "Error: Invalid port number: " << portStr << std::endl;
-			exit(1);
-		}
-		port = atoi(portStr.c_str());
-		if (!isValidIP(host))
-		{
-			std::cerr << "Error: Invalid host address: " << host << std::endl;
-			exit(1);
-		}
-	}
-	else
-	{
-		if (!isNumber(listenValue))
-		{
-			std::cerr << "Error: Invalid port number: " << listenValue << std::endl;
-			exit(1);
-		}
-		port = atoi(listenValue.c_str());
-		host = "";
-	}
-
-	if (port < 1 || port > 65535)
-	{
-		std::cerr << "Error: Port number out of range: " << port << std::endl;
-		exit(1);
-	}
+void ServerConfig::handleListen(std::istringstream& iss, std::string line) {
+    std::string listenValue;
+    iss >> listenValue;
+    if (countWords(line) != 2) {
+        printError("handleListen", "Wrong number of arguments for 'listen'. Expected 1.");
+        exit(1);
+    }
+    listenValue = cleanValue(listenValue);
+    if (listenValue.empty()) {
+        printError("handleListen", "Missing value for 'listen'.");
+        exit(1);
+    }
+    size_t colonPos = listenValue.find(':');
+    if (colonPos != std::string::npos) {
+        host = listenValue.substr(0, colonPos);
+        std::string portStr = listenValue.substr(colonPos + 1);
+        if (!isNumber(portStr)) {
+            printError("handleListen", "Port must be a number: " + portStr);
+            exit(1);
+        }
+        port = atoi(portStr.c_str());
+        if (!isValidIP(host)) {
+            printError("handleListen", "Invalid IP address: " + host);
+            exit(1);
+        }
+    } else {
+        if (!isNumber(listenValue)) {
+            printError("handleListen", "Port must be numeric: " + listenValue);
+            exit(1);
+        }
+        port = atoi(listenValue.c_str());
+        host = "";
+    }
+    if (port < 1 || port > 65535) {
+        printError("handleListen", "Port out of range: " + toString(port));
+        exit(1);
+    }
 }
 
-void ServerConfig::handleHost(std::istringstream& iss, std::string line)
-{
-	iss >> host;
-	host = cleanValue(host);
-	if (countWords(line) != 2)
-		exit(1);
-	if (host.empty() || !isValidIP(host))
-	{
-		std::cerr << "Error: Invalid host address: " << host << std::endl;
-		exit(1);
-	}
+void ServerConfig::handleHost(std::istringstream& iss, std::string line) {
+    iss >> host;
+    host = cleanValue(host);
+    if (countWords(line) != 2) {
+        printError("handleHost", "Expected one argument.");
+        exit(1);
+    }
+    if (host.empty() || !isValidIP(host)) {
+        printError("handleHost", "Invalid or empty host: " + host);
+        exit(1);
+    }
 }
 
-void ServerConfig::handleServerName(std::istringstream& iss, std::string line)
-{
-	if (countWords(line) != 2)
-		exit(1);
-	iss >> server_name;
-	server_name = cleanValue(server_name);
+void ServerConfig::handleServerName(std::istringstream& iss, std::string line) {
+    if (countWords(line) != 2) {
+        printError("handleServerName", "Expected one argument.");
+        exit(1);
+    }
+    iss >> server_name;
+    server_name = cleanValue(server_name);
 }
 
-void ServerConfig::handleIndex(std::istringstream& iss)
-{
+void ServerConfig::handleIndex(std::istringstream& iss) {
     iss >> index;
     index = cleanValue(index);
-    
-	if (!root.empty()) {
-        std::string fullPath;
-        if (root[root.size() - 1] == '/')
-            fullPath = root + index;
-        else
-            fullPath = root + "/" + index;
-            
-        if (!isFileValid(fullPath))
-        {
-            std::cerr << "Warning: Default index file not found at: " << fullPath << std::endl;
+    if (!root.empty()) {
+        std::string fullPath = root + (root[root.size() - 1] == '/' ? "" : "/") + index;
+        if (!isFileValid(fullPath)) {
+            std::cerr << "\033[1;33m[WARNING] Index file not found at: " << fullPath << "\033[0m" << std::endl;
         }
     }
 }
-void ServerConfig::handleRoot(std::istringstream& iss)
-{
-	iss >> root;
-	root = cleanValue(root);
-	if (!isPathValid(root))
-	{
-		std::cerr << "Error: Invalid root path: " << root << std::endl;
-		exit(1);
-	}
-}
 
-void ServerConfig::handleClientMaxBodySize(std::istringstream& iss, std::string line)
-{
-	std::string size_str;
-	iss >> size_str;
-	size_str = cleanValue(size_str);
-	
-	if (countWords(line) != 2)
-		exit(1);
-	if (size_str.empty())
-	{
-		std::cerr << "Error: client_max_body_size is empty" << std::endl;
-		exit(1);
-	}
-
-	char unit = size_str[size_str.size() - 1];
-	std::string numberPart = size_str.substr(0, size_str.size() - 1);
-
-	int multiplier = 1;
-	if (unit == 'K' || unit == 'k') multiplier = 1024;
-	else if (unit == 'M' || unit == 'm') multiplier = 1024 * 1024;
-	else if (unit == 'G' || unit == 'g') multiplier = 1024 * 1024 * 1024;
-	else if (isdigit(unit)) numberPart += unit;
-	else
-	{
-		std::cerr << "Error: Invalid client_max_body_size unit: " << unit << std::endl;
-		exit(1);
-	}
-
-	if (!isNumber(numberPart))
-	{
-		std::cerr << "Error: Invalid client_max_body_size: " << size_str << std::endl;
-		exit(1);
-	}
-
-	client_max_body_size = atoi(numberPart.c_str()) * multiplier;
-}
-
-void ServerConfig::handleErrorPage(std::istringstream& iss)
-{
-	std::string code_str, page;
-	iss >> code_str >> page;
-	code_str = cleanValue(code_str);
-	page = cleanValue(page);
-
-	if (!isNumber(code_str) || !isHttpErrorCodeValid(atoi(code_str.c_str())))
-	{
-		std::cerr << "Error: Invalid error code: " << code_str << std::endl;
-		exit(1);
-	}
-
-	error_pages[atoi(code_str.c_str())] = page;
-}
-
-void ServerConfig::handleLocation(std::istringstream& iss, std::ifstream& configFile, std::string line)
-{
-	LocationConfig location;
-	iss >> location.path;
-	location.path = cleanValue(location.path);
-	line = cleanForLoc(line);
-	if (countWords(line) != 2)
-		exit(1);
-	location.parseLocation(configFile, location);
-
-	locations.push_back(location);
-}
-
-//-------------------------------LOCATION HANDLER----------------------------------------//
-
-void LocationConfig::handleLocRoot(std::istringstream &iss, LocationConfig& location, std::string line){
-
-	iss	>> location.root;
-	location.root =	cleanValue(location.root);
-	if (countWords(line) != 2)
-		exit(1);
-	if (!isPathValid(location.root))
-	{
-		std::cerr << "Error: Invalid root path:	" << location.root << std::endl;
-		exit(1);
-	}
-}
-
-void LocationConfig::handleLocIndex(std::istringstream &iss, LocationConfig& location, std::string line){
-    iss >> location.index;
-    if (countWords(line) != 2)
+void ServerConfig::handleRoot(std::istringstream& iss) {
+    iss >> root;
+    root = cleanValue(root);
+    if (!isPathValid(root)) {
+        printError("handleRoot", "Invalid root path: " + root);
         exit(1);
+    }
+}
+
+void ServerConfig::handleClientMaxBodySize(std::istringstream& iss, std::string line) {
+    std::string size_str;
+    iss >> size_str;
+    size_str = cleanValue(size_str);
+    if (countWords(line) != 2) {
+        printError("handleClientMaxBodySize", "Expected one argument.");
+        exit(1);
+    }
+    if (size_str.empty()) {
+        printError("handleClientMaxBodySize", "Value cannot be empty.");
+        exit(1);
+    }
+    char unit = size_str[size_str.size() - 1];
+    std::string numberPart = size_str.substr(0, size_str.size() - 1);
+    int multiplier = 1;
+    if (unit == 'K' || unit == 'k') multiplier = 1024;
+    else if (unit == 'M' || unit == 'm') multiplier = 1024 * 1024;
+    else if (unit == 'G' || unit == 'g') multiplier = 1024 * 1024 * 1024;
+    else if (isdigit(unit)) numberPart += unit;
+    else {
+        printError("handleClientMaxBodySize", "Invalid unit: " + std::string(1, unit));
+        exit(1);
+    }
+    if (!isNumber(numberPart)) {
+        printError("handleClientMaxBodySize", "Non-numeric size: " + numberPart);
+        exit(1);
+    }
+    client_max_body_size = atoi(numberPart.c_str()) * multiplier;
+}
+
+void ServerConfig::handleErrorPage(std::istringstream& iss) {
+    std::string code_str, page;
+    iss >> code_str >> page;
+    code_str = cleanValue(code_str);
+    page = cleanValue(page);
+    if (!isNumber(code_str) || !isHttpErrorCodeValid(atoi(code_str.c_str()))) {
+        printError("handleErrorPage", "Invalid error code: " + code_str);
+        exit(1);
+    }
+    error_pages[atoi(code_str.c_str())] = page;
+}
+
+void ServerConfig::handleLocation(std::istringstream& iss, std::ifstream& configFile, std::string line) {
+    LocationConfig location;
+    iss >> location.path;
+    location.path = cleanValue(location.path);
+    line = cleanForLoc(line);
+    if (countWords(line) != 2) {
+        printError("handleLocation", "Expected: location <path> {");
+        exit(1);
+    }
+    location.parseLocation(configFile, location);
+    locations.push_back(location);
+}
+
+//--------------------------------------------------LOCATION HANDLERS-------------------------------------------------------//
+
+void LocationConfig::handleLocRoot(std::istringstream &iss, LocationConfig& location, std::string line) {
+    iss >> location.root;
+    location.root = cleanValue(location.root);
+    if (countWords(line) != 2) {
+        printError("handleLocRoot", "Expected one argument.");
+        exit(1);
+    }
+    if (!isPathValid(location.root)) {
+        printError("handleLocRoot", "Invalid path: " + location.root);
+        exit(1);
+    }
+}
+
+void LocationConfig::handleLocIndex(std::istringstream &iss, LocationConfig& location, std::string line) {
+    iss >> location.index;
     location.index = cleanValue(location.index);
-    
+    if (countWords(line) != 2) {
+        printError("handleLocIndex", "Expected one argument.");
+        exit(1);
+    }
     if (!location.root.empty()) {
-        std::string fullPath;
-        if (location.root[location.root.size() - 1] == '/')
-            fullPath = location.root + location.index;
-        else
-            fullPath = location.root + "/" + location.index;
-            
-        if (!isFileValid(fullPath))
-        {
-            std::cerr << "Warning: Default index file not found at: " << fullPath << std::endl;
+        std::string fullPath = location.root + (location.root[location.root.size() - 1] == '/' ? "" : "/") + location.index;
+        if (!isFileValid(fullPath)) {
+            std::cerr << "\033[1;33m[WARNING] Index file not found at: " << fullPath << "\033[0m" << std::endl;
         }
     }
 }
 
-void LocationConfig::handleLocAllMethods(std::istringstream &iss, LocationConfig& location){
-	std::string	method;
-	while (iss >> method){
-		method = cleanValue(method);
-		if (method != "GET" && method != "POST" && method != "DELETE")
-			exit(1);
-		location.allow_methods.push_back(cleanValue(method));
-	}
-	(void)iss, (void)location;
+void LocationConfig::handleLocAllMethods(std::istringstream &iss, LocationConfig& location) {
+    std::string method;
+    while (iss >> method) {
+        method = cleanValue(method);
+        if (method != "GET" && method != "POST" && method != "DELETE") {
+            printError("handleLocAllMethods", "Unsupported method: " + method);
+            exit(1);
+        }
+        location.allow_methods.push_back(method);
+    }
 }
 
-void LocationConfig::handleAutoIndex(std::istringstream &iss, LocationConfig& location, std::string line){
-	std::string	value;
-	iss	>> value;
-	value =	cleanValue(value);
-	if (countWords(line) != 2)
-		exit (1);
-	if (value == "on")
-		location.autoindex = true;
-	else if (value == "off")
-		location.autoindex = false;
-	else
-	{
-		std::cerr << "Error: Invalid value for autoindex: "	<< value << std::endl;
-		exit(1);
-	}
+void LocationConfig::handleAutoIndex(std::istringstream &iss, LocationConfig& location, std::string line) {
+    std::string value;
+    iss >> value;
+    value = cleanValue(value);
+    if (countWords(line) != 2) {
+        printError("handleAutoIndex", "Expected one argument.");
+        exit(1);
+    }
+    if (value == "on")
+        location.autoindex = true;
+    else if (value == "off")
+        location.autoindex = false;
+    else {
+        printError("handleAutoIndex", "Expected 'on' or 'off'. Got: " + value);
+        exit(1);
+    }
 }
 
-void LocationConfig::handleCGI(std::istringstream &iss, LocationConfig& location, std::string line){
-	std::string	ext, path;
-	iss	>> ext >> path;
-	ext = cleanValue(ext);
-	path = cleanValue(path);
-	if (countWords(cleanValue(line)) != 3)
-		exit(1);
-	if (ext.empty() || path.empty())
-	{
-		std::cerr << "Error: Missing value for cgi directive." << std::endl;
-		exit(1);
-	}
-	if (!isPathValid(path))
-	{
-		std::cerr << "Error: Invalid cgi path: " << path << std::endl;
-		exit(1);
-	}
-	location.cgi[ext] = path;
+void LocationConfig::handleCGI(std::istringstream &iss, LocationConfig& location, std::string line) {
+    std::string ext, path;
+    iss >> ext >> path;
+    ext = cleanValue(ext);
+    path = cleanValue(path);
+    if (countWords(line) != 3) {
+        printError("handleCGI", "Expected two arguments: <ext> <path>.");
+        exit(1);
+    }
+    if (!isPathValid(path)) {
+        printError("handleCGI", "Invalid CGI path: " + path);
+        exit(1);
+    }
+    location.cgi[ext] = path;
 }
 
-// bool isNotUrl(std::string value)
-// {
-
-// }
-
-void LocationConfig::handleReturn(std::istringstream &iss, LocationConfig& location, std::string line){
-	std::string value;
-	iss >> value;
-	if (countWords(line) != 2)
-		exit(1);
-	// else if (isNotUrl(value))
-	// 	exit(1);
+void LocationConfig::handleReturn(std::istringstream &iss, LocationConfig& location, std::string line) {
+    std::string value;
+    iss >> value;
+    if (countWords(line) != 2) {
+        printError("handleReturn", "Expected one argument.");
+        exit(1);
+    }
 	(void)location;
 }
-//-------------------------------PARSE FUNCTIONS---------------------------------------//
 
+//--------------------------------------------------PARSERS-----------------------------------------------------------------//
 
-void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& location)
-{
-	std::set<std::string> usedKeys;
-	std::string	line;
-	int i = 0;
-	while (std::getline(configFile,	line))
-	{
-		i++;
-		std::istringstream iss(line);
-		checkPV(line);
-		std::string	key;
-		iss	>> key;
-		if (key.empty()) continue;
-		if (key	== "}")	break;
-		if (usedKeys.find(key) != usedKeys.end())
-		{
+void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& location) {
+    std::set<std::string> usedKeys;
+    std::string line;
+    while (std::getline(configFile, line)) {
+        std::istringstream iss(line);
+        checkPV(line);
+        std::string key;
+        iss >> key;
+        if (key.empty()) continue;
+        if (key == "}") break;
+        if (usedKeys.find(key) != usedKeys.end()) {
 			if (key != "cgi")
 			{
-				std::cerr << "Error: Duplicate directive in location block:	" << key << std::endl;
-				exit(1);
+				printError("parseLocation", "Duplicate directive: " + key);
+            	exit(1);
 			}
-		}
-		usedKeys.insert(key);
-		if (key	== "root")
-			handleLocRoot(iss, location, line);
-		else if (key == "index")
-			handleLocIndex(iss, location, line);
-		else if (key == "allow_methods")
-			handleLocAllMethods(iss, location);
-		else if (key == "autoindex")
-			handleAutoIndex(iss, location, line);
-		else if (key == "cgi")
-			handleCGI(iss, location, line);
-		else if (key == "return")
-			handleReturn(iss, location, line);
-		else
-		{
-			std::cerr << "Error: Unknown directive in location block: "	<< key << std::endl;
-			exit(1);
-		}
-	}
+        }
+        usedKeys.insert(key);
+        if (key == "root") handleLocRoot(iss, location, line);
+        else if (key == "index") handleLocIndex(iss, location, line);
+        else if (key == "allow_methods") handleLocAllMethods(iss, location);
+        else if (key == "autoindex") handleAutoIndex(iss, location, line);
+        else if (key == "cgi") handleCGI(iss, location, line);
+        else if (key == "return") handleReturn(iss, location, line);
+        else {
+            printError("parseLocation", "Unknown directive: " + key);
+            exit(1);
+        }
+    }
 }
 
-void ServerConfig::parseServer(std::ifstream& configFile)
-{
-	std::string line;
-	std::set<std::string> usedKeys;
-
-	while (std::getline(configFile, line))
-	{
-		std::istringstream iss(line);
-		checkPV(line);
-		std::string key;
-		iss >> key;
-		if (key.empty()) continue;
-		if (key == "}") break;
-
-		if (key != "location" && usedKeys.find(key) != usedKeys.end())
-		{
-				std::cerr << "Error: rective in server block: " << key << std::endl;
-				exit(1);
-		}
-		usedKeys.insert(key);
-		if (key == "listen")
-			handleListen(iss, line);
-		else if (key == "host")
-			handleHost(iss, line);
-		else if (key == "server_name")
-			handleServerName(iss, line);
-		else if (key == "index")
-			handleIndex(iss);
-		else if (key == "root")
-			handleRoot(iss);
-		else if (key == "client_max_body_size")
-			handleClientMaxBodySize(iss, line);
-		else if (key == "error_page")
-			handleErrorPage(iss);
-		else if (key == "location")
-			handleLocation(iss, configFile, line);
-		else
-		{
-			std::cerr << "Error: Unknown directive in server block: " << key << std::endl;
-			exit(1);
-		}
-	}
+void ServerConfig::parseServer(std::ifstream& configFile) {
+    std::string line;
+    std::set<std::string> usedKeys;
+    while (std::getline(configFile, line)) {
+        std::istringstream iss(line);
+        checkPV(line);
+        std::string key;
+        iss >> key;
+        if (key.empty()) continue;
+        if (key == "}") break;
+        if (key != "location" && usedKeys.find(key) != usedKeys.end()) {
+            printError("parseServer", "Duplicate directive: " + key);
+            exit(1);
+        }
+        usedKeys.insert(key);
+        if (key == "listen") handleListen(iss, line);
+        else if (key == "host") handleHost(iss, line);
+        else if (key == "server_name") handleServerName(iss, line);
+        else if (key == "index") handleIndex(iss);
+        else if (key == "root") handleRoot(iss);
+        else if (key == "client_max_body_size") handleClientMaxBodySize(iss, line);
+        else if (key == "error_page") handleErrorPage(iss);
+        else if (key == "location") handleLocation(iss, configFile, line);
+        else {
+            printError("parseServer", "Unknown directive: " + key);
+            exit(1);
+        }
+    }
 }
 
-
-void Config::parseConfig(const std::string& filename)
-{
-	std::ifstream configFile(filename.c_str());
-	if (!configFile.is_open())
-	{
-		std::cerr << "Error: Could not open	config file: " << filename << std::endl;
-		exit(1);
-	}
-	std::string	line;
-	while (std::getline(configFile,	line))
-	{
-		std::istringstream iss(line);
-		std::string	key;
-		iss	>> key;
-		if (key.empty()) 
-			continue;
-		if (key	== "server")
-		{
-			ServerConfig server;
-			server.parseServer(configFile);
-			servers.push_back(server);
-		}
-		else
-		{
-			std::cerr << "Error: Unknown directive outside any block: "	<< key << std::endl;
-			exit(1);
-		}
-	}
+void Config::parseConfig(const std::string& filename) {
+    std::ifstream configFile(filename.c_str());
+    if (!configFile.is_open()) {
+        printError("parseConfig", "Unable to open file: " + filename);
+        exit(1);
+    }
+    std::string line;
+    while (std::getline(configFile, line)) {
+        std::istringstream iss(line);
+        std::string key;
+        iss >> key;
+        if (key.empty()) continue;
+        if (key == "server") {
+            ServerConfig server;
+            server.parseServer(configFile);
+            servers.push_back(server);
+        } else {
+            printError("parseConfig", "Unknown directive outside server block: " + key);
+            exit(1);
+        }
+    }
 }
