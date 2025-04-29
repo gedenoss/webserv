@@ -47,14 +47,14 @@ bool Request::isMethodAllowedForRoute(Config &config) {
 
     const std::vector<ServerConfig> &servers = config.getServers();
 
-    bool serverMatched = false;
+    // bool serverMatched = false;
     for (size_t i = 0; i < servers.size(); ++i) {
         const ServerConfig &server = servers[i];
         if (server.getPort() != requestPort) {
             continue;
         }
 
-        serverMatched = true;
+    // serverMatched = true;
      //   std::cout << "Matched server on port: " << server.getPort() << "\n";
 
         const std::vector<LocationConfig>& locations = server.getLocations();

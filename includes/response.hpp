@@ -21,8 +21,8 @@ const int MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
 
 struct Range
 {
-    size_t start;
-    size_t end;
+    long start;
+    long end;
     bool isValid;
     bool isPartial;
 };

@@ -188,9 +188,9 @@ Range parseRange(const std::string &rangeHeader, long fileSize)
         range.end = stringToSizeT(endStr.c_str());
     else
         range.end = fileSize - 1;
-    if (range.start < 0 || range.end < 0 || range.start > range.end || range.end >= static_cast<size_t>(fileSize))
+    if (range.start < 0 || range.end < 0 || range.start > range.end || range.end >= fileSize)
         range.isValid = false;
-    if (range.start > 0 || range.end < static_cast<size_t> (fileSize - 1))
+    if (range.start > 0 || range.end < (fileSize - 1))
         range.isPartial = true;
     return range;
 }
@@ -207,14 +207,14 @@ std::string Response::generateResponseCgi()
     response << _headerCgi << "\r\n";
     if (_range.isPartial)
     {
-        size_t realEnd = std::min(_range.end, _body.size() > 0 ? _body.size() - 1 : 0);
+        size_t realEnd = std::min(static_cast<size_t> (_range.end), _body.size() > 0 ? _body.size() - 1 : 0);
         response << "Content-Range: bytes "
                  << _range.start << "-" << realEnd << "/" << _body.size() << "\r\n";
     }
     response << "\r\n";
-    if (_range.isPartial && _range.start < _body.size())
+    if (_range.isPartial && static_cast<size_t> (_range.start) < _body.size())
     {
-        size_t realEnd = std::min(_range.end, _body.size() - 1);
+        size_t realEnd = std::min(static_cast<size_t> (_range.end), _body.size() - 1);
         std::string partialBody = _body.substr(_range.start, realEnd - _range.start + 1);
         response << partialBody;
     }
