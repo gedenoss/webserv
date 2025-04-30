@@ -61,7 +61,6 @@ void Request::parse(const std::string &rawRequest, Config &config) {
     _errorCode = 200;
 }
 
-// Validation de la taille de la requête
 bool Request::validateRequestSize(const std::string &rawRequest) {
     if (rawRequest.size() > 8000 * 100 * 100) {
         _errorCode = 431;
@@ -70,7 +69,6 @@ bool Request::validateRequestSize(const std::string &rawRequest) {
     return true;
 }
 
-// Analyse et validation de la ligne de requête
 bool Request::parseRequestLine(std::istringstream &stream) {
     std::string line;
     if (!std::getline(stream, line) || line.empty()) {
@@ -101,22 +99,18 @@ bool Request::parseRequestLine(std::istringstream &stream) {
 }
 
 bool Request::validateMethod() {
-    // Liste des méthodes HTTP valides
     const std::string validMethods[] = {"GET", "POST", "DELETE"};
 
-    // Vérifie si la méthode actuelle (_method) est dans la liste des méthodes valides
     for (size_t i = 0; i < sizeof(validMethods) / sizeof(validMethods[0]); ++i) {
         if (_method == validMethods[i]) {
             return true;
         }
     }
 
-    // Si la méthode n'est pas valide, définissez un code d'erreur
-    _errorCode = 501; // 501 Not Implemented
+    _errorCode = 501;
     return false;
 }
 
-// Validation de l'URL
 bool Request::validateUrl() {
     if (!isValidUrl()) {
         _errorCode = 400;
@@ -125,7 +119,6 @@ bool Request::validateUrl() {
     return true;
 }
 
-// Validation de l'en-tête Host
 bool Request::validateHostHeader() {
     if (getHttpVersion() == "HTTP/1.1" && getHeaders().find("Host") == getHeaders().end()) {
         _errorCode = 400;
@@ -134,7 +127,6 @@ bool Request::validateHostHeader() {
     return true;
 }
 
-// Gestion des données multipart/form-data
 void Request::handleMultipartFormData() {
     std::map<std::string, std::string>::const_iterator multipartIt = getHeaders().find("Content-Type");
     if (multipartIt != getHeaders().end()) {
