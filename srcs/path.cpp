@@ -48,55 +48,6 @@ std::string trimLocationPath(const std::string& url, const std::string& location
     return url;
 }
 
-// void Response::listDirectory()
-// {
-//     _listingDirectory = true;
-//     DIR *dir = opendir(_path.c_str());
-//     if (dir == NULL)
-//     {
-//         if (errno == ENOENT)
-//             setStatusCode(404);
-//         else if (errno == EACCES)
-//             setStatusCode(403);
-//         else
-//             setStatusCode(500);
-//         return;
-//     }
-
-//     std::stringstream html;
-//     html << "<html><head><title>Index of " << _request.getUrl() << "</title></head><body>";
-//     html << "<h1>Index of " << _request.getUrl() << "</h1><hr><ul>";
-
-//     struct dirent *entry;
-//     while ((entry = readdir(dir)) != NULL)
-//     {
-//         std::string name = entry->d_name;
-//         if (name == "." || name == "..")
-//             continue;
-//         std::string fullPath = joinPaths(_path, name);  // Chemin complet vers le fichier
-//         struct stat fileStat;
-//         if (stat(fullPath.c_str(), &fileStat) == 0)
-//         {
-//             std::string displayName = name;
-//             if (S_ISDIR(fileStat.st_mode))
-//                 displayName += "/";
-
-//             // Générer l'URL relative en utilisant _request.getUrl()
-//             std::string relativePath = _path;  // URL de base
-//             if (relativePath[relativePath.length() - 1] != '/')
-//                 relativePath += '/';
-//             relativePath += name;
-//             // Ajout du lien vers le fichier ou dossier
-//             html << "<li><a href=\"" << displayName << "\">" << displayName << "</a></li>";
-//         }
-//     }
-
-//     closedir(dir);
-//     html << "</ul><hr></body></html>\n";
-//     _body = html.str();
-//     setStatusCode(200);
-// }
-
 void Response::listDirectory()
 {
     _listingDirectory = true;

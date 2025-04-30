@@ -148,7 +148,7 @@ void Response::childRoutine()
         if (chdir(_cgiPath.c_str()) == -1) 
         {
             perror("chdir");
-            exit(errno);
+            exit(1);
         }
     
         setEnv();
@@ -167,7 +167,7 @@ void Response::childRoutine()
     catch(const std::exception &e)
     {
         perror("childRoutine exception");
-        exit(errno);
+        exit(1);
     }
 }
 
@@ -178,7 +178,7 @@ void Response::manageBodyForCgi()
     //On ouvre l'infile
     infile.open(file.c_str());
     if (infile.fail())
-        exit(errno);
+        exit(1);
     //On écrit le body dans l'infile
     infile << _request.getBody();
     std::stringstream ss;
@@ -188,10 +188,10 @@ void Response::manageBodyForCgi()
     infile.close();
     const int fd = open(file.c_str(), O_CREAT, O_RDWR);
     if (fd < 0)
-        exit(errno);
+        exit(1);
     //On redirige l'entrée standard vers l'infile
     if (dup2(fd, STDIN_FILENO) == -1)
-        exit(errno);
+        exit(1);
     close(fd);
 }
 
@@ -201,10 +201,10 @@ void Response::manageCgiOutfile()
     const std::string file = _cgiOutfilePath;
     const int fd = open(file.c_str(), O_CREAT | O_RDWR, 0644);
     if (fd < 0)
-        exit(errno);
+        exit(1);
     //On redirige la sortie standard vers l'outfile
     if (dup2(fd, STDOUT_FILENO) == -1)
-        exit(errno);
+        exit);
     close(fd);
 }
 
