@@ -248,6 +248,7 @@ void Request::initializeRequest(Request& request, const std::string& method, con
 
 void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
     if (!headersFinished) {
+        std::cout << "Headers not finished yet.\n";
         _errorCode = 400;
         return;
     }

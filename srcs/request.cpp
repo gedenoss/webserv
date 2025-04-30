@@ -94,6 +94,7 @@ void Request::parse(const std::string &rawRequest,	Config &config) {
 		_errorCode = 400;	
 		return ;
 	}
+	std::cout << "headersFinished : " << headersFinished << std::endl;
 
 	processHeaders(stream, headersFinished);
     if (_errorCode != 0) {
