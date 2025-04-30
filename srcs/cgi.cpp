@@ -204,7 +204,7 @@ void Response::manageCgiOutfile()
         exit(1);
     //On redirige la sortie standard vers l'outfile
     if (dup2(fd, STDOUT_FILENO) == -1)
-        exit);
+        exit(1);
     close(fd);
 }
 
