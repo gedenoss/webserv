@@ -91,7 +91,6 @@ class Request {
         int _errorCode;
         LocationConfig _location;
 
-        // Nouvelles fonctions privées pour la segmentation
         bool validateRequestSize(const std::string &rawRequest);
         bool parseRequestLine(std::istringstream &stream);
         bool validateUrl();
