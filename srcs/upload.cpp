@@ -46,7 +46,6 @@ std::string Response::handleUpload(Errors &errors)
                 if (cwd.empty())
                     throw std::runtime_error("Failed to get current working directory");
                 std::string fullPath = cwd + "/upload/" + fileName;
-                std::cout << "FUll PATH: " << fullPath << std::endl;
                 std::ofstream outFile((fullPath).c_str(), std::ios::binary);
                 if (!outFile.is_open())
                     throw std::runtime_error("Failed to open file for writing");

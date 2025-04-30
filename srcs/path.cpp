@@ -27,18 +27,6 @@ std::string findIndex(const std::string &dirPath, const std::string &root)
     return "";
 }
 
-std::string joinPaths(const std::string& a, const std::string& b)
-{
-    if (a.empty()) return b;
-    if (b.empty()) return a;
-
-    if (a[a.size() - 1] == '/' && b[0] == '/')
-        return a + b.substr(1); // évite double slash
-    if (a[a.size() - 1] != '/' && b[0] != '/')
-        return a + "/" + b;     // ajoute slash manquant
-    return a + b;
-}
-
 std::string trimLocationPath(const std::string& url, const std::string& locationPath)
 {
     // Si locationPath est vide ou juste "/", on ne touche pas à l'URL
@@ -60,8 +48,58 @@ std::string trimLocationPath(const std::string& url, const std::string& location
     return url;
 }
 
+// void Response::listDirectory()
+// {
+//     _listingDirectory = true;
+//     DIR *dir = opendir(_path.c_str());
+//     if (dir == NULL)
+//     {
+//         if (errno == ENOENT)
+//             setStatusCode(404);
+//         else if (errno == EACCES)
+//             setStatusCode(403);
+//         else
+//             setStatusCode(500);
+//         return;
+//     }
+
+//     std::stringstream html;
+//     html << "<html><head><title>Index of " << _request.getUrl() << "</title></head><body>";
+//     html << "<h1>Index of " << _request.getUrl() << "</h1><hr><ul>";
+
+//     struct dirent *entry;
+//     while ((entry = readdir(dir)) != NULL)
+//     {
+//         std::string name = entry->d_name;
+//         if (name == "." || name == "..")
+//             continue;
+//         std::string fullPath = joinPaths(_path, name);  // Chemin complet vers le fichier
+//         struct stat fileStat;
+//         if (stat(fullPath.c_str(), &fileStat) == 0)
+//         {
+//             std::string displayName = name;
+//             if (S_ISDIR(fileStat.st_mode))
+//                 displayName += "/";
+
+//             // Générer l'URL relative en utilisant _request.getUrl()
+//             std::string relativePath = _path;  // URL de base
+//             if (relativePath[relativePath.length() - 1] != '/')
+//                 relativePath += '/';
+//             relativePath += name;
+//             // Ajout du lien vers le fichier ou dossier
+//             html << "<li><a href=\"" << displayName << "\">" << displayName << "</a></li>";
+//         }
+//     }
+
+//     closedir(dir);
+//     html << "</ul><hr></body></html>\n";
+//     _body = html.str();
+//     setStatusCode(200);
+// }
+
 void Response::listDirectory()
 {
+    std::cout << "Listing directory: " << _path << std::endl;
     _listingDirectory = true;
     DIR *dir = opendir(_path.c_str());
     if (dir == NULL)
@@ -76,8 +114,18 @@ void Response::listDirectory()
     }
 
     std::stringstream html;
-    html << "<html><head><title>Index of " << _request.getUrl() << "</title></head><body>";
-    html << "<h1>Index of " << _request.getUrl() << "</h1><hr><ul>";
+    html << "<!DOCTYPE html>\n<html><head><meta charset='UTF-8'>";
+    html << "<title>Index of " << _request.getUrl() << "</title>";
+    html << "<style>"
+         << "body { background-color: #f0f0f0; font-family: monospace; padding: 20px; }"
+         << "table { width: 100%; border-collapse: collapse; }"
+         << "th, td { padding: 8px 12px; border-bottom: 1px solid #ccc; }"
+         << "a { text-decoration: none; color: #0044cc; }"
+         << "a:hover { text-decoration: underline; }"
+         << "</style></head><body>";
+
+    html << "<h1>Index of " << _request.getUrl() << "</h1><hr>";
+    html << "<table><tr><th>Name</th><th>Size</th><th>Last modified</th></tr>";
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL)
@@ -85,29 +133,50 @@ void Response::listDirectory()
         std::string name = entry->d_name;
         if (name == "." || name == "..")
             continue;
-        std::string fullPath = joinPaths(_path, name);  // Chemin complet vers le fichier
+
+        std::string fullPath = joinPaths(_path, name);
         struct stat fileStat;
         if (stat(fullPath.c_str(), &fileStat) == 0)
         {
             std::string displayName = name;
-            if (S_ISDIR(fileStat.st_mode))
-                displayName += "/";
+            std::string icon = "📄";
 
-            // Générer l'URL relative en utilisant _request.getUrl()
-            std::string relativePath = _path;  // URL de base
-            if (relativePath[relativePath.length() - 1] != '/')
-                relativePath += '/';
-            relativePath += name;
-            // Ajout du lien vers le fichier ou dossier
-            html << "<li><a href=\"" << displayName << "\">" << displayName << "</a></li>";
+            if (S_ISDIR(fileStat.st_mode))
+            {
+                displayName += "/";
+                icon = "📁";
+            }
+
+            // Relative path for href
+            std::string href = _request.getUrl();
+            if (href[href.length() - 1] != '/')
+                href += '/';
+            href += name;
+
+            // Format file size
+            std::stringstream sizeStr;
+            if (S_ISDIR(fileStat.st_mode))
+                sizeStr << "-";
+            else
+                sizeStr << fileStat.st_size << " B";
+
+            // Format time
+            char timebuf[80];
+            struct tm *tm = localtime(&fileStat.st_mtime);
+            strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M", tm);
+
+            html << "<tr><td>" << icon << " <a href=\"" << href << "\">" << displayName
+                 << "</a></td><td>" << sizeStr.str()
+                 << "</td><td>" << timebuf << "</td></tr>";
         }
     }
 
     closedir(dir);
-    html << "</ul><hr></body></html>\n";
+    html << "</table><hr><address>WebSaviezVousLe?/1.0</address></body></html>\n";
     _body = html.str();
     setStatusCode(200);
 }
+
 
 bool Response::tryPath(const std::string& p)
 {

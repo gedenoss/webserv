@@ -62,6 +62,8 @@ time_t parseHttpDate(const std::string &httpDate)
 
 std::string formatHttpDate(time_t timestamp)
 {
+    if (timestamp == 0)
+        return "";
     char buffer[50];
     struct tm *timeinfo = gmtime(&timestamp);
     strftime(buffer, 50, "%a, %d %b %Y %H:%M:%S GMT", timeinfo);
@@ -243,4 +245,16 @@ int countWords(const std::string& str) {
     }
 
     return wordCount;
+}
+
+std::string joinPaths(const std::string& a, const std::string& b)
+{
+    if (a.empty()) return b;
+    if (b.empty()) return a;
+
+    if (a[a.size() - 1] == '/' && b[0] == '/')
+        return a + b.substr(1); // évite double slash
+    if (a[a.size() - 1] != '/' && b[0] != '/')
+        return a + "/" + b;     // ajoute slash manquant
+    return a + b;
 }

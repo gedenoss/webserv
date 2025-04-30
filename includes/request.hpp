@@ -42,8 +42,8 @@ class Request {
         std::string getMethod() const;
         std::string getUrl() const;
         int getPortFromHeaders() const;
-        void parseHeaders(std::istringstream &stream, size_t &headersSize, bool &headersFinished);
         void parseHostHeader(std::istringstream &stream);
+        void parseHeaders(std::istringstream &stream, size_t &headersSize, bool &headersFinished);
         bool validateMethodAndVersion(Config &config);
         void processHeaders(std::istringstream &stream, bool headersFinished);
         void initializeRequest(Request& request, const std::string& method, const std::string& url, const std::string& httpVersion, const std::string& queryString);
@@ -65,6 +65,8 @@ class Request {
         void addHeader(const std::string& key, const std::string& value);
 
         void printRequest() const;
+        std::string getIp() const;
+
 };
 
 #endif

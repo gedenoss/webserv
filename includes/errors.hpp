@@ -29,6 +29,7 @@ class Errors
         std::string error431();
         std::string error500();
         std::string error501();
+        std::string error504();
         std::string error505();
         std::string error507();
 

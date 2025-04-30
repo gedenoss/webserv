@@ -1,69 +1,235 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delete File with Trash Can</title>
+    <title>Delete File from /prop</title>
     <style>
         body {
+            background-image: url('/images/trash.png'); /* Remplacez par l'URL de votre image de poubelle */
+            background-size: 800px 500px; /* Réduit la taille de l'image à 30% de sa taille originale */
+            background-position: center; /* Centre l'image */
+            background-repeat: no-repeat; /* Empêche l'image de se répéter */
+            background-attachment: fixed;
             background-color: black;
+            color: rgb(0, 0, 0);
+            font-family: Arial, sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             height: 100vh;
             margin: 0;
-            font-family: Arial, sans-serif;
         }
 
-        .trash-can {
-            width: 600px;
-            height: 300px;
+        select, button {
+            padding: 10px;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: red;
+            color: white;
+            border: none;
             cursor: pointer;
+            font-size: 18px;
         }
 
-        .trash-can:hover {
+        button:hover {
             opacity: 0.8;
+        }
+
+        h1 {
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        select {
+            font-size: 18px;
+            color: black;
+        }
+
+        /* Cache le texte par défaut dans le select */
+        option:disabled {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <img src="/images/trash.png" alt="Delete" class="trash-can" onclick="deleteFile()">
+    <select id="fileSelect">
+        <option disabled selected>Chargement des fichiers...</option>
+    </select>
+
+    <button onclick="deleteSelectedFile()">Supprimer le fichier</button>
 
     <script>
-        function deleteFile() {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '*/*';
-            fileInput.onchange = function() {
-                const file = fileInput.files[0];
-
-                if (!file) {
-                    alert('No file selected.');
+        async function fetchFileList() {
+            try {
+                const response = await fetch('/prop/listing?' + new Date().getTime());
+                if (!response.ok) {
+                    const errorHTML = await response.text();
+                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
                     return;
                 }
 
-                const filename = file.name;
+                const files = await response.json();
+                const select = document.getElementById('fileSelect');
+                select.innerHTML = '';
 
-                fetch('/prop/' + encodeURIComponent(filename), {
-                    method: 'DELETE',
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert('File deleted successfully.');
-                    } else {
-                        alert('Failed to delete the file.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error occurred while deleting the file.');
+                if (files.length === 0) {
+                    const option = document.createElement('option');
+                    option.text = "Aucun fichier à supprimer.";
+                    option.disabled = true;
+                    select.add(option);
+                    return;
+                }
+
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.text = file;
+                    select.add(option);
                 });
-            };
-            fileInput.click();
-        }
-    </script>
 
+            } 
+            catch (error) {
+                const errorHTML = await response.text();
+                replaceBodyContent(errorHTML); // Remplacer uniquement le body avec l'HTML du serveur
+                return;
+            }
+        }
+
+        async function deleteSelectedFile() {
+            const select = document.getElementById('fileSelect');
+            const filename = select.value;
+
+            if (!filename) {
+                alert("Aucun fichier sélectionné.");
+                return;
+            }
+
+            const confirmDelete = confirm(`Supprimer le fichier "${filename}" ?`);
+            if (!confirmDelete) return;
+
+            try {
+                const response = await fetch('/prop/' + encodeURIComponent(filename), {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Fichier supprimé avec succès.');
+                    await fetchFileList(); // refresh list
+                } else {
+                    if (!response.ok) {
+                    const errorHTML = await response.text();
+                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
+                    return;
+                    }
+                }
+            } 
+            catch (error) {
+                alert("Erreur réseau.");
+                console.error(error);
+            }
+        }
+
+        // Charger la liste des fichiers à chaque actualisation de la page
+        window.onload = fetchFileList;
+
+        function replaceBodyContent(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newBodyContent = doc.body.innerHTML;  // Récupérer uniquement le contenu du body
+
+            // Remplacer le body actuel par du contenu minimal
+            document.body.innerHTML = newBodyContent;
+        } 
+    </script>
 
 </body>
 </html>
+
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Erreur</title>
+</head>
+<body>
+
+    <script>
+        async function fetchFileList() {
+            try {
+                const response = await fetch('/prop/listing?' + new Date().getTime());
+                if (!response.ok) {
+                    const errorHTML = await response.text();
+                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
+                    return;
+                }
+
+                const files = await response.json();
+                const select = document.getElementById('fileSelect');
+                select.innerHTML = '';
+
+                if (files.length === 0) {
+                    const option = document.createElement('option');
+                    option.text = "Aucun fichier à supprimer.";
+                    option.disabled = true;
+                    select.add(option);
+                    return;
+                }
+
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.text = file;
+                    select.add(option);
+                });
+
+            } catch (error) {
+                alert("Erreur lors de la récupération des fichiers.");
+                console.error(error);
+            }
+        }
+
+        async function deleteSelectedFile() {
+            const select = document.getElementById('fileSelect');
+            const filename = select.value;
+
+            if (!filename) {
+                alert("Aucun fichier sélectionné.");
+                return;
+            }
+
+            const confirmDelete = confirm(`Supprimer le fichier "${filename}" ?`);
+            if (!confirmDelete) return;
+
+            try {
+                const response = await fetch('/prop/' + encodeURIComponent(filename), {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Fichier supprimé avec succès.');
+                    await fetchFileList(); // refresh list
+                } else {
+                    const errorHTML = await response.text();
+                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
+                }
+            } catch (error) {
+                alert("Erreur réseau.");
+                console.error(error);
+            }
+        }
+
+        // Fonction pour remplacer le contenu du body avec l'HTML de la réponse du serveur
+
+        // Charger la liste des fichiers à chaque actualisation de la page
+        window.onload = fetchFileList;
+    </script>
+
+</body>
+</html> -->

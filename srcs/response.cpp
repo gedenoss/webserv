@@ -32,7 +32,6 @@ std::string Response::sendFileResponse()
 
 bool Response::isCGI()
 {
-    // return true;
     std::string extension = _path.substr(_path.find_last_of("."), std::string::npos);
     std::map<std::string, std::string>::const_iterator it = _location.getCgi().find(extension);
     if (it != _location.getCgi().end())
@@ -61,6 +60,7 @@ void Response::setStatusCodeAndMessage()
         setStatusMessage("No Content");
         setTime();
         setEtag(_path);
+        setContentLanguage();
     }
     else if (_status_code == 201) {
     { 
@@ -280,7 +280,6 @@ std::string Response::getResponse(Errors &errors)
     //CGI handling
     if (isCGI())
     {
-        std::cout << "CGI" << std::endl;
         handleCGI(errors);
         if (_status_code != 0)
             return (errors.generateError(_status_code));
@@ -317,9 +316,11 @@ std::string Response::postResponse(Errors &errors)
 {
     if (isCGI())
     {
+        std::cout << "CGI POST" << std::endl;
         handleCGI(errors);
-        if (_status_code != 200)
-        return (errors.generateError(_status_code));
+        if (_status_code != 0)
+            return (errors.generateError(_status_code));
+        return (generateResponseCgi());
     }
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
@@ -347,13 +348,62 @@ std::string Response::deleteResponse(Errors &errors)
     
 }
 
+std::string Response::jsonListFiles(Errors &errors)
+{
+    DIR *dir = opendir("prop");
+    if (!dir)
+    {
+        if (errno == ENOENT)
+            return errors.error404();
+        else if (errno == EACCES)
+            return errors.error403();
+        else
+            return errors.error500();
+    }
+
+    std::stringstream json;
+    json << "[";
+    struct dirent *entry;
+    bool first = true;
+
+    while ((entry = readdir(dir)) != NULL)
+    {
+        std::string name = entry->d_name;
+        if (name == "." || name == "..")
+            continue;
+
+        if (!first)
+            json << ",";
+        json << "\"" << name << "\"";
+        first = false;
+    }
+
+    closedir(dir);
+    json << "]";
+    std::cout << json.str() << std::endl;
+    _status_code = 200;
+    return json.str();
+}
+
+
 std::string Response::sendResponse()
 {
     Errors errors(*this);
     if (_request.getErrorCode() != 200)
         return (errors.generateError(_request.getErrorCode()));
     setInfoRequest();
+    std::cout << "Request URL: " << _request.getUrl() << std::endl;
+    if (_request.getUrl() == "/prop/listing")
+    {
+        _body = jsonListFiles(errors);
+        setStatusCode(200);
+        return (validResponse(errors));
+    }
     findPath();
+    if (_listingDirectory == true)
+    {
+        return (validResponse(errors));
+    }
     //Do i find the file ? -> no error 404
     //Do I have the right to read/write it ? -> no error 403
     if (_status_code != 0)

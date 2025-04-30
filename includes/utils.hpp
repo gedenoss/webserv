@@ -29,5 +29,6 @@ void checkPV(std::string &value);
 int countWords(const std::string& str);
 std::string ensureRelativeDotPath(const std::string& path);
 std::string readPartialFile(const std::string &path, Range &range);
+std::string joinPaths(const std::string& a, const std::string& b);
 
 #endif

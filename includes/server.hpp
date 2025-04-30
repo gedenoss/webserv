@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
+#include <set>   
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -24,32 +25,55 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
-
+#include <csignal>
 #include <poll.h>
 
 #include "config.hpp"
 
-int launchServer(Config config);
+#define RED        "\033[0;31m"
+#define GREEN    "\033[0;32m"
+#define YELLOW    "\033[0;33m"
+#define ORANGE "\033[38;5;208m"
+#define BLUE    "\033[0;34m"
+#define MAGENTA    "\033[0;35m"
+#define CYAN    "\033[0;36m"
+#define WHITE    "\033[0;37m"
+#define BOLD       "\033[1m"
+#define UNDERLINE  "\033[4m"
+#define ITALIC     "\033[3m"
+#define RESET      "\033[0m"
 
 
 class Server {
     public:
+
+        void launchServer();
+        void clean();
+        void handleNewConnection();
+        void handleClientData();
+        static void _sigIntCatcher(int signal);
+
         Server(const Config &config);
         ~Server();
     
-        void run();
     
     private:
-        int epoll_fd;
+
+        int _fd;
+        int _epoll_fd;
         Config config;
-        std::vector<ServerConfig> servers;
-        std::vector<int> server_fds;
-    
-        void initSockets();
-        void addToEpoll(int fd);
-        void handleNewConnection(int server_fd);
-        void handleClient(int client_fd);
-        void cleanup();
+        std::vector<ServerConfig> _servers;
+        std::vector<int> _server_fds;
+        struct sockaddr_in _addr;
+        static bool _serverIsRunning;
+        std::map<int, std::string>        _buffers;
+        std::map<int, int>                _contentLengths;
+        std::set<int>                     _headersDone;
+        
+        void setUp();
+        
+        struct sockaddr_in _client_addr;
     };
+    
 
 #endif

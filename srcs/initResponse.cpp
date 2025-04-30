@@ -5,6 +5,7 @@
 
 Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(serv)
 {
+    std::cout << MAGENTA << "Port : " << _server.getPort() << RESET << std::endl;
     _range.start = 0;
     _range.end = 0;
     _range.isValid = true;
@@ -12,6 +13,7 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _status_code = 0;
     _status_message = "";
     _autoindex = false;
+    _listingDirectory = false;
     _headers["Date"] = "";
     _headers["Server"] = "Webserv";
     _headers["Content-Type"] = "";
@@ -46,6 +48,7 @@ void Response::setTime()
     char buffer[100];
     std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", utc);
     _headers["Date"] = buffer;
+
 }
 
 void Response::setStatusCode(int status_code)
@@ -72,9 +75,13 @@ void Response::setContentLanguage()
 void Response::setLastModified(const std::string &path)
 {
     struct stat fileStat;
-    stat(path.c_str(), &fileStat);
-    _headers["Last-Modified"] = formatHttpDate(fileStat.st_mtime);
+    if (stat(path.c_str(), &fileStat) == 0) {
+        _headers["Last-Modified"] = formatHttpDate(fileStat.st_mtime);
+    } else {
+        _headers["Last-Modified"] = "Thu, 01 Jan 1970 00:00:00 GMT";
+    }
 }
+
 
 void Response::setEtag(const std::string &path)
 { _headers["ETag"] = generateEtag(path); }
@@ -118,7 +125,12 @@ std::string Response::getBody() const
 std::string Response::getContentType()
 {
     std::map<std::string, std::string> mime_types;
-    
+    if (_listingDirectory == true)
+    {
+        std::cout << "here" << std::endl;
+        _listingDirectory = false;
+        return "text/html";
+    }
     mime_types[".html"] = "text/html";
     mime_types[".css"] = "text/css";
     mime_types[".js"] = "application/javascript";

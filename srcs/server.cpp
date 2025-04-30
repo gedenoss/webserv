@@ -18,21 +18,63 @@
 #include "../includes/response.hpp"
 #include "../includes/utils.hpp"
 
-int launchServer(Config config) {
-    std::vector<ServerConfig> servers = config.getServers();
-    std::vector<int> server_fds;
+size_t whichServerToChoose(std::vector<ServerConfig>& servers, const std::string& need) {
+    
+;
+    for (size_t i = 0; i < servers.size(); ++i) {
+        std::cout << "Porrt: " << servers[i].getPort() << std::endl;
+        std::cout << "Need: " << need << std::endl;
+        if (static_cast<size_t> (servers[i].getPort()) == stringToSizeT(need))
+        {
+            std::cout << "Server found: " << i << std::endl;
+            return i;
+        }
 
-    int epoll_fd = epoll_create(servers.size());
-    if (epoll_fd < 0) {
+    }
+
+    return 0;
+}
+
+bool Server::_serverIsRunning = true;
+
+void Server::_sigIntCatcher(int signal) {
+    std::cout << RED << BOLD << "\nSIGINT received. Shutting down server..." << RESET << std::endl;
+    _serverIsRunning = false;
+    (void)signal;
+}
+
+Server::Server(const Config &conf)
+    : _epoll_fd(-1), config(conf), _addr()
+{
+    setUp();
+}
+
+Server::~Server(){
+    for (std::vector<int>::size_type i = 0; i < _server_fds.size(); ++i)
+        close(_server_fds[i]);
+    close(_epoll_fd);
+}
+
+void Server::clean(){
+    close(_fd);
+    epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, _fd, NULL);
+    _buffers.erase(_fd);
+    _contentLengths.erase(_fd);
+    _headersDone.erase(_fd);
+}
+
+void Server::setUp(){
+    
+    _servers = config.getServers();
+
+    _epoll_fd = epoll_create(_servers.size());
+    if (_epoll_fd < 0) {
         perror("ERROR: epoll_create failed");
         exit(EXIT_FAILURE);
     }
 
-    // ————————————————
-    // 1) Mise en place des serveurs
-    // ————————————————
-    for (std::vector<ServerConfig>::size_type i = 0; i < servers.size(); ++i) {
-        ServerConfig server = servers[i];
+    for (std::vector<ServerConfig>::size_type i = 0; i < _servers.size(); ++i) {
+        ServerConfig server = _servers[i];
         int server_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (server_fd < 0) {
             perror("ERROR: socket failed");
@@ -45,17 +87,16 @@ int launchServer(Config config) {
             exit(EXIT_FAILURE);
         }
 
-        struct sockaddr_in addr;
-        std::memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port   = htons(server.getPort());
-        if (inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) <= 0) {
+        std::memset(&_addr, 0, sizeof(_addr));
+        _addr.sin_family = AF_INET;
+        _addr.sin_port   = htons(server.getPort());
+        if (inet_pton(AF_INET, "127.0.0.1", &_addr.sin_addr) <= 0) {
             perror("ERROR: inet_pton failed");
             close(server_fd);
             exit(EXIT_FAILURE);
         }
 
-        if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        if (bind(server_fd, (struct sockaddr*)&_addr, sizeof(_addr)) < 0) {
             perror("ERROR: bind failed");
             close(server_fd);
             exit(EXIT_FAILURE);
@@ -68,144 +109,132 @@ int launchServer(Config config) {
         int flags = fcntl(server_fd, F_GETFL, 0);
         fcntl(server_fd, F_SETFL, flags | O_NONBLOCK);
 
-        server_fds.push_back(server_fd);
+        _server_fds.push_back(server_fd);
 
         struct epoll_event ev;
         ev.events   = EPOLLIN;
         ev.data.fd  = server_fd;
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) < 0) {
+        if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) < 0) {
             perror("ERROR: epoll_ctl ADD server_fd failed");
             close(server_fd);
             exit(EXIT_FAILURE);
         }
     }
+}
 
-    // —————————————————————
-    // 2) Structures d’état par client
-    // —————————————————————
-    std::map<int, std::string>        buffers;
-    std::map<int, int>                contentLengths;
-    std::set<int>                     headersDone;
+void Server::handleNewConnection(){
+    socklen_t client_len = sizeof(_client_addr);
+    int client_fd = accept(_fd, (struct sockaddr*)&_client_addr, &client_len);
+    if (client_fd >= 0) {
+        char client_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &_client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+        uint16_t client_port = ntohs(_client_addr.sin_port);
+        std::cout << "New connection accepted from client: " 
+        << client_ip << ":" << client_port << std::endl;
+        int fl = fcntl(client_fd, F_GETFL, 0);
+        fcntl(client_fd, F_SETFL, fl | O_NONBLOCK);
+        struct epoll_event ev;
+        ev.events   = EPOLLIN;
+        ev.data.fd  = client_fd;
+        epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev);
+    } else {
+        perror("ERROR: accept failed");
+    }
+}
+
+std::string getHostRawRequest(std::string rq)
+{
+    size_t hostPos = rq.find("Host:") + 6;
+    std::string hostname = rq.substr(hostPos);
+    size_t colonPos = hostname.find(':');
+    if (colonPos != std::string::npos) {
+        hostname = hostname.substr(colonPos + 1);
+    }
+    return hostname;
+}
+
+void Server::handleClientData(){
+    struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    getpeername(_fd, (struct sockaddr*)&client_addr, &client_len);
+    char client_ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+    char buf[4096];
+    while (1) {
+        int r = recv(_fd, buf, sizeof(buf)-1, 0);
+        if (r <= 0) break;  // 0=fermeture, -1=EAGAIN/EWOULDBLOCK
+        _buffers[_fd].append(buf, r);
+
+        // Affichage des informations du client avec la requête
+        // std::cout << "Received data from client " 
+        //           << client_ip << ":" << client_port << std::endl;
+        //std::cout << "Data: " << _buffers[fd] << std::endl;
+
+        if (_buffers[_fd].size() > 4069 * 1000 * 100) {
+            std::cerr << "ERROR: Request too large\n";
+            send(_fd, "HTTP/1.1 413 Payload Too Large\r\n\r\n", 35, 0);
+            clean();
+        }
+    }
+    if (! _headersDone.count(_fd)) {
+        std::string &rq = _buffers[_fd];
+        std::string::size_type end_hdr = rq.find("\r\n\r\n");
+        if (end_hdr != std::string::npos) {
+            _headersDone.insert(_fd);
+            std::string::size_type pos = rq.find("Content-Length:");
+            if (pos != std::string::npos) {
+                std::string::size_type line_end = rq.find("\r\n", pos);
+                std::string cl = rq.substr(pos + 15, line_end - (pos+15));
+                _contentLengths[_fd] = std::atoi(cl.c_str());
+                } else {
+                    _contentLengths[_fd] = 0;
+                }
+        }
+    }
+    if (_headersDone.count(_fd)) {
+        std::string &rq = _buffers[_fd];
+        std::string::size_type end_hdr = rq.find("\r\n\r\n");
+        int expected = _contentLengths[_fd];
+        std::size_t have_body = rq.size() - (end_hdr + 4);
+        if ((int)have_body < expected)
+            return;
+        {
+        std::cout << "Full request received " << rq << " \n";
+        std::string need = getHostRawRequest(rq);
+        size_t i = whichServerToChoose(_servers, need);
+        std::cout << "Server chosen: " << i << std::endl;
+        size_t maxBodySize = _servers[i].getClientMaxBodySize();          
+        Request  request(maxBodySize,1024);
+        request.parse(rq, config);
+        Response response(request, _servers[i]);
+        std::string reply = response.sendResponse();
+        send(_fd, reply.c_str(), reply.size(), 0);
+        }
+    }
+    clean();
+}
+
+void Server::launchServer() {
 
     const int MAX_EVENTS = 100;
     struct epoll_event events[MAX_EVENTS];
+    signal(SIGPIPE, SIG_IGN); // ignorer les signaux de fermeture de socket
+    signal(SIGINT, _sigIntCatcher);
 
-    // ——————————————————————————
-    // 3) Boucle principale epoll
-    // ——————————————————————————
-    while (1) {
-        int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+    while (_serverIsRunning) {
+        int n = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
         if (n < 0) {
             perror("ERROR: epoll_wait failed");
             break;
         }
-
         for (int i = 0; i < n; ++i) {
-            int fd = events[i].data.fd;
-
-            // —————————————————————————————
-            // a) Nouvelle connexion entrante
-            // —————————————————————————————
-            if (std::find(server_fds.begin(), server_fds.end(), fd)
-                != server_fds.end())
-            {
-                struct sockaddr_in client_addr;
-                socklen_t client_len = sizeof(client_addr);
-                int client_fd = accept(fd,
-                                       (struct sockaddr*)&client_addr,
-                                       &client_len);
-                if (client_fd >= 0) {
-                    std::cout << "New connection accepted\n";
-                    int fl = fcntl(client_fd, F_GETFL, 0);
-                    fcntl(client_fd, F_SETFL, fl | O_NONBLOCK);
-                    struct epoll_event ev;
-                    ev.events   = EPOLLIN;
-                    ev.data.fd  = client_fd;
-                    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev);
-                } else {
-                    perror("ERROR: accept failed");
-                }
-            }
-            // ——————————————————————————————
-            // b) Données prêtes sur socket client
-            // ——————————————————————————————
-            else {
-                // 1) Lire tout ce qui est dispo sans fermer
-                char buf[4096];
-                while (1) {
-                    int r = recv(fd, buf, sizeof(buf)-1, 0);
-                    if (r <= 0) break;  // 0=fermeture, -1=EAGAIN/EWOULDBLOCK
-                    buffers[fd].append(buf, r);
-                    // protection anti-DOS
-                    if (buffers[fd].size() > 4069 * 1000 * 100) {
-                        std::cerr << "ERROR: Request too large\n";
-                        send(fd,
-                             "HTTP/1.1 413 Payloaddd To Large\r\n\r\n",
-                             35, 0);
-                        goto cleanup_fd;
-                    }
-                }
-
-                // 2) Vérifier si on a déjà parsé les headers
-                if (! headersDone.count(fd)) {
-                    std::string &rq = buffers[fd];
-                    std::string::size_type end_hdr = rq.find("\r\n\r\n");
-                    if (end_hdr != std::string::npos) {
-                        headersDone.insert(fd);
-                        // extraire Content-Length s’il existe
-                        std::string::size_type pos = rq.find("Content-Length:");
-                        if (pos != std::string::npos) {
-                            std::string::size_type line_end = rq.find("\r\n", pos);
-                            std::string cl = rq.substr(pos + 15,
-                                                       line_end - (pos+15));
-                            contentLengths[fd] = std::atoi(cl.c_str());
-                        } else {
-                            contentLengths[fd] = 0;
-                        }
-                    }
-                }
-
-                // 3) Si headers parsés, vérifier si le body est complet
-                if (headersDone.count(fd)) {
-                    std::string &rq = buffers[fd];
-                    std::string::size_type end_hdr = rq.find("\r\n\r\n");
-                    int expected = contentLengths[fd];
-                    std::size_t have_body =
-                        rq.size() - (end_hdr + 4);
-
-                    // tant que non complet, on attend la prochaine EPOLLIN
-                    if ((int)have_body < expected)
-                        continue;
-
-                    // body complet ou pas attendu → on traite
-                    {
-                        // std::cout << "Full request received "
-                        //           << rq << " \n";
-                        size_t maxBodySize = servers[0].getClientMaxBodySize();          
-                        Request  request(maxBodySize,1024);    //define by the client_max_body_size in the .conf
-                        request.parse(rq, config);
-                        Response response(request, servers[0]);
-                        std::string reply = response.sendResponse();
-                        send(fd, reply.c_str(), reply.size(), 0);
-                    }
-                }
-
-            cleanup_fd:
-                // on ferme et on nettoie l’état
-                close(fd);
-                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-                buffers.erase(fd);
-                contentLengths.erase(fd);
-                headersDone.erase(fd);
-            }
+            _fd = events[i].data.fd;
+            if (std::find(_server_fds.begin(), _server_fds.end(), _fd)
+                != _server_fds.end())
+                handleNewConnection();
+            else
+                handleClientData();
         }
     }
-
-    // ——————————————————————
-    // 4) Cleanup final
-    // ——————————————————————
-    for (std::vector<int>::size_type i = 0; i < server_fds.size(); ++i)
-        close(server_fds[i]);
-    close(epoll_fd);
-    return 0;
+    return ;
 }

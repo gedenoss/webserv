@@ -30,7 +30,7 @@ void Response::handleCGI(Errors &errors)
     }
     std::string fullpath = cwd + "/";
     // _cgiPath = _path.substr(0, _path.find_last_of('/') + 1);
-    _cgiScriptName = _path.substr(_path.find_last_of('/') + 1, _path.npos);
+    _cgiScriptName = _path.substr(_path.find_first_of('.') + 1, _path.npos);
     _cgiPath = fullpath;
     if (_request.getMethod() == "POST")
     {
@@ -39,6 +39,7 @@ void Response::handleCGI(Errors &errors)
     }
     std::string outfileName = generateFileName(_cgiScriptName, "outfile");
     _cgiOutfilePath = _cgiPath + outfileName;
+    std::cout << "CGI script path: " << joinPaths(_cgiPath, _cgiScriptName) << std::endl;
     if ((_cgiPid = fork()) == -1)
         errors.error500();
     else if (_cgiPid == 0)
@@ -53,26 +54,41 @@ void Response::handleCGI(Errors &errors)
 void Response::checkCgiStatus() 
 {
     int status;
-    if (waitpid(_cgiPid, &status, 0) == -1)
+    const int TIMEOUT = 5; // Timeout en secondes
+    const int INTERVAL_USEC = 100000; // Intervalle de vérification en microsecondes
+    time_t start = time(NULL);
+
+    while (true)
     {
-        perror("waitpid");
-        setStatusCode(500);
-        return;
-    }
-
-    if (WIFEXITED(status)) {
-        if (WEXITSTATUS(status) != 0) {
-            std::cerr << "CGI script exited with non-zero status: " << WEXITSTATUS(status) << std::endl;
+        pid_t result = waitpid(_cgiPid, &status, WNOHANG);
+        if (result == -1)
+        {
+            perror("waitpid");
             setStatusCode(500);
-        } else {
-            // Script CGI s'est exécuté avec succès
-            readOutfile();
+            break;
         }
-    } else {
-        std::cerr << "CGI script did not exit normally." << std::endl;
-        setStatusCode(500);
-    }
-
+        else if (result > 0)
+        {
+            if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) != 0) {
+                    std::cerr << "CGI exited with status: " << WEXITSTATUS(status) << std::endl;
+                    setStatusCode(500);
+                } else {
+                    readOutfile();
+                }
+            } else {
+                std::cerr << "CGI script did not exit normally." << std::endl;
+                setStatusCode(500);
+            }
+            break;
+        }
+        if (time(NULL) - start >= TIMEOUT) {
+            std::cerr << "CGI script timeout. Killing..." << std::endl;
+            killCgi();
+            break;
+        }
+        usleep(INTERVAL_USEC);
+    }   
     _cgiIsRunning = false;
     _responseIsReady = true;
 }
@@ -95,7 +111,7 @@ void Response::readOutfile()
 
     if (pos != std::string::npos) {
         _headerCgi = full.substr(0, pos);
-        _body = full.substr(pos + 4);
+        _body = full.substr(pos);
         } else {
         _body = full;  // fallback si pas de headers
         }
@@ -107,12 +123,19 @@ void Response::killCgi()
     if (_cgiIsRunning)
     {
         kill(_cgiPid, SIGKILL);
+        if (waitpid(_cgiPid, NULL, 0) < 0)
+        {
+            perror("waitpid");
+            setStatusCode(500);  // erreur interne si le waitpid échoue
+        }
+        else
+        {
+            cleanUpCgiFiles();
+            setStatusCode(504); // timeout : Gateway Timeout
+        }
     }
-    if (waitpid(_cgiPid, NULL, 0) < 0)
-        setStatusCode(500);
-    _cgiIsRunning = false;
-    _responseIsReady = true;
 }
+
 
 void Response::childRoutine()
 {
@@ -131,8 +154,8 @@ void Response::childRoutine()
     
         setEnv();
         vectorToCStringTab(_env, envp);
-        _arg.push_back("/usr/bin/php");
-        _arg.push_back(_cgiPath + _cgiScriptName);
+        _arg.push_back(_cgiBinPath);
+        _arg.push_back(joinPaths(_cgiPath, _cgiScriptName));
         vectorToCStringTab(_arg, args);
         
         // On execute le script CGI
