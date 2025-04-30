@@ -133,9 +133,6 @@ void Server::handleNewConnection(){
     if (client_fd >= 0) {
         char client_ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &_client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
-        // uint16_t client_port = ntohs(_client_addr.sin_port);
-        // std::cout << "New connection accepted from client: " 
-        // << client_ip << ":" << client_port << std::endl;
         // rend le socket non bloquant
         int fl = fcntl(client_fd, F_GETFL, 0);
         fcntl(client_fd, F_SETFL, fl | O_NONBLOCK);
@@ -215,6 +212,7 @@ void Server::handleClientData(){
             // si on a tout recu on traite la requete
         std::string need = getHostRawRequest(rq);
         size_t i = whichServerToChoose(_servers, need);
+        std::cout << BLUE << BOLD << "Port choosen : " << _servers[i].getPort() << RESET << std::endl;
         size_t maxBodySize = _servers[i].getClientMaxBodySize();          
         Request  request(maxBodySize,1024);
         request.parse(rq, config);

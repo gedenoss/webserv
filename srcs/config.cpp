@@ -330,6 +330,12 @@ void ServerConfig::parseServer(std::ifstream& configFile) {
 }
 
 void Config::parseConfig(const std::string& filename) {
+	
+	if (filename.substr(filename.find_last_of(".") + 1) != "conf") {
+        printError("parseConfig", "Invalid file extension. Only .conf files are allowed: " + filename);
+        exit(1);
+    }
+
     std::ifstream configFile(filename.c_str());
     if (!configFile.is_open()) {
         printError("parseConfig", "Unable to open file: " + filename);

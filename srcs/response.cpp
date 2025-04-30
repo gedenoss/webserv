@@ -8,9 +8,9 @@ std::string Response::generateResponse(bool isError)
 {
     std::stringstream response;
     if (isError == true)
-        std::cout << RED << BOLD << "HTTP/1.1" << _status_code << " " << _status_message << RESET << std::endl;
+        std::cout << RED << BOLD << "HTTP/1.1 " << _status_code << " " << _status_message << RESET << std::endl;
     else
-    std::cout << GREEN << BOLD << "HTTP/1.1" << _status_code << " " << _status_message << RESET << std::endl;
+    std::cout << GREEN << BOLD << "HTTP/1.1 " << _status_code << " " << _status_message << RESET << std::endl;
     response << "HTTP/1.1 " << _status_code << " " << _status_message << "\r\n";
     for(std::vector<std::string>::iterator it = _order.begin(); it != _order.end(); ++it)
     {

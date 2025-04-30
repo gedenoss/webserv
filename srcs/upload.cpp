@@ -56,10 +56,8 @@ std::string Response::handleUpload(Errors &errors)
         }
 
         setStatusCode(201);
-        setStatusMessage("Created");
-        setHeaders("Content-Type", "text/plain");
         setBody("File uploaded successfully.");
-        return generateResponse(true);
+        return validResponse(errors);
     } catch (const std::exception &e) {
         return errors.error500();
     }
