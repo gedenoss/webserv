@@ -453,7 +453,9 @@ std::string Response::sendResponse()
         setStatusCode(200);
         return (validResponse(errors));
     }
+    std::cout << "URL : " << _request.getUrl() << std::endl;
     findPath();
+    std::cout << "PATH : " << _path << std::endl;
     if (_listingDirectory == true)
     {
         return (validResponse(errors));

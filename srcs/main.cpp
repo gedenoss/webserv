@@ -23,7 +23,3 @@ int	main(int argc, char* argv[])
 	launch.launchServer();
 	return 0;
 	}
-
-
-
-
