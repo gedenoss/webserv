@@ -51,6 +51,10 @@ class Server {
         void clean();
         void handleNewConnection();
         void handleClientData();
+
+        void handleClientWrite();
+        void modifyEpollEvent(int fd, uint32_t events);
+        
         static void _sigIntCatcher(int signal);
 
         Server(const Config &config);
@@ -59,6 +63,7 @@ class Server {
     
     private:
 
+        std::map<int, std::string> _pendingResponses;
         int _fd;
         int _epoll_fd;
         Config config;

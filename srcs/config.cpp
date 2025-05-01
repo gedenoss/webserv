@@ -215,6 +215,8 @@ void LocationConfig::handleLocAllMethods(std::istringstream &iss, LocationConfig
     while (iss >> method) {
         method = cleanValue(method);
         if (method != "GET" && method != "POST" && method != "DELETE") {
+            if (isOnlyWhiteSpace(method) == 1)
+                break;
             printError("handleLocAllMethods", "Unsupported method: " + method);
             exit(1);
         }

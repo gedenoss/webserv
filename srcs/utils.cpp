@@ -165,6 +165,15 @@ bool hasWritePermission(const std::string &path)
 
 //--------------------------------------IS FUNCTIONS--------------------------------------//
 
+bool isOnlyWhiteSpace(const std::string& str) {
+    for (size_t i = 0; i < str.size(); ++i) {
+        if (!std::isspace(str[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool isDirectory(const std::string &path)
 {
     struct stat fileStat;
