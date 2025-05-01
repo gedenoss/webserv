@@ -23,3 +23,13 @@ seq 1 50 | xargs -P10 -I{} curl -s -X POST -F "file=@images/gbouguer.jpg" http:/
  
 { yes http://127.0.0.1:8080/upload | head -n100; yes http://127.0.0.1:8000/upload | head -n100; } | \
 xargs -P20 -n1 -I{} curl -s -X POST -F "file=@images/gbouguer.jpg" {} > /dev/null
+
+
+
+||||||||||||CHUNKED|||||||||||||||
+printf 'd\r\n{"foo":"bar"}\r\n0\r\n\r\n' | \
+curl -v -X POST http://localhost:8000/upload \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -H "Transfer-Encoding: chunked" \
+     -H "Content-Length: 23" \
+     --data-binary @-

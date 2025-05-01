@@ -39,6 +39,7 @@ void Request::parse(const std::string &rawRequest, Config &config) {
 
     if (!validateMethod()) {
         _errorCode = 400;
+        std::cout << "Invalid method: " << _method << std::endl;
         return;
     }
 
@@ -55,6 +56,9 @@ void Request::parse(const std::string &rawRequest, Config &config) {
 
     processHeaders(stream, headersFinished);
     if (_errorCode != 0) return;
+
+    // processBody(stream);
+    // if (_errorCode != 0) return;
 
     handleMultipartFormData();
 
@@ -73,6 +77,7 @@ bool Request::parseRequestLine(std::istringstream &stream) {
     std::string line;
     if (!std::getline(stream, line) || line.empty()) {
         _errorCode = 400;
+        std::cout << "Empty request line" << std::endl;
         return false;
     }
 
@@ -114,6 +119,7 @@ bool Request::validateMethod() {
 bool Request::validateUrl() {
     if (!isValidUrl()) {
         _errorCode = 400;
+        std::cout << "Invalid URL: " << _url << std::endl;
         return false;
     }
     return true;
@@ -122,6 +128,7 @@ bool Request::validateUrl() {
 bool Request::validateHostHeader() {
     if (getHttpVersion() == "HTTP/1.1" && getHeaders().find("Host") == getHeaders().end()) {
         _errorCode = 400;
+        std::cout << "Missing Host header" << std::endl;
         return false;
     }
     return true;

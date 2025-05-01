@@ -248,6 +248,7 @@ void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
         }
 
         if (_method == "POST" && contentLength == 0) {
+            std::cout << "Content-Length is 0 for POST method.\n";
             _errorCode = 400;
             return;
         }
@@ -288,6 +289,7 @@ void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
     }
 
     if ((_method == "POST") && getHeaders().find("Content-Type") == getHeaders().end()) {
+        std::cout << "Content-Type header is missing for POST method.\n";
         _errorCode = 400;
         return;
     }
@@ -335,8 +337,13 @@ void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
     }
 }
 
-
-
+bool Request::isChunkedTransferEncoding() const {
+    std::map<std::string, std::string>::const_iterator it = _headers.find("Transfer-Encoding");
+    if (it != _headers.end() && it->second == "chunked") {
+        return true;
+    }
+    return false;
+}
 
 /*  bool conversionSuccess = false;
 size_t contentLength = safeStringToUlong(contentLengthIt->second, conversionSuccess);
