@@ -199,7 +199,7 @@ void Server::handleClientWrite() {
     if (data.empty()) {
         _pendingResponses.erase(_fd);
         modifyEpollEvent(_fd, EPOLLIN);
-        clean();
+        clean(); // connection keep-alive à implémenter si besoin
     }
 }
 

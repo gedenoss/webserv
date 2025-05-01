@@ -58,7 +58,6 @@ bool Response::isCGI()
     return false;
 }
 
-
 std::string Response::validResponse(Errors &errors)
 {
     setStatusCodeAndMessage();
@@ -317,7 +316,6 @@ std::string Response::getResponse(Errors &errors)
         return (errors.generateError(_status_code));
     if (handleRange())
         return (errors.generateError(_status_code));
-
     //CGI handling
     if (isCGI())
     {
@@ -368,7 +366,6 @@ std::string Response::handleForm(Errors &errors)
     setStatusCode(201);
     return validResponse(errors);
 }
-
 
 std::string Response::postResponse(Errors &errors)
 {
