@@ -15,11 +15,13 @@ std::string Response::generateResponse(bool isError)
     for(std::vector<std::string>::iterator it = _order.begin(); it != _order.end(); ++it)
     {
         if (_headers.find(*it) != _headers.end() && !_headers[*it].empty())
+        {
             response << *it << ": " << _headers[*it] << "\r\n";
-        if (isError == true)
-            std::cout << RED << *it << ": " << _headers[*it] << RESET << "\r\n";
-        else
-            std::cout << GREEN << *it << ": " << _headers[*it] << RESET << "\r\n";
+            if (isError == true)
+                std::cout << RED << *it << ": " << _headers[*it] << RESET << "\r\n";
+            else
+                std::cout << GREEN << *it << ": " << _headers[*it] << RESET << "\r\n";
+        }
     }
     std::cout << std::endl;
     response << "\r\n";
@@ -41,7 +43,11 @@ std::string Response::sendFileResponse()
 
 bool Response::isCGI()
 {
-    std::string extension = _path.substr(_path.find_last_of("."), std::string::npos);
+    std::size_t dotPos = _path.find_last_of('.');
+    if (dotPos == std::string::npos)
+        return false;
+
+    std::string extension = _path.substr(dotPos);
     std::map<std::string, std::string>::const_iterator it = _location.getCgi().find(extension);
     if (it != _location.getCgi().end())
     {
@@ -51,6 +57,7 @@ bool Response::isCGI()
     }
     return false;
 }
+
 
 std::string Response::validResponse(Errors &errors)
 {
@@ -103,43 +110,64 @@ void Response::cleanUpCgiFiles()
     }
 }
 
+static std::string trim(const std::string& str)
+{
+    std::size_t first = str.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos)
+        return "";
+    std::size_t last = str.find_last_not_of(" \t\r\n");
+    return str.substr(first, last - first + 1);
+}
+
 bool Response::isAcceptable()
 {
-    std::string accept = _request.getHeaders().at("Accept");
+    std::map<std::string, std::string> headers = _request.getHeaders();
+
+    if (headers.find("Accept") == headers.end())
+        return true;
+
+    std::string accept = headers["Accept"];
     std::vector<std::string> elements;
     split(accept, ",", elements);
+
     if (accept.find("*/*") != std::string::npos || accept.empty())
         return true;
+
     std::string content_type = getContentType();
     std::size_t pos = content_type.find("/");
+    if (pos == std::string::npos)
+        return false;
+
     std::string type_content = content_type.substr(0, pos);
     std::string subtype_content = content_type.substr(pos + 1);
+
     for (std::vector<std::string>::iterator it = elements.begin(); it != elements.end(); ++it)
     {
-        std::string element = *it;
-        std::size_t pos = element.find("/");
-        if (pos != std::string::npos)
+        std::string element = trim(*it);
+        std::size_t slash = element.find("/");
+
+        if (slash != std::string::npos)
         {
-            std::string type = element.substr(0, pos);
-            std::string subtype = element.substr(pos + 1);
+            std::string type = trim(element.substr(0, slash));
+            std::string subtype = trim(element.substr(slash + 1));
+
             if (type == "*")
             {
-                if (subtype == "*")
-                    return true;
-                else if (subtype == subtype_content)
+                if (subtype == "*" || subtype == subtype_content)
                     return true;
             }
             else if (type == type_content)
             {
-                if (subtype == "*")
-                    return true;
-                else if (subtype == subtype_content)
+                if (subtype == "*" || subtype == subtype_content)
                     return true;
             }
         }
     }
+
     return false;
 }
+
+
 
 bool Response::isModifiedSince(const std::string &ifModifiedSince)
 {
@@ -289,6 +317,7 @@ std::string Response::getResponse(Errors &errors)
         return (errors.generateError(_status_code));
     if (handleRange())
         return (errors.generateError(_status_code));
+
     //CGI handling
     if (isCGI())
     {
@@ -301,29 +330,46 @@ std::string Response::getResponse(Errors &errors)
     return (validResponse(errors));
 }
 
+
 std::string Response::handleForm(Errors &errors)
 {
     std::string body = _request.getBody();
-    std::ofstream file(_path.c_str(), std::ios::out);
+    // std::cout << "FILE FORM" << std::endl;
+    _path = _path.substr(_path.find_last_of("/") + 1); // On garde juste le nom du fichier
+    std::string filePath = "upload/" + _path; // _path contient juste le nom du fichier attendu
+    struct stat fileStat;
+    bool fileExists = (stat(filePath.c_str(), &fileStat) == 0);
 
-    if (!file.is_open()) // Vérifier si le fichier ne s'est pas ouvert
+    if (fileExists)
     {
-        if (access(_path.c_str(), F_OK) == -1) // Vérifie si le fichier existe
-            return errors.error404();
-        if (access(_path.c_str(), W_OK) == -1) // Vérifie si on a le droit d'écrire
+        // Si ce n’est pas un fichier régulier, erreur 403
+        if (!S_ISREG(fileStat.st_mode))
             return errors.error403();
-        return errors.error500();
+
+        // Si pas les droits en écriture, erreur 403
+        if (access(filePath.c_str(), W_OK) == -1)
+            return errors.error403();
+    }
+    else
+    {
+        // Vérifie que le dossier "upload" existe et est accessible en écriture
+        if (access("upload", F_OK) == -1 || access("upload", W_OK) == -1)
+            return errors.error403();
     }
 
-    file << body;
+    // Ouvrir le fichier (append si existe, sinon out)
+    std::ofstream file(filePath.c_str(), fileExists ? std::ios::app : std::ios::out);
+    if (!file.is_open())
+        return errors.error500();
+
+    file << body << std::endl; // Ajout d'un saut de ligne pour séparer les soumissions
     file.close();
+
     setStatusCode(201);
     return validResponse(errors);
 }
 
-  // Fin des headers trouvée, vous pouvez potentiellement sortir
-            // si vous n'attendez pas un body spécifique.
-            // Pour une gestion complète du body, il faudrait vérifier Content-Length.
+
 std::string Response::postResponse(Errors &errors)
 {
     if (isCGI())
@@ -336,7 +382,6 @@ std::string Response::postResponse(Errors &errors)
     else if (_request.getHeaders().count("Content-Type") > 0)
     {
         const std::string &contentType = _request.getHeaders().at("Content-Type");
-
         if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
             return handleForm(errors);
         else if (contentType.find("multipart/form-data") != std::string::npos)
@@ -361,7 +406,7 @@ std::string Response::deleteResponse(Errors &errors)
 
 std::string Response::jsonListFiles(Errors &errors)
 {
-    DIR *dir = opendir("prop");
+    DIR *dir = opendir("upload");
     if (!dir)
     {
         if (errno == ENOENT)
@@ -391,7 +436,6 @@ std::string Response::jsonListFiles(Errors &errors)
 
     closedir(dir);
     json << "]";
-    std::cout << json.str() << std::endl;
     _status_code = 200;
     return json.str();
 }
@@ -403,7 +447,7 @@ std::string Response::sendResponse()
     if (_request.getErrorCode() != 200)
         return (errors.generateError(_request.getErrorCode()));
     setInfoRequest();
-    if (_request.getUrl() == "/prop/listing")
+    if (_request.getUrl() == "/upload/listing")
     {
         _body = jsonListFiles(errors);
         setStatusCode(200);

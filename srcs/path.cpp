@@ -146,21 +146,37 @@ void Response::findPath()
     bool pathIsDir = isDirectory(path);
     bool subPathIsDir = isDirectory(subPath);
 
-    // 1. Fichier brut
     if (_request.getMethod() == "POST")
     {
-        if (isDirectory(path.substr(0, path.find_last_of('/') + 1)))
+        if (!_request.getUrl().empty() && *(_request.getUrl().end() - 1) == '/')
         {
-            _path = path;
-            return;
+            if (_index.empty())
+            {
+                setStatusCode(403);
+                _path = "";
+                return;
+            }
+            else
+            {
+                std::string indexPath = joinPaths(path, _index);
+                std::string indexSubPath = joinPaths(subPath, _index);
+                if (tryPath(indexPath) || tryPath(indexSubPath))
+                    return;
+                else
+                {
+                    setStatusCode(404);
+                    _path = "";
+                    return;
+                }
+            }
         }
-        else if (isDirectory(subPath.substr(0, subPath.find_last_of('/') + 1)))
+        if (tryPath(path) || tryPath(subPath))
+            return;
+        else
         {
-            _path = subPath;
-            return;
+            _path = "." + _request.getUrl();
+            return ;
         }
-        setStatusCode(403);
-        return;
     }
     if (tryPath(path) || tryPath(subPath))
         return;

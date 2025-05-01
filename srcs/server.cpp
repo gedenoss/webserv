@@ -210,7 +210,7 @@ void Server::handleClientData(){
             return;
         {
             // si on a tout recu on traite la requete
-        std::string need = getHostRawRequest(rq);
+        std::string need = getHostRawRequest(rq); 
         size_t i = whichServerToChoose(_servers, need);
         std::cout << BLUE << BOLD << "Port choosen : " << _servers[i].getPort() << RESET << std::endl;
         size_t maxBodySize = _servers[i].getClientMaxBodySize();          
@@ -228,6 +228,7 @@ void Server::handleClientData(){
 
 void Server::launchServer() {
 
+    std::srand(std::time(0));
     const int MAX_EVENTS = 100;
     struct epoll_event events[MAX_EVENTS];
     // ignorer les signaux de fermeture de socket

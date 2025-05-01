@@ -14,7 +14,7 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _autoindex = false;
     _listingDirectory = false;
     _headers["Date"] = "";
-    _headers["Server"] = "Webserv";
+    _headers["Server"] = _server.getServerName();
     _headers["Content-Type"] = "";
     _headers["Content-Length"] = "";
     _headers["Content-Language"] = "";
@@ -30,8 +30,11 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
 
     _order.push_back("Connection");
     _order.push_back("Date");
-    _order.push_back("ETag");
-    _order.push_back("Last-Modified");
+    if (_request.getMethod() == "GET")
+    {
+        _order.push_back("ETag");
+        _order.push_back("Last-Modified");
+    }
     _order.push_back("Server");
     _order.push_back("Content-Type");
     _order.push_back("Content-Length");
@@ -93,7 +96,8 @@ void Response::setHeadersForResponse()
     setContentLength();
     setContentLanguage();
     setLastModified(_path);
-    setEtag(_path);
+    if (_request.getMethod() == "GET")
+        setEtag(_path);
 }
 
 void Response::setInfoRequest()

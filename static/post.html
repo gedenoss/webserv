@@ -145,7 +145,7 @@
         formData.append('nom', nom);
         formData.append('raison', raison);
 
-        fetch(`/prop/${filename}`, {
+        fetch(`${filename}`, {
           method: 'POST',
           body: formData,
           headers: {

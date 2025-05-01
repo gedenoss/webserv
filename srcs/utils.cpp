@@ -29,12 +29,10 @@ void vectorToCStringTab(const std::vector<std::string>& str, std::vector<char*>&
 }
 
 
-bool fileExists(const std::string &name)
+bool fileExists(const std::string& path)
 {
-    struct stat pathStat;
-    if (stat(name.c_str(), &pathStat) != 0)
-        return false; // Impossible d'accéder au fichier
-    return S_ISREG(pathStat.st_mode);
+    struct stat buffer;
+    return stat(path.c_str(), &buffer) == 0 && S_ISREG(buffer.st_mode);
 }
 
 

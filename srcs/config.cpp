@@ -103,6 +103,7 @@ void ServerConfig::handleServerName(std::istringstream& iss, std::string line) {
     }
     iss >> server_name;
     server_name = cleanValue(server_name);
+    std::cout << "\033[1;32m[INFO] Server name: " << server_name << "\033[0m" << std::endl;
 }
 
 void ServerConfig::handleIndex(std::istringstream& iss) {
