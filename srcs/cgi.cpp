@@ -31,7 +31,6 @@ void Response::handleCGI(Errors &errors)
     std::string fullpath = cwd + "/";
     // _cgiPath = _path.substr(0, _path.find_last_of('/') + 1);
     _cgiScriptName = _path.substr(_path.find_first_of('.') + 1, _path.npos);
-    std::cout << "Script name: " << _cgiScriptName << std::endl;
     _cgiPath = fullpath;
     if (_request.getMethod() == "POST")
     {

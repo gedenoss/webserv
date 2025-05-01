@@ -19,6 +19,7 @@ std::string readFile(const std::string& path);
 bool compareLanguages(const std::pair<std::string, double>& a, const std::pair<std::string, double>& b);
 bool hasReadPermission(const std::string &path);
 bool hasWritePermission(const std::string &path);
+bool isOnlyWhiteSpace(const std::string& str);
 bool isDirectory(const std::string &path);
 bool isValidIP(const std::string& ip);
 bool isPathValid(const std::string&	path);

@@ -38,14 +38,11 @@ bool Request::isMethodAllowedForRoute(Config &config) {
 
     const std::vector<ServerConfig> &servers = config.getServers();
 
-    bool serverMatched = false;
     for (size_t i = 0; i < servers.size(); ++i) {
         const ServerConfig &server = servers[i];
         if (server.getPort() != requestPort) {
             continue;
         }
-
-        serverMatched = true;
 
         const std::vector<LocationConfig>& locations = server.getLocations();
 
@@ -71,12 +68,6 @@ bool Request::isMethodAllowedForRoute(Config &config) {
                 return true;
             }
         }
-    }
-
-    if (!serverMatched) {
-        std::cout << " No server matched the port [" << requestPort << "]\n";
-    } else {
-        std::cout << " No matching location or allowed method for URL [" << url << "] on port [" << requestPort << "]\n";
     }
     return false;
 }
@@ -233,7 +224,6 @@ void Request::initializeRequest(Request& request, const std::string& method, con
 
 void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
     if (!headersFinished) {
-        std::cout << "Headers not finished yet.\n";
         _errorCode = 400;
         return;
     }
@@ -241,7 +231,6 @@ void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
     if (contentLengthIt != getHeaders().end()) {
         bool conversionSuccess = false;
         size_t contentLength = safeStringToUlong(contentLengthIt->second, conversionSuccess);
-
         if (!conversionSuccess) {
             _errorCode = 400;
             return;
