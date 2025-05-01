@@ -62,6 +62,12 @@ class Response {
         std::string getContentType();
         std::string getLanguage();
         int getContentLength();
+        ServerConfig getServer() const {
+            return _server;
+        };
+        std::string getRoot() const {
+            return _root;
+        };
 
 
         bool isAcceptable();

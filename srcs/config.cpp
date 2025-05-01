@@ -12,11 +12,16 @@ void printError(const std::string& context, const std::string& msg) {
     std::cerr << "\033[1;31m[ERROR] " << context << ": " << msg << "\033[0m" << std::endl;
 }
 
-//-----------------------------------------------------GETTERS-------------------------------------------------------------//
+//------------------------------------------------CONSTRUCTORS-----------------------------------------------------//
 
-const std::vector<std::string>& ServerConfig::getAllowMethod() const {
-    return _allowMethods;
+
+ServerConfig::ServerConfig()
+{
+    server_name = "localhost";
+    client_max_body_size = 1024 * 1024; // Default to 1MB
 }
+
+//-----------------------------------------------------GETTERS-------------------------------------------------------------//
 
 std::vector<LocationConfig> ServerConfig::getLocations() const {
     return locations;
@@ -83,18 +88,6 @@ void ServerConfig::handleListen(std::istringstream& iss, std::string line) {
     }
 }
 
-void ServerConfig::handleHost(std::istringstream& iss, std::string line) {
-    iss >> host;
-    host = cleanValue(host);
-    if (countWords(line) != 2) {
-        printError("handleHost", "Expected one argument.");
-        exit(1);
-    }
-    if (host.empty() || !isValidIP(host)) {
-        printError("handleHost", "Invalid or empty host: " + host);
-        exit(1);
-    }
-}
 
 void ServerConfig::handleServerName(std::istringstream& iss, std::string line) {
     if (countWords(line) != 2) {
@@ -106,25 +99,7 @@ void ServerConfig::handleServerName(std::istringstream& iss, std::string line) {
     std::cout << "\033[1;32m[INFO] Server name: " << server_name << "\033[0m" << std::endl;
 }
 
-void ServerConfig::handleIndex(std::istringstream& iss) {
-    iss >> index;
-    index = cleanValue(index);
-    if (!root.empty()) {
-        std::string fullPath = root + (root[root.size() - 1] == '/' ? "" : "/") + index;
-        if (!isFileValid(fullPath)) {
-            std::cerr << "\033[1;33m[WARNING] Index file not found at: " << fullPath << "\033[0m" << std::endl;
-        }
-    }
-}
 
-void ServerConfig::handleRoot(std::istringstream& iss) {
-    iss >> root;
-    root = cleanValue(root);
-    if (!isPathValid(root)) {
-        printError("handleRoot", "Invalid root path: " + root);
-        exit(1);
-    }
-}
 
 void ServerConfig::handleClientMaxBodySize(std::istringstream& iss, std::string line) {
     std::string size_str;
@@ -271,6 +246,18 @@ void LocationConfig::handleReturn(std::istringstream &iss, LocationConfig& locat
 
 //--------------------------------------------------PARSERS-----------------------------------------------------------------//
 
+void validateLocationDirectives(const std::set<std::string>& usedKeys) {
+    static std::set<std::string> requiredKeys;
+    requiredKeys.insert("root");
+
+    for (std::set<std::string>::const_iterator it = requiredKeys.begin(); it != requiredKeys.end(); ++it) {
+        if (usedKeys.find(*it) == usedKeys.end()) {
+            std::cerr << RED << "[ERROR] Missing required directive: " << *it << RESET <<std::endl;
+            exit(1);
+        }
+    }
+}
+
 void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& location) {
     std::set<std::string> usedKeys;
     std::string line;
@@ -279,7 +266,7 @@ void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& lo
         checkPV(line);
         std::string key;
         iss >> key;
-        if (key.empty()) continue;
+        if (key.empty() || key[0] == '#') continue;
         if (key == "}") break;
         if (usedKeys.find(key) != usedKeys.end()) {
 			if (key != "cgi")
@@ -300,7 +287,21 @@ void LocationConfig::parseLocation(std::ifstream& configFile, LocationConfig& lo
             exit(1);
         }
     }
+    validateLocationDirectives(usedKeys);
 }
+
+void validateServerDirectives(const std::set<std::string>& usedKeys) {
+    static std::set<std::string> requiredKeys;
+    requiredKeys.insert("listen");
+
+    for (std::set<std::string>::const_iterator it = requiredKeys.begin(); it != requiredKeys.end(); ++it) {
+        if (usedKeys.find(*it) == usedKeys.end()) {
+            std::cerr << RED << "[ERROR] Missing required directive: " << *it << RESET <<std::endl;
+            exit(1);
+        }
+    }
+}
+
 
 void ServerConfig::parseServer(std::ifstream& configFile) {
     std::string line;
@@ -310,7 +311,7 @@ void ServerConfig::parseServer(std::ifstream& configFile) {
         checkPV(line);
         std::string key;
         iss >> key;
-        if (key.empty()) continue;
+        if (key.empty() || key[0] == '#') continue;
         if (key == "}") break;
         if (key != "location" && usedKeys.find(key) != usedKeys.end()) {
             printError("parseServer", "Duplicate directive: " + key);
@@ -318,10 +319,7 @@ void ServerConfig::parseServer(std::ifstream& configFile) {
         }
         usedKeys.insert(key);
         if (key == "listen") handleListen(iss, line);
-        else if (key == "host") handleHost(iss, line);
         else if (key == "server_name") handleServerName(iss, line);
-        else if (key == "index") handleIndex(iss);
-        else if (key == "root") handleRoot(iss);
         else if (key == "client_max_body_size") handleClientMaxBodySize(iss, line);
         else if (key == "error_page") handleErrorPage(iss);
         else if (key == "location") handleLocation(iss, configFile, line);
@@ -330,7 +328,9 @@ void ServerConfig::parseServer(std::ifstream& configFile) {
             exit(1);
         }
     }
+    validateServerDirectives(usedKeys);
 }
+
 
 void Config::parseConfig(const std::string& filename) {
 	
@@ -346,15 +346,19 @@ void Config::parseConfig(const std::string& filename) {
     }
     std::string line;
     while (std::getline(configFile, line)) {
+        if (line.empty() || line[0] == '#') 
+        {
+        } 
         std::istringstream iss(line);
         std::string key;
         iss >> key;
-        if (key.empty()) continue;
+        if (key.empty() || key[0] == '#') continue;
         if (key == "server") {
             ServerConfig server;
             server.parseServer(configFile);
             servers.push_back(server);
-        } else {
+        }
+        else {
             printError("parseConfig", "Unknown directive outside server block: " + key);
             exit(1);
         }

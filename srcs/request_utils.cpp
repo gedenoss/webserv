@@ -62,7 +62,7 @@ bool Request::isMethodAllowedForRoute(Config &config) {
                 return false;
             }
         }
-        const std::vector<std::string>& serverAllowedMethods = server.getAllowMethod();
+        const std::vector<std::string>& serverAllowedMethods = server.getAllowMethods();
         for (size_t k = 0; k < serverAllowedMethods.size(); ++k) {
             if (_method == serverAllowedMethods[k]) {
                 return true;

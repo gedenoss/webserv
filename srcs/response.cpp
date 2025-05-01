@@ -440,19 +440,17 @@ std::string Response::jsonListFiles(Errors &errors)
 
 std::string Response::sendResponse()
 {
+    setInfoRequest();
     Errors errors(*this);
     if (_request.getErrorCode() != 200)
         return (errors.generateError(_request.getErrorCode()));
-    setInfoRequest();
     if (_request.getUrl() == "/upload/listing")
     {
         _body = jsonListFiles(errors);
         setStatusCode(200);
         return (validResponse(errors));
     }
-    std::cout << "URL : " << _request.getUrl() << std::endl;
     findPath();
-    std::cout << "PATH : " << _path << std::endl;
     if (_listingDirectory == true)
     {
         return (validResponse(errors));

@@ -10,10 +10,19 @@ std::string Errors::getError(int code, const std::string &message)
     _response.setStatusCode(code);
     _response.setStatusMessage(message);
     _response.setTime();
-    std::string errorPath = toString(code) + ".html";
-    if (fileExists(errorPath))
+    std::string errorPath = "";
+    // std::string errorPath = toString(code) + ".html";
+    std::map<int, std::string> errorPages = _response.getServer().getErrorPages();
+    for (std::map<int, std::string>::iterator it = errorPages.begin(); it != errorPages.end(); ++it)
+    {
+        if (it->first == code)
+            errorPath = it->second;
+        errorPath = joinPaths(_response.getRoot(), errorPath);
         _response.setBody(readFile(errorPath));
-    else
+    }
+    // if (fileExists(errorPath))
+    //     _response.setBody(readFile(errorPath));
+    if (errorPath.empty())
     {
         std::string body = "<html><body><h1>" + toString(code) + " " + message + "</h1></body></html>";
         _response.setBody(body);

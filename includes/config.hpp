@@ -41,24 +41,20 @@ class LocationConfig {
 
 class ServerConfig {
 	private:
-		int port;  
-		std::string host;
-		std::string index;                       
-		std::string server_name;           
-		std::string root;                  
+		int port;      
+		std::string host;                 
+		std::string server_name;                             
 		size_t client_max_body_size;       
 		std::map<int, std::string> error_pages; 
-		std::vector<LocationConfig> locations; 
+		std::vector<LocationConfig> locations;
 		std::vector<std::string> _allowMethods;
 
 	public:
+		ServerConfig();
 		void parseServer(std::ifstream&	configFile);
 		//------------adem--------------//
 		void handleListen(std::istringstream& iss, std::string line);
-		void handleHost(std::istringstream& iss, std::string line);
 		void handleServerName(std::istringstream& iss, std::string line);
-		void handleIndex(std::istringstream& iss);
-		void handleRoot(std::istringstream& iss);
 		void handleClientMaxBodySize(std::istringstream& iss, std::string line);
 		void handleErrorPage(std::istringstream& iss);
 		void handleLocation(std::istringstream& iss, std::ifstream& configFile, std::string line);
@@ -66,10 +62,10 @@ class ServerConfig {
 
 		int getPort()const { return port; };
 		size_t getClientMaxBodySize() const { return client_max_body_size; }
-		std::string getIndex() { return index; };
 		std::string getServerName() { return server_name; };
 		std::vector<LocationConfig> getLocations() const;
-		const std::vector<std::string>& getAllowMethod() const;
+		std::vector<std::string> getAllowMethods() const { return _allowMethods; }
+		std::map<int, std::string> getErrorPages() const { return error_pages; }
 };
 
 class Config {
