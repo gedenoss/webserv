@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,10 +5,10 @@
     <title>Delete File from /upload</title>
     <style>
         body {
-            background-image: url('/images/trash.png'); /* Remplacez par l'URL de votre image de poubelle */
-            background-size: 800px 500px; /* Réduit la taille de l'image à 30% de sa taille originale */
-            background-position: center; /* Centre l'image */
-            background-repeat: no-repeat; /* Empêche l'image de se répéter */
+            background-image: url('/images/trash.png');
+            background-size: 800px 500px;
+            background-position: center;
+            background-repeat: no-repeat;
             background-attachment: fixed;
             background-color: black;
             color: rgb(0, 0, 0);
@@ -50,7 +49,6 @@
             color: black;
         }
 
-        /* Cache le texte par défaut dans le select */
         option:disabled {
             display: none;
         }
@@ -69,8 +67,7 @@
             try {
                 const response = await fetch('/upload/listing?' + new Date().getTime());
                 if (!response.ok) {
-                    const errorHTML = await response.text();
-                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
+                    showError(response.status);
                     return;
                 }
 
@@ -93,11 +90,9 @@
                     select.add(option);
                 });
 
-            } 
-            catch (error) {
-                const errorHTML = await response.text();
-                replaceBodyContent(errorHTML); // Remplacer uniquement le body avec l'HTML du serveur
-                return;
+            } catch (error) {
+                alert("❌ Erreur réseau lors du chargement des fichiers.");
+                console.error(error);
             }
         }
 
@@ -106,7 +101,7 @@
             const filename = select.value;
 
             if (!filename) {
-                alert("Aucun fichier sélectionné.");
+                alert("⚠️ Aucun fichier sélectionné.");
                 return;
             }
 
@@ -118,34 +113,37 @@
                     method: 'DELETE'
                 });
 
-                if (response.ok) {
+                if (response.status === 204) {
                     alert('Fichier supprimé avec succès.');
-                    await fetchFileList(); // refresh list
+                    await fetchFileList();
                 } else {
-                    if (!response.ok) {
-                    const errorHTML = await response.text();
-                    replaceBodyContent(errorHTML);  // Remplacer uniquement le body avec l'HTML du serveur
-                    return;
-                    }
+                    showError(response.status);
                 }
-            } 
-            catch (error) {
-                alert("Erreur réseau.");
+            } catch (error) {
+                alert("Erreur réseau lors de la suppression.");
                 console.error(error);
             }
         }
 
-        // Charger la liste des fichiers à chaque actualisation de la page
+        function showError(status) {
+            let message = '';
+            switch (status) {
+                case 405:
+                    message = "Erreur 405 : Méthode non autorisée.";
+                    break;
+                case 404:
+                    message = "Erreur 404 : Fichier introuvable.";
+                    break;
+                case 500:
+                    message = "Erreur 500 : Erreur interne du serveur.";
+                    break;
+                default:
+                    message = `Erreur inconnue (${status}).`;
+            }
+            alert(message);
+        }
+
         window.onload = fetchFileList;
-
-        function replaceBodyContent(html) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newBodyContent = doc.body.innerHTML;  // Récupérer uniquement le contenu du body
-
-            // Remplacer le body actuel par du contenu minimal
-            document.body.innerHTML = newBodyContent;
-        } 
     </script>
 
 </body>

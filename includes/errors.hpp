@@ -15,6 +15,7 @@ class Errors
         std::string generateError(int code);
 
         std::string error304();
+        std::string error307();
         std::string error400();
         std::string error403();
         std::string error404();

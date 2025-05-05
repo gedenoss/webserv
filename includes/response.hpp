@@ -33,56 +33,57 @@ class Response {
         Response(Request &req, ServerConfig &serv);
         ~Response();
 
+        // Setters
+        void    setStatusCode(int status_code);
+        void    setStatusMessage(const std::string &status_message);
+        void    setHeaders(const std::string &key, const std::string &value);
+        void    setBody(const std::string &body);
+        void    setTime();
+        void    setContentType();
+        void    setContentLength();
+        void    setContentLanguage();
+        void    setLastModified(const std::string &path);
+        void    setEtag(const std::string &path);
+        void    setHeadersForResponse();
+        void    setStatusCodeAndMessage();
+        void    setInfoRequest();
 
-        std::string sendResponse();
-        std::string generateResponse(bool isError);
-        std::string generateResponseCgi();
-        void findLocation(Errors &errors);
-
-        void setStatusCode(int status_code);
-        void setStatusMessage(const std::string &status_message);
-        void setHeaders(const std::string &key, const std::string &value);
-        void setBody(const std::string &body);
-        void setTime();
-        void setContentType();
-        void setContentLength();
-        void setContentLanguage();
-        void setLastModified(const std::string &path);
-        void setEtag(const std::string &path);
-        void setHeadersForResponse();
-        void setStatusCodeAndMessage();
-        void setInfoRequest();
-
-        int getStatusCode() const;
-        std::string getPath() const;
-        std::string getStatusMessage() const;
-        std::map<std::string, std::string> getHeaders() const;
-        std::string getBody() const;
-
-        std::string getContentType();
-        std::string getLanguage();
-        int getContentLength();
-        ServerConfig getServer() const {
-            return _server;
-        };
-        std::string getRoot() const {
-            return _root;
-        };
+        // Getters
+        int                                 getStatusCode() const  { return _status_code; };
+        std::string                         getPath() const { return _path; };
+        std::string                         getStatusMessage() const { return _status_message; };
+        std::map<std::string, std::string>  getHeaders() const { return _headers; };
+        std::string                         getBody() const { return _body; };
+        std::string                         getContentType();
+        std::string                         getLanguage();
+        ServerConfig                        getServer() const { return _server; };
+        std::string                         getRoot() const { return _root; };
+        LocationConfig                      getLocation() const { return _location; };
 
 
+        // Methods to find errors
         bool isAcceptable();
         bool isModifiedSince(const std::string &ifModifiedSince);
         bool handleIfModifiedSince(const std::map<std::string, std::string> &headers);
         bool isNotModified(const std::map<std::string, std::string> &headers);
-        bool isCGI();
         bool isContentLanguageEmpty();
         bool handleFileErrors();
         bool handleRange();
-        std::string sendFileResponse();
+
+        // Methods to handle path and directory
         bool tryPath(const std::string &p);
         void findPath();
         void listDirectory();
 
+        // Methods to generate response
+        std::string sendFileResponse();
+        std::string sendResponse();
+        std::string generateResponse(bool isError);
+        std::string generateResponseCgi();
+        std::string validResponse(Errors &errors);
+
+        // Methods to handle CGI
+        bool isCGI();
         void setEnv();
         void handleCGI(Errors &errors);
         void childRoutine();
@@ -91,19 +92,19 @@ class Response {
         void checkCgiStatus();
         void readOutfile();
         void killCgi();
+        void cleanUpCgiFiles();
+
+        // Methods to handle POST and DELETE
         std::string handleForm(Errors &errors);
+        std::string jsonListFiles(Errors &errors);
         std::string handleUpload(Errors &errors);
 
         std::string getResponse(Errors &errors);
         std::string postResponse(Errors &errors);
         std::string deleteResponse(Errors &errors);
 
-        std::string validResponse(Errors &errors);
-        std::string jsonListFiles(Errors &errors);
-
-        void cleanUpCgiFiles();
-
     private:
+        // Response variables
         Request &_request;
         Range _range;
         LocationConfig _location;
@@ -117,6 +118,8 @@ class Response {
         std::map<std::string, std::string> _headers;
         std::vector<std::string> _available_languages;
         std::string _body;
+
+        // CGI  variables
         std::string _headerCgi;
         std::vector<std::string> _order;
         std::vector<std::string> _env;

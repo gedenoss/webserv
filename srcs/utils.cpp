@@ -265,3 +265,20 @@ std::string joinPaths(const std::string& a, const std::string& b)
         return a + "/" + b;     // ajoute slash manquant
     return a + b;
 }
+
+std::string trim(const std::string& str)
+{
+    std::size_t first = str.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos)
+        return "";
+    std::size_t last = str.find_last_not_of(" \t\r\n");
+    return str.substr(first, last - first + 1);
+}
+
+std::string generateFileName(const std::string &scriptName, std::string typeOfFile)
+{
+    static int counter = 0;
+    std::stringstream infileName;
+    infileName << "." << scriptName << "_" << counter++ << "_" << typeOfFile;
+    return infileName.str();
+}

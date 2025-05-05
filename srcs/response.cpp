@@ -4,6 +4,8 @@
 #include "../includes/errors.hpp"
 #include "../includes/upload.hpp"
 
+
+// Functions to generate a response string
 std::string Response::generateResponse(bool isError)
 {
     std::stringstream response;
@@ -25,11 +27,12 @@ std::string Response::generateResponse(bool isError)
     }
     std::cout << std::endl;
     response << "\r\n";
-    response << _body;
+    if (_status_code == 200 || _status_code == 206)
+    {
+        response << _body;
+    }
     return response.str();
 }
-
-
 
 std::string Response::sendFileResponse()
 {
@@ -39,23 +42,6 @@ std::string Response::sendFileResponse()
     else
         body = readFile(_path);
     return body;
-}
-
-bool Response::isCGI()
-{
-    std::size_t dotPos = _path.find_last_of('.');
-    if (dotPos == std::string::npos)
-        return false;
-
-    std::string extension = _path.substr(dotPos);
-    std::map<std::string, std::string>::const_iterator it = _location.getCgi().find(extension);
-    if (it != _location.getCgi().end())
-    {
-        _cgiBinPath = it->second;
-        _getBody = false;
-        return true;
-    }
-    return false;
 }
 
 std::string Response::validResponse(Errors &errors)
@@ -68,54 +54,9 @@ std::string Response::validResponse(Errors &errors)
     return generateResponse(false);
 }
 
-void Response::setStatusCodeAndMessage()
-{
-    if (_status_code == 204)
-    {
-        setStatusMessage("No Content");
-        setTime();
-        setEtag(_path);
-        setContentLanguage();
-    }
-    else if (_status_code == 201) {
-    { 
-        setStatusMessage("Created");
-        setHeadersForResponse();
-    }
-    } else if (!_range.isPartial) {
-        setStatusCode(200);
-        setStatusMessage("OK");
-        setHeadersForResponse();
-    } else {
-        setStatusCode(206);
-        setStatusMessage("Partial Content");
-        setHeadersForResponse();
-    }
-}
-
+// Fonctions to check headers
 bool Response::isContentLanguageEmpty() {
     return _headers["Content-Language"].empty();
-}
-
-void Response::cleanUpCgiFiles()
-{
-    if (!_cgiInfilePath.empty()) {
-        remove(_cgiInfilePath.c_str());
-        _cgiInfilePath.clear();
-    }
-    if (!_cgiOutfilePath.empty()) {
-        remove(_cgiOutfilePath.c_str());
-        _cgiOutfilePath.clear();
-    }
-}
-
-static std::string trim(const std::string& str)
-{
-    std::size_t first = str.find_first_not_of(" \t\r\n");
-    if (first == std::string::npos)
-        return "";
-    std::size_t last = str.find_last_not_of(" \t\r\n");
-    return str.substr(first, last - first + 1);
 }
 
 bool Response::isAcceptable()
@@ -166,7 +107,17 @@ bool Response::isAcceptable()
     return false;
 }
 
-
+bool Response::isNotModified(const std::map<std::string, std::string> &headers)
+{
+    std::string etag = generateEtag(_path);
+    if (headers.count("If-None-Match") > 0)
+    {
+        std::string client_etag = headers.at("If-None-Match");
+        if (client_etag == etag)
+            return true;
+    }
+    return false;
+}
 
 bool Response::isModifiedSince(const std::string &ifModifiedSince)
 {
@@ -190,19 +141,7 @@ bool Response::handleIfModifiedSince(const std::map<std::string, std::string> &h
     return true;
 }
 
-bool Response::isNotModified(const std::map<std::string, std::string> &headers)
-{
-    std::string etag = generateEtag(_path);
-    if (headers.count("If-None-Match") > 0)
-    {
-        std::string client_etag = headers.at("If-None-Match");
-        if (client_etag == etag)
-            return true;
-    }
-    return false;
-}
-
-
+//Functions to handle range
 Range parseRange(const std::string &rangeHeader, long fileSize)
 {
     Range range;
@@ -231,63 +170,6 @@ Range parseRange(const std::string &rangeHeader, long fileSize)
     return range;
 }
 
-std::string Response::generateResponseCgi()
-{
-    std::stringstream response;
-    std::cout << std::endl;
-    if (_range.isPartial)
-        _status_code = 206; // HTTP 206 Partial Content
-    else
-        _status_code = 200; // HTTP 200 OK
-    response << "HTTP/1.1 " << _status_code << " " << (_status_code == 206 ? "Partial Content" : "OK") << "\r\n";
-    std::cout << GREEN << BOLD <<response.str() << RESET;
-    response << _headerCgi << "\r\n";
-    std::cout << GREEN << _headerCgi << RESET << std::endl;
-    if (_range.isPartial)
-    {
-        size_t realEnd = std::min(static_cast<size_t> (_range.end), _body.size() > 0 ? _body.size() - 1 : 0);
-        response << "Content-Range: bytes "
-                 << _range.start << "-" << realEnd << "/" << _body.size() << "\r\n";
-    }
-    response << "\r\n";
-    if (_range.isPartial && static_cast<size_t> (_range.start) < _body.size())
-    {
-        size_t realEnd = std::min(static_cast<size_t> (_range.end), _body.size() - 1);
-        std::string partialBody = _body.substr(_range.start, realEnd - _range.start + 1);
-        response << partialBody;
-    }
-    else
-        response << _body;
-    // std::cout << response.str() << std::endl;
-    cleanUpCgiFiles();
-    return response.str();
-}
-
-bool Response::handleFileErrors()
-{
-    if (!fileExists(_path))
-    {
-        setStatusCode(404);
-        return true;
-    }
-    if (!isAcceptable())
-    {
-        setStatusCode(406);
-        return true;
-    }
-    if (!hasReadPermission(_path))
-    {
-        setStatusCode(403);
-        return true;
-    }
-    // if (handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
-    // {
-    //     setStatusCode(304);
-    //     return false;
-    // }
-    return false;
-}
-
 bool Response::handleRange()
 {
     struct stat fileStat;
@@ -309,26 +191,7 @@ bool Response::handleRange()
     return false;
 }
 
-std::string Response::getResponse(Errors &errors)
-{
-    //Check all the errors
-    if (handleFileErrors())
-        return (errors.generateError(_status_code));
-    if (handleRange())
-        return (errors.generateError(_status_code));
-    //CGI handling
-    if (isCGI())
-    {
-        handleCGI(errors);
-        if (_status_code != 0)
-            return (errors.generateError(_status_code));
-        return (generateResponseCgi());
-    }
-    _body = sendFileResponse();
-    return (validResponse(errors));
-}
-
-
+//Fonction to handle POST form request
 std::string Response::handleForm(Errors &errors)
 {
     std::string body = _request.getBody();
@@ -367,38 +230,30 @@ std::string Response::handleForm(Errors &errors)
     return validResponse(errors);
 }
 
-std::string Response::postResponse(Errors &errors)
-{
-    if (isCGI())
-    {
-        handleCGI(errors);
-        if (_status_code != 0)
-            return (errors.generateError(_status_code));
-        return (generateResponseCgi());
-    }
-    else if (_request.getHeaders().count("Content-Type") > 0)
-    {
-        const std::string &contentType = _request.getHeaders().at("Content-Type");
-        if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
-            return handleForm(errors);
-        else if (contentType.find("multipart/form-data") != std::string::npos)
-            return handleUpload(errors);
-        else
-            return errors.error415();
-    }
-    return errors.error415();
-}
-std::string Response::deleteResponse(Errors &errors)
+//Fonction to handle errors
+bool Response::handleFileErrors()
 {
     if (!fileExists(_path))
-        return (errors.error404());
-    else if (!hasWritePermission(_path))
-        return (errors.error403());
-    else if (std::remove(_path.c_str()) != 0)
-        return (errors.error500());
-    _status_code = 204;
-    return (validResponse(errors));
-    
+    {
+        setStatusCode(404);
+        return true;
+    }
+    if (!isAcceptable())
+    {
+        setStatusCode(406);
+        return true;
+    }
+    if (!hasReadPermission(_path))
+    {
+        setStatusCode(403);
+        return true;
+    }
+    if (handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
+    {
+        setStatusCode(304);
+        return false;
+    }
+    return false;
 }
 
 std::string Response::jsonListFiles(Errors &errors)
@@ -437,6 +292,59 @@ std::string Response::jsonListFiles(Errors &errors)
     return json.str();
 }
 
+std::string Response::getResponse(Errors &errors)
+{
+    //Check all the errors
+    if (handleFileErrors())
+        return (errors.generateError(_status_code));
+    if (handleRange())
+        return (errors.generateError(_status_code));
+    //CGI handling
+    if (isCGI())
+    {
+        handleCGI(errors);
+        if (_status_code != 0)
+            return (errors.generateError(_status_code));
+        return (generateResponseCgi());
+    }
+    _body = sendFileResponse();
+    return (validResponse(errors));
+}
+
+std::string Response::postResponse(Errors &errors)
+{
+    if (isCGI())
+    {
+        handleCGI(errors);
+        if (_status_code != 0)
+            return (errors.generateError(_status_code));
+        return (generateResponseCgi());
+    }
+    else if (_request.getHeaders().count("Content-Type") > 0)
+    {
+        const std::string &contentType = _request.getHeaders().at("Content-Type");
+        if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
+            return handleForm(errors);
+        else if (contentType.find("multipart/form-data") != std::string::npos)
+            return handleUpload(errors);
+        else
+            return errors.error415();
+    }
+    return errors.error415();
+}
+
+std::string Response::deleteResponse(Errors &errors)
+{
+    if (!fileExists(_path))
+        return (errors.error404());
+    else if (!hasWritePermission(_path))
+        return (errors.error403());
+    else if (std::remove(_path.c_str()) != 0)
+        return (errors.error500());
+    _status_code = 204;
+    return (validResponse(errors));
+    
+}
 
 std::string Response::sendResponse()
 {
@@ -451,12 +359,16 @@ std::string Response::sendResponse()
         return (validResponse(errors));
     }
     findPath();
+    if (_location.getHasReturn() == true)
+    {
+        setStatusCode(307);
+        std::cout << "Location: " << _location.getReturnPath() << std::endl;
+        return (errors.generateError(_status_code));
+    }
     if (_listingDirectory == true)
     {
         return (validResponse(errors));
     }
-    //Do i find the file ? -> no error 404
-    //Do I have the right to read/write it ? -> no error 403
     if (_status_code != 0)
         return (errors.generateError(_status_code));
     if (_request.getMethod() == "GET") {

@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <map>
 #include <set>
+#include "../includes/utils.hpp"
 
 void printError(const std::string& context, const std::string& msg) {
     std::cerr << "\033[1;31m[ERROR] " << context << ": " << msg << "\033[0m" << std::endl;
@@ -19,6 +20,14 @@ ServerConfig::ServerConfig()
 {
     server_name = "localhost";
     client_max_body_size = 1024 * 1024; // Default to 1MB
+}
+
+LocationConfig::LocationConfig()
+{
+    autoindex = false;
+    allow_methods.push_back("GET");
+    hasReturn = false;
+    returnPath = "";
 }
 
 //-----------------------------------------------------GETTERS-------------------------------------------------------------//
@@ -235,13 +244,17 @@ void LocationConfig::handleCGI(std::istringstream &iss, LocationConfig& location
 }
 
 void LocationConfig::handleReturn(std::istringstream &iss, LocationConfig& location, std::string line) {
-    std::string value;
-    iss >> value;
-    if (countWords(line) != 2) {
-        printError("handleReturn", "Expected one argument.");
+    int words = countWords(line);
+
+    if (words < 2 || words >= 3) {
+        printError("handleReturn", "Expected `return <url>`");
         exit(1);
     }
-	(void)location;
+    // On stocke dans la config
+    location.hasReturn = true;
+    std::string url;
+    iss >> url;
+    location.returnPath = url;
 }
 
 //--------------------------------------------------PARSERS-----------------------------------------------------------------//
@@ -314,8 +327,11 @@ void ServerConfig::parseServer(std::ifstream& configFile) {
         if (key.empty() || key[0] == '#') continue;
         if (key == "}") break;
         if (key != "location" && usedKeys.find(key) != usedKeys.end()) {
-            printError("parseServer", "Duplicate directive: " + key);
-            exit(1);
+            if (key != "error_page")
+            {
+                printError("parseServer", "Duplicate directive: " + key);
+                exit(1);
+            }
         }
         usedKeys.insert(key);
         if (key == "listen") handleListen(iss, line);

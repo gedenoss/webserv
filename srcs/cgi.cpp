@@ -10,13 +10,32 @@
 #include <fstream>
 #include <sstream>
 
-
-std::string generateFileName(const std::string &scriptName, std::string typeOfFile)
+bool Response::isCGI()
 {
-    static int counter = 0;
-    std::stringstream infileName;
-    infileName << "." << scriptName << "_" << counter++ << "_" << typeOfFile;
-    return infileName.str();
+    std::size_t dotPos = _path.find_last_of('.');
+    if (dotPos == std::string::npos)
+        return false;
+
+    std::string extension = _path.substr(dotPos);
+    std::map<std::string, std::string>::const_iterator it = _location.getCgi().find(extension);
+    if (it != _location.getCgi().end())
+    {
+        _cgiBinPath = it->second;
+        _getBody = false;
+        return true;
+    }
+    return false;
+}
+void Response::cleanUpCgiFiles()
+{
+    if (!_cgiInfilePath.empty()) {
+        remove(_cgiInfilePath.c_str());
+        _cgiInfilePath.clear();
+    }
+    if (!_cgiOutfilePath.empty()) {
+        remove(_cgiOutfilePath.c_str());
+        _cgiOutfilePath.clear();
+    }
 }
 
 void Response::handleCGI(Errors &errors)
@@ -229,4 +248,36 @@ void Response::setEnv()
         else
             _env.push_back("CONTENT_TYPE=text/plain");
     }
+}
+
+std::string Response::generateResponseCgi()
+{
+    std::stringstream response;
+    std::cout << std::endl;
+    if (_range.isPartial)
+        _status_code = 206; // HTTP 206 Partial Content
+    else
+        _status_code = 200; // HTTP 200 OK
+    response << "HTTP/1.1 " << _status_code << " " << (_status_code == 206 ? "Partial Content" : "OK") << "\r\n";
+    std::cout << GREEN << BOLD <<response.str() << RESET;
+    response << _headerCgi << "\r\n";
+    std::cout << GREEN << _headerCgi << RESET << std::endl;
+    if (_range.isPartial)
+    {
+        size_t realEnd = std::min(static_cast<size_t> (_range.end), _body.size() > 0 ? _body.size() - 1 : 0);
+        response << "Content-Range: bytes "
+                 << _range.start << "-" << realEnd << "/" << _body.size() << "\r\n";
+    }
+    response << "\r\n";
+    if (_range.isPartial && static_cast<size_t> (_range.start) < _body.size())
+    {
+        size_t realEnd = std::min(static_cast<size_t> (_range.end), _body.size() - 1);
+        std::string partialBody = _body.substr(_range.start, realEnd - _range.start + 1);
+        response << partialBody;
+    }
+    else
+        response << _body;
+    // std::cout << response.str() << std::endl;
+    cleanUpCgiFiles();
+    return response.str();
 }

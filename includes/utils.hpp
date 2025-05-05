@@ -31,5 +31,7 @@ int countWords(const std::string& str);
 std::string ensureRelativeDotPath(const std::string& path);
 std::string readPartialFile(const std::string &path, Range &range);
 std::string joinPaths(const std::string& a, const std::string& b);
+std::string trim(const std::string& str);
+std::string generateFileName(const std::string &scriptName, std::string typeOfFile);
 
 #endif

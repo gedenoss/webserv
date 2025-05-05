@@ -39,6 +39,7 @@ Response::Response(Request &req, ServerConfig &serv) : _request(req), _server(se
     _order.push_back("Content-Type");
     _order.push_back("Content-Length");
     _order.push_back("Content-Language");
+    _order.push_back("Location");
 
     _getBody = true;
 }
@@ -88,6 +89,36 @@ void Response::setLastModified(const std::string &path)
 void Response::setEtag(const std::string &path)
 { _headers["ETag"] = generateEtag(path); }
 
+
+void Response::setStatusCodeAndMessage()
+{
+    if (_status_code == 204)
+    {
+        setStatusMessage("No Content");
+        setTime();
+        setEtag(_path);
+        setContentLanguage();
+    }
+    else if (_status_code == 201)
+    { 
+        setStatusMessage("Created");
+        setHeadersForResponse();
+    }
+    else if (_status_code == 304) {
+        setStatusMessage("Not Modified");
+        setHeadersForResponse();
+    }
+    else if (!_range.isPartial) {
+        setStatusCode(200);
+        setStatusMessage("OK");
+        setHeadersForResponse();
+    } else {
+        setStatusCode(206);
+        setStatusMessage("Partial Content");
+        setHeadersForResponse();
+    }
+}
+
 void Response::setHeadersForResponse()
 {
     setTime();
@@ -100,6 +131,8 @@ void Response::setHeadersForResponse()
         setEtag(_path);
 }
 
+
+
 void Response::setInfoRequest()
 {
     _location = _request.getLocation();
@@ -109,21 +142,6 @@ void Response::setInfoRequest()
     if (_root.empty())
         _root = ".";
 }
-
-int Response::getStatusCode() const
-{ return _status_code; }
-
-std::string Response::getPath() const
-{ return _path; }
-
-std::string Response::getStatusMessage() const
-{ return _status_message;}
-
-std::map<std::string, std::string> Response::getHeaders() const
-{ return _headers; }
-
-std::string Response::getBody() const
-{   return _body; }
 
 std::string Response::getContentType()
 {

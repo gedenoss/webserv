@@ -20,8 +20,6 @@ std::string Errors::getError(int code, const std::string &message)
         errorPath = joinPaths(_response.getRoot(), errorPath);
         _response.setBody(readFile(errorPath));
     }
-    // if (fileExists(errorPath))
-    //     _response.setBody(readFile(errorPath));
     if (errorPath.empty())
     {
         std::string body = "<html><body><h1>" + toString(code) + " " + message + "</h1></body></html>";
@@ -29,6 +27,8 @@ std::string Errors::getError(int code, const std::string &message)
     }
     
     _response.setHeaders("Content-Type", "text/html");
+    if (_response.getStatusCode() == 307)
+        _response.setHeaders("Location", _response.getLocation().getReturnPath());
     _response.setContentLength();
     _response.setContentLanguage();
 
@@ -43,6 +43,8 @@ std::string Errors::generateError(int code)
     switch(code) {
         case 304:
             return error304();
+        case 307:
+            return error307();
         case 400:
             return error400();
         case 403:
@@ -83,6 +85,7 @@ std::string Errors::generateError(int code)
 }
 
 std::string Errors::error304() { return getError(304, "Not Modified"); }
+std::string Errors::error307() { return getError(307, "Temporary Redirect"); }
 std::string Errors::error400() { return getError(400, "Bad Request"); }
 std::string Errors::error403() { return getError(403, "Forbidden"); }
 std::string Errors::error404() { return getError(404, "Not Found"); }
