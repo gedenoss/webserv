@@ -17,6 +17,13 @@ size_t stringToSizeT(const std::string &str) {
     return result;
 }
 
+int stringToInt(const std::string &str) {
+    std::stringstream ss(str);
+    int result;
+    ss >> result;
+    return result;
+}
+
 void vectorToCStringTab(const std::vector<std::string>& str, std::vector<char*>& cstr) {
     cstr.reserve(str.size() + 1);  // Allouer de l'espace pour les éléments et le NULL final
     for (size_t i = 0; i < str.size(); ++i) {

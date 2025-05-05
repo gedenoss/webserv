@@ -9,6 +9,7 @@
 
 std::string toString(int value);
 size_t stringToSizeT(const std::string &str);
+int stringToInt(const std::string &str);
 void	vectorToCStringTab(const std::vector<std::string>& str, std::vector<char *>& cstr);
 bool fileExists(const std::string &name);
 void split(const std::string &s, const std::string &delimiter, std::vector<std::string> &elements);

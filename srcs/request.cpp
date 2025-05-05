@@ -1,4 +1,5 @@
 #include "../includes/request.hpp"
+#include "../includes/utils.hpp"
 #include "../includes/response.hpp"
 #include "../includes/config.hpp"
 #include <cctype>
@@ -45,15 +46,15 @@ void Request::parse(const std::string &rawRequest, Config &config) {
     if (!validateUrl()) return;
 
     if (!validateMethodAndVersion(config)) return;
-
     size_t headersSize = 0;
     bool headersFinished = false;
     parseHeaders(stream, headersSize, headersFinished);
     if (_errorCode != 0) return;
-
+   
     if (!validateHostHeader()) return;
 
     processHeaders(stream, headersFinished);
+
     if (_errorCode != 0) return;
 
     handleMultipartFormData();
@@ -157,11 +158,11 @@ void Request::printRequest() const {
 	{
 		// if(it->first == "Host")
 		// 	importantValue = it->second;
-		// std::cout << it->first << ": " << it->second << "\n";
+		std::cout << it->first << ": " << it->second << "\n";
 		
 	}
 	std::cout << std::endl;
-	// std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
+	std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
 	// std::cout << "  " << importantValue <<"\n";
 	// return importantValue;
 }
