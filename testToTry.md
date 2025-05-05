@@ -33,3 +33,14 @@ curl -v -X POST http://localhost:8000/upload \
      -H "Transfer-Encoding: chunked" \
      -H "Content-Length: 23" \
      --data-binary @-
+
+curl -X POST http://localhost:8000/upload \ 
+     -H "Transfer-Encoding: chunked" \
+     --data-binary @- <<EOF
+5
+Hello
+6
+ World
+0
+EOF
+

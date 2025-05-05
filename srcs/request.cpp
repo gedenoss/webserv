@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <iostream>		
 
-
 Request::Request(size_t	maxBody, size_t	maxHeaders) :_maxBodySize(maxBody),	_maxHeadersSize(maxHeaders){}
 
 Request::~Request()	{}
@@ -57,8 +56,10 @@ void Request::parse(const std::string &rawRequest, Config &config) {
     processHeaders(stream, headersFinished);
     if (_errorCode != 0) return;
 
-    // processBody(stream);
-    // if (_errorCode != 0) return;
+    if (getHeaders().find("Transfer-Encoding") != getHeaders().end() &&
+        getHeaders()["Transfer-Encoding"] == "chunked")
+        processChunkedBody(stream);
+    if(_errorCode != 0) return;
 
     handleMultipartFormData();
 

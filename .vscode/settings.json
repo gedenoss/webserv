@@ -55,5 +55,11 @@
         "set": "cpp",
         "csignal": "cpp",
         "cinttypes": "cpp"
+    },
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
     }
 }

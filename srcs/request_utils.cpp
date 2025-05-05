@@ -237,6 +237,11 @@ void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
         _errorCode = 400;
         return;
     }
+    std::map<std::string, std::string>::const_iterator transferEncodingIt = getHeaders().find("Transfer-Encoding");
+    if (transferEncodingIt != getHeaders().end() && transferEncodingIt->second == "chunked") {
+        processChunkedBody(stream);
+        return;
+    }
     std::map<std::string, std::string>::const_iterator contentLengthIt = getHeaders().find("Content-Length");
     if (contentLengthIt != getHeaders().end()) {
         bool conversionSuccess = false;
@@ -293,56 +298,30 @@ void Request::processHeaders(std::istringstream &stream, bool headersFinished) {
         _errorCode = 400;
         return;
     }
-
-    std::map<std::string, std::string>::const_iterator contentTypeIt = getHeaders().find("Content-Type");
-    if (contentTypeIt != getHeaders().end()) {
-        std::string contentType = contentTypeIt->second;
-
-        size_t paramPos = contentType.find(';');
-        if (paramPos != std::string::npos) {
-            contentType = contentType.substr(0, paramPos);
-        }
-
-        size_t lastNonSpace = contentType.find_last_not_of(" \t\r");
-        if (lastNonSpace != std::string::npos)
-            contentType = contentType.substr(0, lastNonSpace + 1);
-
-        static const std::string allowedTypes[] = {
-            "text/html", "image/png", "image/jpeg", "text/css",
-            "application/javascript", "application/json", "application/xml",
-            "application/pdf", "text/plain", "text/csv", "application/x-www-form-urlencoded", "multipart/form-data"
-        };
-
-        bool isAllowed = false;
-        for (size_t i = 0; i < sizeof(allowedTypes) / sizeof(allowedTypes[0]); ++i) {
-            if (contentType == allowedTypes[i]) {
-                isAllowed = true;
-                break;
-            }
-        }
-
-        if (!isAllowed) {
-            _errorCode = 415;
-            return;
-        }
-    }
-
-    std::map<std::string, std::string>::const_iterator expectIt = getHeaders().find("Expect");
-    if (expectIt != getHeaders().end()) {
-        std::string expect = expectIt->second;
-        if (expect.find("100-continue") != std::string::npos) {
-            _errorCode = 417;
-            return;
-        }
-    }
 }
 
-bool Request::isChunkedTransferEncoding() const {
-    std::map<std::string, std::string>::const_iterator it = _headers.find("Transfer-Encoding");
-    if (it != _headers.end() && it->second == "chunked") {
-        return true;
+void Request::processChunkedBody(std::istringstream &stream) {
+    std::string chunkSizeLine;
+    std::string body;
+    while (std::getline(stream, chunkSizeLine)) {
+        if (!chunkSizeLine.empty() && chunkSizeLine[chunkSizeLine.size() - 1] == '\r') {
+            chunkSizeLine.erase(chunkSizeLine.size() - 1);
+        }
+        size_t chunkSize = std::strtoul(chunkSizeLine.c_str(), NULL, 16);
+        if (chunkSize == 0) {
+            break;
+        }
+        std::string chunk(chunkSize, '\0');
+        stream.read(&chunk[0], chunkSize);
+        body += chunk;
+        stream.ignore(2);
     }
-    return false;
+    if (body.size() > _maxBodySize) {
+        _errorCode = 413;
+        return;
+    }
+    if (body.empty()) return;
+    setBody(body);
 }
 
 /*  bool conversionSuccess = false;
@@ -453,3 +432,4 @@ if (expect.find("100-continue")	!= std::string::npos) {
 _errorCode = 400;	
 return ;
 }*/
+
