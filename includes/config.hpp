@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <set>
 
 class LocationConfig {
 	private:
@@ -31,6 +32,7 @@ class LocationConfig {
 		std::vector<std::string> getAllowMethod() const { return allow_methods; };
 		bool getHasReturn() const { return hasReturn; };
 		std::string getReturnPath() const { return returnPath; };
+		void validateLocationDirectives(const std::set<std::string>& usedKeys);
 		//---------------adem------------------//
 		void handleLocRoot(std::istringstream &iss, LocationConfig& location, std::string line);
 		void handleLocIndex(std::istringstream &iss, LocationConfig& location, std::string line);

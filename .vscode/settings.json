@@ -54,7 +54,12 @@
         "map": "cpp",
         "set": "cpp",
         "csignal": "cpp",
-        "cinttypes": "cpp",
-        "iomanip": "cpp"
+        "cinttypes": "cpp"
+    },
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
     }
 }

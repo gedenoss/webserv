@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <iostream>		
 
-
 Request::Request(size_t	maxBody, size_t	maxHeaders) :_maxBodySize(maxBody),	_maxHeadersSize(maxHeaders){}
 
 Request::~Request()	{}
@@ -40,6 +39,7 @@ void Request::parse(const std::string &rawRequest, Config &config) {
 
     if (!validateMethod()) {
         _errorCode = 400;
+        std::cout << "Invalid method: " << _method << std::endl;
         return;
     }
 
@@ -56,6 +56,11 @@ void Request::parse(const std::string &rawRequest, Config &config) {
     processHeaders(stream, headersFinished);
 
     if (_errorCode != 0) return;
+
+    if (getHeaders().find("Transfer-Encoding") != getHeaders().end() &&
+        getHeaders()["Transfer-Encoding"] == "chunked")
+        processChunkedBody(stream);
+    if(_errorCode != 0) return;
 
     handleMultipartFormData();
 
@@ -74,6 +79,7 @@ bool Request::parseRequestLine(std::istringstream &stream) {
     std::string line;
     if (!std::getline(stream, line) || line.empty()) {
         _errorCode = 400;
+        std::cout << "Empty request line" << std::endl;
         return false;
     }
 
@@ -115,6 +121,7 @@ bool Request::validateMethod() {
 bool Request::validateUrl() {
     if (!isValidUrl()) {
         _errorCode = 400;
+        std::cout << "Invalid URL: " << _url << std::endl;
         return false;
     }
     return true;
@@ -123,6 +130,7 @@ bool Request::validateUrl() {
 bool Request::validateHostHeader() {
     if (getHttpVersion() == "HTTP/1.1" && getHeaders().find("Host") == getHeaders().end()) {
         _errorCode = 400;
+        std::cout << "Missing Host header" << std::endl;
         return false;
     }
     return true;
@@ -158,11 +166,11 @@ void Request::printRequest() const {
 	{
 		// if(it->first == "Host")
 		// 	importantValue = it->second;
-		std::cout << it->first << ": " << it->second << "\n";
+		// std::cout << it->first << ": " << it->second << "\n";
 		
 	}
 	std::cout << std::endl;
-	std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
+	// std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
 	// std::cout << "  " << importantValue <<"\n";
 	// return importantValue;
 }

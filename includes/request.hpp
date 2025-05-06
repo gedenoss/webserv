@@ -97,6 +97,9 @@ class Request {
         bool validateHostHeader();
         void handleMultipartFormData();
 
+        bool isChunkedTransferEncoding() const;
+        bool parseChunkedBody(std::istream &stream);
+
     public:
         Request(size_t maxBodySize, size_t maxHeadersSize);
         ~Request();
@@ -119,6 +122,7 @@ class Request {
         bool validateMethodAndVersion(Config &config);
         bool validateMethod();
         void processHeaders(std::istringstream &stream, bool headersFinished);
+        void processChunkedBody(std::istringstream &stream);
         void initializeRequest(Request& request, const std::string& method, const std::string& url, const std::string& httpVersion, const std::string& queryString);
         std::string getHttpVersion() const;
         std::string getBody() const;

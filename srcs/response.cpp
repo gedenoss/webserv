@@ -362,7 +362,6 @@ std::string Response::sendResponse()
     if (_location.getHasReturn() == true)
     {
         setStatusCode(307);
-        std::cout << "Location: " << _location.getReturnPath() << std::endl;
         return (errors.generateError(_status_code));
     }
     if (_listingDirectory == true)

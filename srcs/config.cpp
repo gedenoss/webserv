@@ -25,7 +25,6 @@ ServerConfig::ServerConfig()
 LocationConfig::LocationConfig()
 {
     autoindex = false;
-    allow_methods.push_back("GET");
     hasReturn = false;
     returnPath = "";
 }
@@ -260,7 +259,7 @@ void LocationConfig::handleReturn(std::istringstream &iss, LocationConfig& locat
 
 //--------------------------------------------------PARSERS-----------------------------------------------------------------//
 
-void validateLocationDirectives(const std::set<std::string>& usedKeys) {
+void LocationConfig::validateLocationDirectives(const std::set<std::string>& usedKeys) {
     static std::set<std::string> requiredKeys;
     requiredKeys.insert("root");
 
@@ -269,6 +268,9 @@ void validateLocationDirectives(const std::set<std::string>& usedKeys) {
             std::cerr << RED << "[ERROR] Missing required directive: " << *it << RESET <<std::endl;
             exit(1);
         }
+    }
+    if (usedKeys.find("allow_methods") == usedKeys.end()) {
+        allow_methods.push_back("GET");
     }
 }
 
