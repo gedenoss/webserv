@@ -47,6 +47,8 @@
 class Server {
     public:
 
+        size_t verifyLoc(std::string method, std::string path, const std::string& need);
+        size_t whichServerToChoose(std::vector<ServerConfig>& servers, const std::string& need, std::string &adem);
         void launchServer();
         void clean();
         void handleNewConnection();

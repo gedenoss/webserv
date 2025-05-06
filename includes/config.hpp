@@ -65,6 +65,7 @@ class ServerConfig {
 		//----------plus adem-----------//
 
 		int getPort()const { return port; };
+		const std::string getServerNames() const {return server_name;};
 		size_t getClientMaxBodySize() const { return client_max_body_size; }
 		std::string getServerName() { return server_name; };
 		std::vector<LocationConfig> getLocations() const;

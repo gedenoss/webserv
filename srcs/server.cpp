@@ -18,13 +18,48 @@
 #include "../includes/response.hpp"
 #include "../includes/utils.hpp"
 
-size_t whichServerToChoose(std::vector<ServerConfig>& servers, const std::string& need) {
-    for (size_t i = 0; i < servers.size(); ++i) {
-        if (static_cast<size_t>(servers[i].getPort()) == stringToSizeT(need))
-            return i;
+size_t Server::verifyLoc(std::string method, std::string path, const std::string& need) {
+    (void)method;
+    size_t i = -1;
+    if (!path.empty() && path[0] == '/')
+        path.erase(0, 1);
+
+    std::string::size_type pos = path.find('/');
+    std::string rootFolder = (pos == std::string::npos) ? path : path.substr(0, pos);
+    std::string match = "/" + rootFolder;
+
+    for (std::vector<ServerConfig>::iterator servIt = _servers.begin(); servIt != _servers.end(); ++servIt) {
+        std::vector<LocationConfig> locs = servIt->getLocations();
+        ++i;
+        for (std::vector<LocationConfig>::iterator locIt = locs.begin(); locIt != locs.end(); ++locIt) {
+            if (locIt->getPath() == match && servIt->getPort() == stringToInt(need)) {
+                return i;
+            }
+        }
     }
-    return 0;
+    return -1;
 }
+
+size_t Server::whichServerToChoose(std::vector<ServerConfig>& servers, const std::string& need, std::string &adem) {
+    std::istringstream iss(adem);    
+    std::string method;
+    std::string path;
+    std::string version;
+    size_t serv;
+
+    iss >> method >> path >> version;
+    serv = verifyLoc(method, path, need);
+    if (static_cast<int>(serv) == -1){
+        for (size_t i = 0; i < servers.size(); ++i) {
+            if (static_cast<size_t>(servers[i].getPort()) == stringToSizeT(need))
+                return i;
+        }
+        return 0;
+    }
+    else
+        return serv;
+}
+
 
 bool Server::_serverIsRunning = true;
 
@@ -167,14 +202,14 @@ void Server::handleClientData() {
 
     if (_headersDone.count(_fd)) {
         std::string &rq = _buffers[_fd];
+        std::string &adem = rq;
         size_t end_hdr = rq.find("\r\n\r\n");
         int expected = _contentLengths[_fd];
         size_t have_body = rq.size() - (end_hdr + 4);
         if ((int)have_body < expected)
             return;
-
         std::string need = getHostRawRequest(rq);
-        size_t i = whichServerToChoose(_servers, need);
+        size_t i = whichServerToChoose(_servers, need, adem);
         std::cout << BLUE << BOLD << "Port choosen : " << _servers[i].getPort() << RESET << std::endl;
         size_t maxBodySize = _servers[i].getClientMaxBodySize();          
         Request  request(maxBodySize,1024);
@@ -185,7 +220,7 @@ void Server::handleClientData() {
 
         _pendingResponses[_fd] = reply;
         modifyEpollEvent(_fd, EPOLLIN | EPOLLOUT);
-    }
+    }   
 }
 
 void Server::handleClientWrite() {
@@ -199,7 +234,7 @@ void Server::handleClientWrite() {
     if (data.empty()) {
         _pendingResponses.erase(_fd);
         modifyEpollEvent(_fd, EPOLLIN);
-        clean(); // connection keep-alive à implémenter si besoin
+        clean();
     }
 }
 
