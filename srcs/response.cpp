@@ -27,7 +27,7 @@ std::string Response::generateResponse(bool isError)
     }
     std::cout << std::endl;
     response << "\r\n";
-    if (_status_code == 200 || _status_code == 206)
+    if (_status_code != 304)
     {
         response << _body;
     }
@@ -248,11 +248,11 @@ bool Response::handleFileErrors()
         setStatusCode(403);
         return true;
     }
-    if (handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
-    {
-        setStatusCode(304);
-        return false;
-    }
+    // if (handleIfModifiedSince(_request.getHeaders()) || isNotModified(_request.getHeaders()))
+    // {
+    //     setStatusCode(304);
+    //     return false;
+    // }
     return false;
 }
 

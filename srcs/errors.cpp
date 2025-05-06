@@ -16,9 +16,11 @@ std::string Errors::getError(int code, const std::string &message)
     for (std::map<int, std::string>::iterator it = errorPages.begin(); it != errorPages.end(); ++it)
     {
         if (it->first == code)
+        {
             errorPath = it->second;
-        errorPath = joinPaths(_response.getRoot(), errorPath);
-        _response.setBody(readFile(errorPath));
+            errorPath = joinPaths(_response.getRoot(), errorPath);
+            _response.setBody(readFile(errorPath));
+        }
     }
     if (errorPath.empty())
     {
@@ -31,7 +33,6 @@ std::string Errors::getError(int code, const std::string &message)
         _response.setHeaders("Location", _response.getLocation().getReturnPath());
     _response.setContentLength();
     _response.setContentLanguage();
-
     if (code == 304)
         _response.setLastModified(_response.getPath());
 

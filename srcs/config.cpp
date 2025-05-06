@@ -246,7 +246,7 @@ void LocationConfig::handleCGI(std::istringstream &iss, LocationConfig& location
 void LocationConfig::handleReturn(std::istringstream &iss, LocationConfig& location, std::string line) {
     int words = countWords(line);
 
-    if (words < 2 || words >= 3) {
+    if (words != 2) {
         printError("handleReturn", "Expected `return <url>`");
         exit(1);
     }
@@ -254,6 +254,7 @@ void LocationConfig::handleReturn(std::istringstream &iss, LocationConfig& locat
     location.hasReturn = true;
     std::string url;
     iss >> url;
+    url = cleanValue(url);
     location.returnPath = url;
 }
 

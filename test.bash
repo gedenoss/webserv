@@ -121,17 +121,27 @@ sleep 1 # Wait for the server to start
 # fi
 
 # Test 3
-echo -e "${BOLDBLUE} Test 2: ${RESET}"
-# Test the server with a body size greater than the limit
-dd if=/dev/zero of=testfile bs=1024 count=10240 # 1MB file called testfile
+# echo -e "${BOLDBLUE} Test 2: ${RESET}"
+# # Test the server with a body size greater than the limit
+# dd if=/dev/zero of=testfile bs=1024 count=10240 # 1MB file called testfile
 
-curl -s -X POST -d @testtext http://localhost:6000/index.html
- # Send the file to the server
+# curl -s -X POST -d @testtext http://localhost:6000/index.html
+#  # Send the file to the server
 
-if [ "$status_code" -eq 413 ]; then
-	echo -e "[❌]${RED} Body size greater than the limit ${RESET}"
+# if [ "$status_code" -eq 413 ]; then
+# 	echo -e "[❌]${RED} Body size greater than the limit ${RESET}"
+# else
+# 	echo -e "[✅]${GREEN} Body size greater than the limit ${RESET}"
+# fi
+# rm -f testfile # Remove the file
+
+# Test 4
+echo -e "${BOLDBLUE} Test 4: ${RESET} Chunked requests"
+curl -s -X POST -H "Transfer-Encoding: chunked" -d @testfile http://localhost:6000/upload # Send the file to the server
+if [ $? -eq 0 ]; then
+	echo -e "[❌]${RED} Chunked requests ${RESET}"
 else
-	echo -e "[✅]${GREEN} Body size greater than the limit ${RESET}"
+	echo -e "[✅]${GREEN} Chunked requests ${RESET}"
 fi
 rm -f testfile # Remove the file
 
