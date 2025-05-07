@@ -18,7 +18,6 @@ std::string Errors::getError(int code, const std::string &message)
         if (it->first == code)
         {
             errorPath = it->second;
-            errorPath = joinPaths(_response.getRoot(), errorPath);
             _response.setBody(readFile(errorPath));
         }
     }

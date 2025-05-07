@@ -124,7 +124,6 @@ void Response::listDirectory()
     closedir(dir);
     html << "</table><hr><address>WebSaviezVousLe?/1.0</address></body></html>\n";
     _body = html.str();
-    setStatusCode(200);
 }
 
 

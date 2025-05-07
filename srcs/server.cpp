@@ -174,7 +174,13 @@ void Server::handleClientData() {
     char buf[4096];
     while (1) {
         int r = recv(_fd, buf, sizeof(buf) - 1, 0);
-        if (r <= 0) break;
+        if (r < 0){
+            break;
+        }
+        if (r == 0){
+            close(_fd); 
+            break;  
+        } 
         _buffers[_fd].append(buf, r);
         if (_buffers[_fd].size() > 4069 * 1000 * 100) {
             std::cerr << "ERROR: Request too large\n";
@@ -220,7 +226,7 @@ void Server::handleClientData() {
 
         _pendingResponses[_fd] = reply;
         modifyEpollEvent(_fd, EPOLLIN | EPOLLOUT);
-    }   
+    }
 }
 
 void Server::handleClientWrite() {

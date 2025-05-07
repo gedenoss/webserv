@@ -38,8 +38,6 @@ void Request::parse(const std::string &rawRequest, Config &config) {
     parseHostHeader(stream);
 
     if (!validateMethod()) {
-        _errorCode = 400;
-        std::cout << "Invalid method: " << _method << std::endl;
         return;
     }
 
@@ -113,7 +111,7 @@ bool Request::validateMethod() {
             return true;
         }
     }
-
+    if(!isValidMethod()) { _errorCode = 400; return false; }
     _errorCode = 501;
     return false;
 }
@@ -161,16 +159,12 @@ void Request::printRequest() const {
 			//   << "Headers:\n";
 	
 	
-	const std::map<std::string,	std::string>& headersRef = getHeaders();	
-	for	(std::map<std::string, std::string>::const_iterator	it = headersRef.begin(); it != headersRef.end(); ++it)
-	{
-		// if(it->first == "Host")
-		// 	importantValue = it->second;
-		// std::cout << it->first << ": " << it->second << "\n";
+	// const std::map<std::string,	std::string>& headersRef = getHeaders();	
+	// for	(std::map<std::string, std::string>::const_iterator	it = headersRef.begin(); it != headersRef.end(); ++it)
+	// {
+	// 	std::cout << it->first << ": " << it->second << "\n";
 		
-	}
+	// }
 	std::cout << std::endl;
 	// std::cout << "Body:	" << (getBody().empty()	? "[empty]"	: getBody()) << "\n";
-	// std::cout << "  " << importantValue <<"\n";
-	// return importantValue;
 }

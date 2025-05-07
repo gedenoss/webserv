@@ -42,7 +42,7 @@ std::vector<ServerConfig> Config::getServers() const {
 //-------------------------------------------------CLEAN FUNCTIONS----------------------------------------------------------//
 
 std::string cleanValue(std::string value) {
-    while (!value.empty() && (value[value.size() - 1] == ';' || isspace(value[value.size() - 1]))) 
+    while (!value.empty() && (value[value.size() - 1] == ';' || isspace(value[value.size() - 1]) || value[value.size() - 1] == '{')) 
         value.erase(value.size() - 1);
     return value;
 }

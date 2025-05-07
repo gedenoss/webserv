@@ -24,7 +24,7 @@ def test_all():
     make_request("DELETE", "127.0.0.1", 8000, "/upload/form")
     
     # Test d’un CGI Python
-    make_request("POST", "127.0.0.1", 8000, "/scrpts/test.py", body="x=1", headers={"Content-Type": "application/x-www-form-urlencoded"})
+    make_request("POST", "127.0.0.1", 8000, "/scripts/test.py", body="x=1", headers={"Content-Type": "application/x-www-form-urlencoded"})
 
     # Test du serveur 127.0.0.1:1234 (server_name prout)
     print("=== Test serveur prout ===")
@@ -34,10 +34,10 @@ def test_all():
     # Test du serveur 127.0.0.1:8080 (server_name pipi)
     print("=== Test serveur pipi ===")
     make_request("GET", "127.0.0.1", 8080, "/")
-    make_request("GET", "127.0.0.1", 8080, "/images")
-    make_request("DELETE", "127.0.0.1", 8080, "/images")
-    make_request("GET", "127.0.0.1", 8080, "/prop")
-    make_request("POST", "127.0.0.1", 8080, "/admin", body="action=login", headers={"Content-Type": "application/x-www-form-urlencoded"})
+    make_request("GET", "127.0.0.1", 8080, "/images/")
+    make_request("DELETE", "127.0.0.1", 8080, "/images/")
+    make_request("GET", "127.0.0.1", 8080, "/upload/")
+    make_request("POST", "127.0.0.1", 8080, "/admin/ok", body="action=login", headers={"Content-Type": "application/x-www-form-urlencoded"})
 
 if __name__ == "__main__":
     test_all()

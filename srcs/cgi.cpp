@@ -82,6 +82,7 @@ void Response::checkCgiStatus()
         if (result == -1)
         {
             perror("waitpid");
+            std::cerr << "Error waiting for CGI process." << std::endl;
             setStatusCode(500);
             break;
         }
@@ -91,6 +92,7 @@ void Response::checkCgiStatus()
                 if (WEXITSTATUS(status) != 0) {
                     std::cerr << "CGI exited with status: " << WEXITSTATUS(status) << std::endl;
                     setStatusCode(500);
+                    break;
                 } else {
                     readOutfile();
                 }
@@ -262,6 +264,7 @@ std::string Response::generateResponseCgi()
     std::cout << GREEN << BOLD <<response.str() << RESET;
     response << _headerCgi << "\r\n";
     std::cout << GREEN << _headerCgi << RESET << std::endl;
+    std::cout << std::endl;
     if (_range.isPartial)
     {
         size_t realEnd = std::min(static_cast<size_t> (_range.end), _body.size() > 0 ? _body.size() - 1 : 0);

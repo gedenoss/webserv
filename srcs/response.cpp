@@ -304,7 +304,10 @@ std::string Response::getResponse(Errors &errors)
     {
         handleCGI(errors);
         if (_status_code != 0)
+        {
+            cleanUpCgiFiles();
             return (errors.generateError(_status_code));
+        }
         return (generateResponseCgi());
     }
     _body = sendFileResponse();
@@ -335,9 +338,9 @@ std::string Response::postResponse(Errors &errors)
 
 std::string Response::deleteResponse(Errors &errors)
 {
-    if (!fileExists(_path))
+    if (!fileExists(_path) && _listingDirectory == false)
         return (errors.error404());
-    else if (!hasWritePermission(_path))
+    else if (!hasWritePermission(_path) || _listingDirectory == true)
         return (errors.error403());
     else if (std::remove(_path.c_str()) != 0)
         return (errors.error500());
@@ -364,10 +367,8 @@ std::string Response::sendResponse()
         setStatusCode(307);
         return (errors.generateError(_status_code));
     }
-    if (_listingDirectory == true)
-    {
+    if (_listingDirectory == true && _request.getMethod() == "GET")
         return (validResponse(errors));
-    }
     if (_status_code != 0)
         return (errors.generateError(_status_code));
     if (_request.getMethod() == "GET") {

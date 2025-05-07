@@ -204,6 +204,9 @@
         <button onclick="window.location.href='scripts/'">CGI</button>
         <button onclick="window.location.href='delete.html'">Delete</button>
         <button onclick="window.location.href='upload.html'">Upload</button>
+        
+        <!-- Nouveau bouton Return -->
+        <button id="returnButton">Loldle</button>
     </div>
     
 
@@ -220,6 +223,11 @@
                 glitter.remove();
             }, 1000);
         }
+
+        // Fonction pour la redirection du bouton Return
+        document.getElementById('returnButton').addEventListener('click', function() {
+            window.location.href = 'loldle/';  // Redirige vers 'loldl'
+        });
 
         const text = document.querySelector(".text");
         const FPS = 60;
@@ -256,7 +264,7 @@
     </script>
 
     <div class="scrolling-image">
-        <img src="../images/vache.png" alt="Vache">
+        <img src="images/vache.png" alt="Vache">
     </div>
 
 </body>
