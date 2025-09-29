@@ -7,7 +7,7 @@
 
 > A lightweight HTTP/1.1-compliant web server written in C++98 from scratch.
 
----
+
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@
 - [Authors](#authors)
 - [License](#license)
 
----
+
 
 ## About
 
@@ -35,7 +35,7 @@ Objectives:
 - Implement a custom configuration parser
 - Handle multiple clients and servers concurrently
 
----
+
 
 ## Features
 
@@ -49,7 +49,7 @@ Objectives:
 - Chunked transfer encoding
 - Connection timeout and socket reuse
 
----
+
 
 ## Getting Started
 
