@@ -58,4 +58,10 @@ Objectives:
 - Linux or macOS
 - `g++` compiler with C++98 support
 - `make`
+  
+## Screenshots
+
+### Homepage Example
+
+![Homepage Screenshot](screenshots/home.png)
 
